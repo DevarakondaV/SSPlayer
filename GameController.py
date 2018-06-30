@@ -7,7 +7,11 @@ import numpy as np
 import mss
 import mss.tools
 import win32api, win32con
-app_dir = r"C:\Users\devar\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
+import threading
+from scipy import misc
+
+
+app_dir = r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
 
 def wait_for(sec):
 	t = time.time()+sec
@@ -19,6 +23,11 @@ class SSPlayer:
 	def __init__(self,dir,l_or_d):
 		self.l_o_d = l_or_d
 		self.app = self.launch_app(dir)
+		#self.tr_images = threading.Lock()
+		self.tr_img_ev = threading.Event()
+		self.training_images = []
+		self.counter = 0
+		self.current_screen = 1
 		
 	def launch_app(self,dir):
 		app = application.Application().start(dir)
@@ -88,9 +97,24 @@ class SSPlayer:
 		mouse.release(button='left',coords=self.replay_click_loc)
 
 	def move_mouse(self,cord):
+		x,y = win32api.GetCursorPos()
+		dx = cord[0]-x
+		dy = cord[1]-y
 		#win32api.SetCursorPos(cord)
-		win32api.mouse_event(win32con.MOUSEEVENTF_MOVE, cord[0],cord[1],0,0)
+		win32api.mouse_event(win32con.MOUSEEVENTF_MOVE, dx,dy,0,0)
+		
+	def move_mouse_right(self):
+		win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,1,0,0,0)
+	
+	def move_mouse_left(self):
+		win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,-1,0,0,0)
 
+	def move_mouse_up(self):
+		win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,-1,0,0)
+		
+	def move_mouse_down(self):
+		win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,1,0,0)
+		
 	#returns the screen number
 	#1 for main, 2 for play, 3 for end
 	def get_screen_number(self):
@@ -105,17 +129,58 @@ class SSPlayer:
 	def get_window_shape(self):
 		return self.app.windows()[0].Rectangle() #self.rect
 
-con = SSPlayer(app_dir,2)
+	def add_training_images(self,e):
+		if not e.is_set():
+			self.current_screen = self.get_screen_number()
+			self.counter = self.counter+1
+			self.training_images.append(misc.imresize(self.current_shot,(110,84)))
+			threading.Timer(.03,self.add_training_images,[self.tr_img_ev]).start()
+	
+	
+	def get_training_images(self):
+		if (len(self.training_images) < 4):
+			return []
+		else:
+			if (len(self.training_images) >= 4):
+				im1 = np.array(self.training_images.pop(0))
+				im2 = np.array(self.training_images.pop(0))
+				im3 = np.array(self.training_images.pop(0))
+				im4 = np.array(self.training_images.pop(0))
+			
+			return [im1,im2,im3,im4]
+	
+def save_frames(frames):
+	p = 1
+	for i in range(0,np.shape(frames)[0]):
+		for x in range(0,np.shape(frames)[1]):
+			Image.fromarray(frames[i][x][:,:]).save("test/img_f"+str(p)+".png")
+			p = p+1
+	
+	return
+		
+
+		
+
+gm = SSPlayer(app_dir,1)
 wait_for(1)
-con.click_play()
-wait_for(1)
-con.click_to_play()
-wait_for(1)
-for i in range(0,30):
-	print(Timer(lambda: con.move_mouse((-1,-1))).timeit(number=1))
-#wait_for(10)
-#con.release_click()
-#wait_for(1)
-#con.click_replay()
-wait_for(3)
-con.kill()
+gm.add_training_images(gm.tr_img_ev)
+print(Timer(lambda: gm.take_screenshot()).timeit(number=1))
+wait_for(2)
+n_frames = 0
+t = time.time()+3
+frames = []
+while(gm.current_screen == 2):
+	sp = gm.get_training_images()
+	if (np.shape(sp)[0] != 0):
+		n_frames = n_frames+4
+		frames.append(sp)
+	if (time.time()>t):
+		break
+
+
+gm.tr_img_ev.set()
+gm.kill()
+print("counter: ",gm.counter)
+print("n_frames: ",n_frames)
+print(np.shape(frames))
+save_frames(frames)
