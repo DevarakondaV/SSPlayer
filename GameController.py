@@ -11,7 +11,7 @@ import threading
 from scipy import misc
 
 
-app_dir = r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
+app_dir = r"C:\Users\devar\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
 
 def wait_for(sec):
 	t = time.time()+sec
@@ -70,11 +70,12 @@ class SSPlayer:
 		
 	def take_screenshot(self):
 		img = mss.mss().grab(self.processing_crop)
-		self.current_shot = np.array(img)[:,:,1]
+		self.current_shot = misc.imresize(np.array(img)[:,:,1],(110,84))
 	
 	def crop_image_for_test(self):
 		self.take_screenshot()
-		return self.current_shot[0:50,0:100]
+		#[0:50,0:100]
+		return self.current_shot[0:8,0:17]
 	
 	def kill(self):
 		self.app.kill()
@@ -83,11 +84,12 @@ class SSPlayer:
 		win32api.SetCursorPos(self.play_click_loc)
 		win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,self.play_click_loc[0],self.play_click_loc[1],0,0)
 		win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,self.play_click_loc[0],self.play_click_loc[1],0,0)
-	
+
 	def click_to_play(self):
 		win32api.SetCursorPos(self.playing_click_loc)
 		win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,self.playing_click_loc[0],self.playing_click_loc[1],0,0)
-		
+		#self.current_screen = 2
+
 	def click_replay(self):
 		win32api.SetCursorPos(self.replay_click_loc)
 		win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,self.replay_click_loc[0],self.replay_click_loc[1],0,0)
@@ -121,7 +123,7 @@ class SSPlayer:
 		img = self.crop_image_for_test()
 		if (np.array_equal(img,self.mainscene)):
 			return 1
-		elif (np.array_equal(img,self.playscene)):
+		elif (np.allclose(img,self.playscene)):
 			return 2
 		else:
 			return 3
@@ -131,10 +133,10 @@ class SSPlayer:
 
 	def add_training_images(self,e):
 		if not e.is_set():
-			self.current_screen = self.get_screen_number()
 			self.counter = self.counter+1
-			self.training_images.append(misc.imresize(self.current_shot,(110,84)))
-			threading.Timer(.03,self.add_training_images,[self.tr_img_ev]).start()
+			self.current_screen = self.get_screen_number()
+			self.training_images.append(self.current_shot)
+			threading.Timer(0.03,self.add_training_images,[self.tr_img_ev]).start()
 	
 	
 	def get_training_images(self):
@@ -148,7 +150,9 @@ class SSPlayer:
 				im4 = np.array(self.training_images.pop(0))
 			
 			return [im1,im2,im3,im4]
+		
 	
+
 def save_frames(frames):
 	p = 1
 	for i in range(0,np.shape(frames)[0]):
@@ -161,31 +165,40 @@ def save_frames(frames):
 
 		
 
-gm = SSPlayer(app_dir,1)
-wait_for(1)
-#gm.add_training_images(gm.tr_img_ev)
-#print(Timer(lambda: gm.take_screenshot()).timeit(number=1))
+gm = SSPlayer(app_dir,2)
 wait_for(2)
 n_frames = 0
-p = 0
-t = time.time()+1
-#frames = []
-while(True): #gm.current_screen == 2):
-	#sp = gm.get_training_images()
-	#if (np.shape(sp)[0] != 0):
-	#	n_frames = n_frames+4
-	#	frames.append(sp)
-	gm.take_screenshot()
-	Image.fromarray(gm.current_shot).save("test/img_f"+str(p)+".png")
-	p = p+1
-	#print(Timer(lambda: gm.take_screenshot()).timeit(number=1))
+#gm.add_training_images(gm.tr_img_ev)
+t = time.time()+5
+frames = []
+
+
+
+#t = time.time()
+gm.click_play()
+wait_for(1)
+gm.click_to_play()
+gm.add_training_images(gm.tr_img_ev)
+
+"""
+while(gm.current_screen != 2):
+	continue
+while(gm.current_screen == 2):
+	sp = gm.get_training_images()
+	if (np.shape(sp)[0] != 0):
+		n_frames = n_frames+4
+		frames.append(sp)
 	if (time.time()>t):
 		break
+"""
 
 
+print("Time: ",time.time()-t)
+print("Current Screen: ",gm.current_screen)
 gm.tr_img_ev.set()
 gm.kill()
 print("counter: ",gm.counter)
-#print("n_frames: ",n_frames)
-#print(np.shape(frames))
-#save_frames(frames)
+print("n_frames: ",n_frames)
+print(np.shape(frames))
+save_frames(frames)
+
