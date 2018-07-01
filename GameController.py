@@ -163,17 +163,22 @@ def save_frames(frames):
 
 gm = SSPlayer(app_dir,1)
 wait_for(1)
-gm.add_training_images(gm.tr_img_ev)
-print(Timer(lambda: gm.take_screenshot()).timeit(number=1))
+#gm.add_training_images(gm.tr_img_ev)
+#print(Timer(lambda: gm.take_screenshot()).timeit(number=1))
 wait_for(2)
 n_frames = 0
-t = time.time()+3
-frames = []
-while(gm.current_screen == 2):
-	sp = gm.get_training_images()
-	if (np.shape(sp)[0] != 0):
-		n_frames = n_frames+4
-		frames.append(sp)
+p = 0
+t = time.time()+1
+#frames = []
+while(True): #gm.current_screen == 2):
+	#sp = gm.get_training_images()
+	#if (np.shape(sp)[0] != 0):
+	#	n_frames = n_frames+4
+	#	frames.append(sp)
+	gm.take_screenshot()
+	Image.fromarray(gm.current_shot).save("test/img_f"+str(p)+".png")
+	p = p+1
+	#print(Timer(lambda: gm.take_screenshot()).timeit(number=1))
 	if (time.time()>t):
 		break
 
@@ -181,6 +186,6 @@ while(gm.current_screen == 2):
 gm.tr_img_ev.set()
 gm.kill()
 print("counter: ",gm.counter)
-print("n_frames: ",n_frames)
-print(np.shape(frames))
-save_frames(frames)
+#print("n_frames: ",n_frames)
+#print(np.shape(frames))
+#save_frames(frames)
