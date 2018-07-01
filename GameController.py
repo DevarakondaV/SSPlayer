@@ -8,10 +8,12 @@ import mss
 import mss.tools
 import win32api, win32con
 import threading
+import multiprocessing
 from scipy import misc
+#multiprocessing.set_start_method('spawn')
 
 
-app_dir = r"C:\Users\devar\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
+app_dir = r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
 
 def wait_for(sec):
 	t = time.time()+sec
@@ -75,7 +77,7 @@ class SSPlayer:
 	def crop_image_for_test(self):
 		self.take_screenshot()
 		#[0:50,0:100]
-		return self.current_shot[0:8,0:17]
+		return self.current_shot[0:8,10:27]
 	
 	def kill(self):
 		self.app.kill()
@@ -123,7 +125,7 @@ class SSPlayer:
 		img = self.crop_image_for_test()
 		if (np.array_equal(img,self.mainscene)):
 			return 1
-		elif (np.allclose(img,self.playscene)):
+		elif (np.array_equal(img,self.playscene)):
 			return 2
 		else:
 			return 3
@@ -136,7 +138,7 @@ class SSPlayer:
 			self.counter = self.counter+1
 			self.current_screen = self.get_screen_number()
 			self.training_images.append(self.current_shot)
-			threading.Timer(0.03,self.add_training_images,[self.tr_img_ev]).start()
+			threading.Timer(0.01,self.add_training_images,[self.tr_img_ev]).start()
 	
 	
 	def get_training_images(self):
@@ -162,38 +164,65 @@ def save_frames(frames):
 	
 	return
 		
+def save_frames2(frames):
+	p = 0
+	for i in frames:
+		Image.fromarray(i).save("test/img_f"+str(p)+".png")
+		p = p+1
+	return
+	
 
+def take_shot(processing_crop):
+		img = mss.mss().grab(processing_crop)
+		return misc.imresize(np.array(img)[:,:,1],(110,84))		
 		
+def multi_add_training_images(q,e,p):
+	while not e.is_set():
+		q.put(take_shot(p))
+			
+			
+if __name__ == "__main__":
+	gm = SSPlayer(app_dir,1)
+	t_img = multiprocessing.Queue()
+	ev = multiprocessing.Event()
+	pp = gm.processing_crop
+	wait_for(2)
+	n_frames = 0
+	#gm.add_training_images(gm.tr_img_ev)
+	frames = []
+	
+	#Starting Process
+	p = multiprocessing.Process(target=multi_add_training_images,args=[t_img,ev,pp])
+	p.start()
 
-gm = SSPlayer(app_dir,2)
-wait_for(2)
-n_frames = 0
-#gm.add_training_images(gm.tr_img_ev)
-t = time.time()+5
-frames = []
+	while not p.is_alive():
+		continue
 
+	t = time.time()+5
+	while(True):
+		if t_img.empty() is False:
+			frames.append(t_img.get())
+		
+		if (time.time()>t):
+			break;
 
-
-#t = time.time()
-gm.click_play()
-wait_for(1)
-gm.click_to_play()
-gm.add_training_images(gm.tr_img_ev)
-
+	ev.set()
+	p.terminate()
+	print(len(frames))
+	print(np.shape(frames[0]))
+	save_frames2(frames)
+	gm.kill()
+	
 """
-while(gm.current_screen != 2):
-	continue
-while(gm.current_screen == 2):
-	sp = gm.get_training_images()
-	if (np.shape(sp)[0] != 0):
-		n_frames = n_frames+4
-		frames.append(sp)
-	if (time.time()>t):
-		break
-"""
+	#sp = gm.get_training_images()
+	#if (np.shape(sp)[0] != 0):
+	#	n_frames = n_frames+4
+	#	frames.append(sp)
+	#if (time.time()>t):
+	#	break
 
 
-print("Time: ",time.time()-t)
+print("Time: ",time.time()-t2)
 print("Current Screen: ",gm.current_screen)
 gm.tr_img_ev.set()
 gm.kill()
@@ -201,4 +230,4 @@ print("counter: ",gm.counter)
 print("n_frames: ",n_frames)
 print(np.shape(frames))
 save_frames(frames)
-
+"""
