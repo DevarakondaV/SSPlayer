@@ -13,7 +13,7 @@ from scipy import misc
 #multiprocessing.set_start_method('spawn')
 
 
-app_dir = r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
+app_dir = r"C:\Users\devar\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
 
 def wait_for(sec):
 	t = time.time()+sec
@@ -144,6 +144,19 @@ def multi_add_training_images(q,e,p):
 	while not e.is_set():
 		q.put(take_shot(p))
 		
+def get_four(,player_instance,process_queue);
+	rtn_array = []
+	for i in range(0,4):
+		rtn_array.append(process_queue.get())
+	
+	rm_idx = []
+	for i in range(0,4):
+		if (player_instance.get_screen_number(rtn_array[i]) != 2):
+			rm_idx.append(i)
+	
+	for i in rm_idx:
+		rtn_array.pop(i)
+	return rtn_array
 		
 def Run(player_instance,shot_process,process_event,process_queue):
 	pp = player_instance.processing_crop
@@ -160,17 +173,23 @@ def Run(player_instance,shot_process,process_event,process_queue):
 		continue
 	
 	player_instance.click_to_play()
-	
-	test_img = []
-	for i in range(0,4):
-		test_img.append(process_queue.get())
-	while(player_instance.get_screen_number(test_img) == 2):
-			
+		
+	img_array = []
+	while(player_instance.get_screen_number(take_shot(pp)) == 2):
+		if process_queue.qsize() > 4:
+			img_array = get_four()
+		
+		action = get_from_tensorflow(img_array)
+		player_instance.perform(action)
+		
+		
+	process_event.set()
+	shot_process.terminate()
 	return 
 
 			
 if __name__ == "__main__":
-	gm = SSPlayer(app_dir,1)
+	gm = SSPlayer(app_dir,2)
 	t_img = multiprocessing.Queue()
 	ev = multiprocessing.Event()
 	pp = gm.processing_crop
