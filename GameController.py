@@ -144,7 +144,7 @@ def multi_add_training_images(q,e,p):
 	while not e.is_set():
 		q.put(take_shot(p))
 		
-def get_four(,player_instance,process_queue);
+def get_four(player_instance,process_queue):
 	rtn_array = []
 	for i in range(0,4):
 		rtn_array.append(process_queue.get())
@@ -177,7 +177,7 @@ def Run(player_instance,shot_process,process_event,process_queue):
 	img_array = []
 	while(player_instance.get_screen_number(take_shot(pp)) == 2):
 		if process_queue.qsize() > 4:
-			img_array = get_four()
+			img_array = get_four(player_instance,process_queue)
 		
 		action = get_from_tensorflow(img_array)
 		player_instance.perform(action)
@@ -187,13 +187,3 @@ def Run(player_instance,shot_process,process_event,process_queue):
 	shot_process.terminate()
 	return 
 
-			
-if __name__ == "__main__":
-	gm = SSPlayer(app_dir,2)
-	t_img = multiprocessing.Queue()
-	ev = multiprocessing.Event()
-	pp = gm.processing_crop
-	p = multiprocessing.Process(target=multi_add_training_images,args=[t_img,ev,pp])
-
-	print(Timer(lambda: Run(gm,p,ev,t_img)).timeit(number=1))
-	
