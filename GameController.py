@@ -158,6 +158,7 @@ def get_four(player_instance,process_queue):
 		rtn_array.pop(i)
 	return rtn_array
 		
+"""
 def Run(player_instance,shot_process,process_event,process_queue):
 	pp = player_instance.processing_crop
 	frames = []
@@ -185,5 +186,6 @@ def Run(player_instance,shot_process,process_event,process_queue):
 		
 	process_event.set()
 	shot_process.terminate()
-	return 
+	return
+"""
 
