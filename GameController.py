@@ -42,6 +42,8 @@ class SSPlayer:
 		if (self.l_o_d == 1):
 			self.mainscene = np.array(Image.open(r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\testimg\laptop\mainscene.png"))
 			self.playscene = np.array(Image.open(r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\testimg\laptop\playscene.png"))
+			self.mainscene = img_standardize(self.mainscene)
+			self.playscene = img_standardize(self.playscene)
 			self.processing_crop = {'top': self.window_screen_loc.top+31,
 									'left': self.window_screen_loc.left+8,
 									'width': self.window_width,
@@ -51,8 +53,10 @@ class SSPlayer:
 			self.replay_click_loc = (148,498)
 		
 		else:
-			self.mainscene = Image.open(r"C:\Users\devar\Documents\EngProj\SSPlayer\testimg\desktop\mainscene.png")
-			self.playscene = Image.open(r"C:\Users\devar\Documents\EngProj\SSPlayer\testimg\desktop\playscene.png")
+			self.mainscene = np.array(Image.open(r"C:\Users\devar\Documents\EngProj\SSPlayer\testimg\desktop\mainscene.png"))
+			self.playscene = np.array(Image.open(r"C:\Users\devar\Documents\EngProj\SSPlayer\testimg\desktop\playscene.png"))
+			self.mainscene = img_standardize(self.mainscene)
+			self.playscene = img_standardize(self.playscene)
 			self.processing_crop = {'top': self.window_screen_loc.top+58,
 									'left': self.window_screen_loc.left+13,
 									'width': self.window_width,
@@ -125,9 +129,9 @@ class SSPlayer:
 	#1 for main, 2 for play, 3 for end
 	def get_screen_number(self,img):
 		img = self.crop_image_for_test(img)
-		if (np.array_equal(img,self.mainscene)):
+		if (np.allclose(img,self.mainscene)):
 			return 1
-		elif (np.array_equal(img,self.playscene)):
+		elif (np.allclose(img,self.playscene)):
 			self.reward = self.reward+1
 			return 2
 		else:
@@ -142,26 +146,17 @@ class SSPlayer:
 	
 	
 
-def save_frames(frames):
-	p = 1
-	for i in range(0,np.shape(frames)[0]):
-		for x in range(0,np.shape(frames)[1]):
-			Image.fromarray(frames[i][x][:,:]).save("test/img_f"+str(p)+".png")
-			p = p+1
-	
-	return
-		
-def save_frames2(frames):
-	p = 0
-	for i in frames:
-		Image.fromarray(i).save("test/img_f"+str(p)+".png")
-		p = p+1
-	return
-	
+def img_standardize(img):
+	m = np.mean(img)
+	sdv = np.std(img)
+	adj_stdev = max(sdv,1.0/np.power(img.size,.5))
+	img = (1.0/adj_stdev)*(img-m).astype(np.float16)
+	return img
 
 def take_shot(processing_crop):
 		img = mss.mss().grab(processing_crop)
 		img = misc.imresize(np.array(img)[:,:,1],(110,84))
+		img = img_standardize(img)
 		return img
 		
 def multi_add_training_images(q,e,p):
