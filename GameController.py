@@ -13,7 +13,7 @@ from scipy import misc
 #multiprocessing.set_start_method('spawn')
 
 
-app_dir = r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
+app_dir = r"C:\Users\devar\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
 
 def wait_for(sec):
 	t = time.time()+sec
@@ -28,6 +28,7 @@ class SSPlayer:
 		self.counter = 0
 		self.current_screen = 1
 		self.reward = 0
+		self.play = False
 		
 	def launch_app(self,dir):
 		app = application.Application().start(dir)
@@ -96,28 +97,28 @@ class SSPlayer:
 	def move_mouse_right(self):
 		x,y = win32api.GetCursorPos()
 		if (x < (self.processing_crop['left']+self.processing_crop['width'])):
-			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,2,0,0,0)
+			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,3,0,0,0)
 		else:
 			self.reward = self.reward-.5
 	
 	def move_mouse_left(self):
 		x,y = win32api.GetCursorPos()
 		if (x > self.processing_crop['left']):
-			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,-2,0,0,0)
+			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,-3,0,0,0)
 		else:
 			self.reward = self.reward-.5
 
 	def move_mouse_up(self):
 		x,y = win32api.GetCursorPos()
 		if (y > self.processing_crop['top']):
-			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,-2,0,0)
+			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,-3,0,0)
 		else:
 			self.reward = self.reward-.5
 			
 	def move_mouse_down(self):
 		x,y = win32api.GetCursorPos()
 		if (y < (self.processing_crop['top']+self.processing_crop['height'])):
-			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,2,0,0)
+			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,3,0,0)
 		else:
 			self.reward = self.reward-.5
 	#returns the screen number
@@ -160,7 +161,8 @@ def save_frames2(frames):
 
 def take_shot(processing_crop):
 		img = mss.mss().grab(processing_crop)
-		return misc.imresize(np.array(img)[:,:,1],(110,84))		
+		img = misc.imresize(np.array(img)[:,:,1],(110,84))
+		return img
 		
 def multi_add_training_images(q,e,p):
 	while not e.is_set():
