@@ -13,7 +13,7 @@ from scipy import misc
 #multiprocessing.set_start_method('spawn')
 
 
-app_dir = r"C:\Users\devar\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
+app_dir = r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
 
 def wait_for(sec):
 	t = time.time()+sec
@@ -27,6 +27,7 @@ class SSPlayer:
 		self.app = self.launch_app(dir)
 		self.counter = 0
 		self.current_screen = 1
+		self.reward = 0
 		
 	def launch_app(self,dir):
 		app = application.Application().start(dir)
@@ -78,6 +79,7 @@ class SSPlayer:
 
 	def click_replay(self):
 		win32api.SetCursorPos(self.replay_click_loc)
+		wait_for(.2)
 		win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,self.replay_click_loc[0],self.replay_click_loc[1],0,0)
 		win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,self.replay_click_loc[0],self.replay_click_loc[1],0,0)
 	
@@ -92,17 +94,32 @@ class SSPlayer:
 		win32api.mouse_event(win32con.MOUSEEVENTF_MOVE, dx,dy,0,0)
 		
 	def move_mouse_right(self):
-		win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,1,0,0,0)
+		x,y = win32api.GetCursorPos()
+		if (x < (self.processing_crop['left']+self.processing_crop['width'])):
+			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,2,0,0,0)
+		else:
+			self.reward = self.reward-.5
 	
 	def move_mouse_left(self):
-		win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,-1,0,0,0)
+		x,y = win32api.GetCursorPos()
+		if (x > self.processing_crop['left']):
+			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,-2,0,0,0)
+		else:
+			self.reward = self.reward-.5
 
 	def move_mouse_up(self):
-		win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,-1,0,0)
-		
+		x,y = win32api.GetCursorPos()
+		if (y > self.processing_crop['top']):
+			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,-2,0,0)
+		else:
+			self.reward = self.reward-.5
+			
 	def move_mouse_down(self):
-		win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,1,0,0)
-		
+		x,y = win32api.GetCursorPos()
+		if (y < (self.processing_crop['top']+self.processing_crop['height'])):
+			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,2,0,0)
+		else:
+			self.reward = self.reward-.5
 	#returns the screen number
 	#1 for main, 2 for play, 3 for end
 	def get_screen_number(self,img):
@@ -110,9 +127,14 @@ class SSPlayer:
 		if (np.array_equal(img,self.mainscene)):
 			return 1
 		elif (np.array_equal(img,self.playscene)):
+			self.reward = self.reward+1
 			return 2
 		else:
+			self.reward = 0
 			return 3
+			
+	def get_reward(self):
+		return self.reward
 
 	def get_window_shape(self):
 		return self.app.windows()[0].Rectangle() #self.rect
