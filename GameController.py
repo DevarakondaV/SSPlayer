@@ -31,12 +31,14 @@ class SSPlayer:
 				'processing_crop',
 				'play_click_loc',
 				'playing_click_loc',
-				'replay_click_loc']
+				'replay_click_loc',
+				'sct']
 
 	def __init__(self,dir,l_or_d):
 		self.l_o_d = l_or_d
 		self.app = self.launch_app(dir)
 		self.reward = 0
+		self.sct = mss.mss()
 	
 		
 	def launch_app(self,dir):
@@ -145,7 +147,7 @@ class SSPlayer:
 		if (np.array_equal(img,self.mainscene)):
 			return 1
 		elif (np.array_equal(img,self.playscene)):
-			self.reward = self.reward
+			self.reward = self.reward+1e-5
 			return 2
 		else:
 			self.reward = 0
@@ -160,23 +162,29 @@ class SSPlayer:
 	
 
 def img_normalize(img):
-	i_max = np.amax(img)
-	i_min = np.amin(img)
-	diff = i_max-i_min
-	img = (1.0/diff)*(img-i_max)
+	i_max = [np.amax(img[i]) for i in range(0,4)]
+	i_min = [np.amin(img[i]) for i in range(0,4)]
+	#i_max = np.amax(img)
+	#i_min = np.amin(img)
+	diff = [i_max[i]-i_min[i] for i in range(0,4)]
+	#img = (1.0/diff)*(img-i_min)
+	img = [(1.0/diff[i])*(img[i]-i_min[i]) for i in range(0,4)]
 	return img
 	
 def img_standardize(img):
 	img = img_normalize(img)
-	m = np.mean(img)
-	sdv = np.std(img)
-	adj_stdev = max(sdv,1.0/np.power(img.size,.5))
-	img = (1.0/adj_stdev)*(img-m)
-	return img
+	#m = [np.mean(img[i]).astype(np.float16) for i in range(0,4)]
+	#sdv = [np.std(img[i]).astype(np.float16) for i in range(0,4)]
+	#adj_sdv = [max(sdv[i],1.0/np.power(110*84,.5)) for i in range(0,len(sdv))]
+	#adj_stdev = max(sdv,1.0/np.power(110*84,.5))
+	#img = (1.0/adj_stdev)*(img-m)
+	#img = np.array([(1.0/adj_sdv[i])*(img[i]-m[i]) for i in range(0,4)]).astype(np.float16)
+	return np.array(img)
 
-def take_shot(processing_crop):
-		img = mss.mss().grab(processing_crop)
+def take_shot(game):
+		img = game.sct.grab(game.processing_crop)
 		img = misc.imresize(np.array(img)[:,:,1],(110,84))
+		#img = misc.imresize(img[:,:,1],(110,84))
 		return img
 		
 def multi_add_training_images(q,e,p):
