@@ -12,9 +12,6 @@ import multiprocessing
 from scipy import misc
 #multiprocessing.set_start_method('spawn')
 
-
-app_dir = r"C:\Users\devar\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
-
 def wait_for(sec):
 	t = time.time()+sec
 	while(True):
@@ -22,13 +19,25 @@ def wait_for(sec):
 			break
 
 class SSPlayer:
+	
+	__slots__ = ['l_o_d',
+				'app',
+				'reward',
+				'window_width',
+				'window_height',
+				'window_screen_loc',
+				'mainscene',
+				'playscene',
+				'processing_crop',
+				'play_click_loc',
+				'playing_click_loc',
+				'replay_click_loc']
+
 	def __init__(self,dir,l_or_d):
 		self.l_o_d = l_or_d
 		self.app = self.launch_app(dir)
-		self.counter = 0
-		self.current_screen = 1
 		self.reward = 0
-		self.play = False
+	
 		
 	def launch_app(self,dir):
 		app = application.Application().start(dir)
@@ -38,12 +47,13 @@ class SSPlayer:
 		self.window_width = app.windows()[0].client_rect().width()
 		self.window_height = app.windows()[0].client_rect().height()
 		self.window_screen_loc = app.windows()[0].Rectangle()
+
 		
 		if (self.l_o_d == 1):
 			self.mainscene = np.array(Image.open(r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\testimg\laptop\mainscene.png"))
 			self.playscene = np.array(Image.open(r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\testimg\laptop\playscene.png"))
-			self.mainscene = img_standardize(self.mainscene)
-			self.playscene = img_standardize(self.playscene)
+			#self.mainscene = img_standardize(self.mainscene)
+			#self.playscene = img_standardize(self.playscene)
 			self.processing_crop = {'top': self.window_screen_loc.top+31,
 									'left': self.window_screen_loc.left+8,
 									'width': self.window_width,
@@ -55,8 +65,8 @@ class SSPlayer:
 		else:
 			self.mainscene = np.array(Image.open(r"C:\Users\devar\Documents\EngProj\SSPlayer\testimg\desktop\mainscene.png"))
 			self.playscene = np.array(Image.open(r"C:\Users\devar\Documents\EngProj\SSPlayer\testimg\desktop\playscene.png"))
-			self.mainscene = img_standardize(self.mainscene)
-			self.playscene = img_standardize(self.playscene)
+			#self.mainscene = img_standardize(self.mainscene)
+			#self.playscene = img_standardize(self.playscene)
 			self.processing_crop = {'top': self.window_screen_loc.top+58,
 									'left': self.window_screen_loc.left+13,
 									'width': self.window_width,
@@ -64,7 +74,7 @@ class SSPlayer:
 			self.play_click_loc = (243,319)
 			self.playing_click_loc = (209,529)
 			self.replay_click_loc = (148,518)
-
+		
 		return app
 	
 	def crop_image_for_test(self,img):
@@ -75,11 +85,13 @@ class SSPlayer:
 		
 	def click_play(self):
 		win32api.SetCursorPos(self.play_click_loc)
+		wait_for(.2)
 		win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,self.play_click_loc[0],self.play_click_loc[1],0,0)
 		win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,self.play_click_loc[0],self.play_click_loc[1],0,0)
 
 	def click_to_play(self):
 		win32api.SetCursorPos(self.playing_click_loc)
+		wait_for(.2)
 		win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,self.playing_click_loc[0],self.playing_click_loc[1],0,0)
 
 	def click_replay(self):
@@ -125,14 +137,15 @@ class SSPlayer:
 			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,3,0,0)
 		else:
 			self.reward = self.reward-.5
+	
 	#returns the screen number
 	#1 for main, 2 for play, 3 for end
 	def get_screen_number(self,img):
 		img = self.crop_image_for_test(img)
-		if (np.allclose(img,self.mainscene)):
+		if (np.array_equal(img,self.mainscene)):
 			return 1
-		elif (np.allclose(img,self.playscene)):
-			self.reward = self.reward+1
+		elif (np.array_equal(img,self.playscene)):
+			self.reward = self.reward
 			return 2
 		else:
 			self.reward = 0
@@ -146,17 +159,24 @@ class SSPlayer:
 	
 	
 
+def img_normalize(img):
+	i_max = np.amax(img)
+	i_min = np.amin(img)
+	diff = i_max-i_min
+	img = (1.0/diff)*(img-i_max)
+	return img
+	
 def img_standardize(img):
+	img = img_normalize(img)
 	m = np.mean(img)
 	sdv = np.std(img)
 	adj_stdev = max(sdv,1.0/np.power(img.size,.5))
-	img = (1.0/adj_stdev)*(img-m).astype(np.float16)
+	img = (1.0/adj_stdev)*(img-m)
 	return img
 
 def take_shot(processing_crop):
 		img = mss.mss().grab(processing_crop)
 		img = misc.imresize(np.array(img)[:,:,1],(110,84))
-		img = img_standardize(img)
 		return img
 		
 def multi_add_training_images(q,e,p):
