@@ -1,16 +1,12 @@
 from pywinauto import *
-import time
 import image
-from timeit import timeit,Timer
+import time
 from PIL import Image
 import numpy as np
 import mss
 import mss.tools
 import win32api, win32con
-import threading
-import multiprocessing
-from scipy import misc
-#multiprocessing.set_start_method('spawn')
+from scipy import stats
 
 def wait_for(sec):
 	t = time.time()+sec
@@ -37,7 +33,7 @@ class SSPlayer:
 	def __init__(self,dir,l_or_d):
 		self.l_o_d = l_or_d
 		self.app = self.launch_app(dir)
-		self.reward = 0
+		self.reward = 1
 		self.sct = mss.mss()
 	
 		
@@ -46,16 +42,15 @@ class SSPlayer:
 		app.ShapeScape.Wait('visible',timeout=20)
 		app.ShapeScape.SetFocus()
 		app.ShapeScape.MoveWindow(x=50,y=50)
-		self.window_width = app.windows()[0].client_rect().width()
-		self.window_height = app.windows()[0].client_rect().height()
-		self.window_screen_loc = app.windows()[0].Rectangle()
+		
+		self.window_width = app.ShapeScape.client_rect().width()
+		self.window_height = app.ShapeScape.client_rect().height()
+		self.window_screen_loc = app.ShapeScape.Rectangle()
 
 		
 		if (self.l_o_d == 1):
 			self.mainscene = np.array(Image.open(r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\testimg\laptop\mainscene.png"))
 			self.playscene = np.array(Image.open(r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\testimg\laptop\playscene.png"))
-			#self.mainscene = img_standardize(self.mainscene)
-			#self.playscene = img_standardize(self.playscene)
 			self.processing_crop = {'top': self.window_screen_loc.top+31,
 									'left': self.window_screen_loc.left+8,
 									'width': self.window_width,
@@ -63,12 +58,11 @@ class SSPlayer:
 			self.play_click_loc = (233,294)
 			self.playing_click_loc = (209,529)
 			self.replay_click_loc = (148,498)
+
 		
 		else:
 			self.mainscene = np.array(Image.open(r"C:\Users\devar\Documents\EngProj\SSPlayer\testimg\desktop\mainscene.png"))
 			self.playscene = np.array(Image.open(r"C:\Users\devar\Documents\EngProj\SSPlayer\testimg\desktop\playscene.png"))
-			#self.mainscene = img_standardize(self.mainscene)
-			#self.playscene = img_standardize(self.playscene)
 			self.processing_crop = {'top': self.window_screen_loc.top+58,
 									'left': self.window_screen_loc.left+13,
 									'width': self.window_width,
@@ -80,7 +74,7 @@ class SSPlayer:
 		return app
 	
 	def crop_image_for_test(self,img):
-		return img[0:8,10:27]
+		return img[:,0:8,10:27]
 	
 	def kill(self):
 		self.app.kill()
@@ -115,28 +109,28 @@ class SSPlayer:
 	def move_mouse_right(self):
 		x,y = win32api.GetCursorPos()
 		if (x < (self.processing_crop['left']+self.processing_crop['width'])):
-			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,3,0,0,0)
+			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,4,0,0,0)
 		else:
 			self.reward = self.reward-.5
 	
 	def move_mouse_left(self):
 		x,y = win32api.GetCursorPos()
 		if (x > self.processing_crop['left']):
-			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,-3,0,0,0)
+			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,-4,0,0,0)
 		else:
 			self.reward = self.reward-.5
 
 	def move_mouse_up(self):
 		x,y = win32api.GetCursorPos()
 		if (y > self.processing_crop['top']):
-			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,-3,0,0)
+			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,-4,0,0)
 		else:
 			self.reward = self.reward-.5
 			
 	def move_mouse_down(self):
 		x,y = win32api.GetCursorPos()
-		if (y < (self.processing_crop['top']+self.processing_crop['height'])):
-			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,3,0,0)
+		if (y < (self.processing_crop['top']+self.processing_crop['height']-5)):
+			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,4,0,0)
 		else:
 			self.reward = self.reward-.5
 	
@@ -147,92 +141,34 @@ class SSPlayer:
 		if (np.array_equal(img,self.mainscene)):
 			return 1
 		elif (np.array_equal(img,self.playscene)):
-			self.reward = self.reward+1e-5
+			self.reward = self.reward
 			return 2
 		else:
 			self.reward = 0
 			return 3
 			
-	def get_reward(self):
-		return self.reward
-
-	def get_window_shape(self):
-		return self.app.windows()[0].Rectangle() #self.rect
+	
+	def get_screen_number2(self,img):
+		img = self.crop_image_for_test(img)
+		check_m = np.array_equiv(self.playscene,img)
+		return check_m
+			
 	
 	
 
 def img_normalize(img):
-	i_max = [np.amax(img[i]) for i in range(0,4)]
-	i_min = [np.amin(img[i]) for i in range(0,4)]
-	#i_max = np.amax(img)
-	#i_min = np.amin(img)
-	diff = [i_max[i]-i_min[i] for i in range(0,4)]
-	#img = (1.0/diff)*(img-i_min)
-	img = [(1.0/diff[i])*(img[i]-i_min[i]) for i in range(0,4)]
+	print("Img Shape: ",img.shape)
+	i_max2 = np.amax(img,axis=0)
+	print("Img Max: ",i_max2)
 	return img
 	
 def img_standardize(img):
-	img = img_normalize(img)
-	#m = [np.mean(img[i]).astype(np.float16) for i in range(0,4)]
-	#sdv = [np.std(img[i]).astype(np.float16) for i in range(0,4)]
-	#adj_sdv = [max(sdv[i],1.0/np.power(110*84,.5)) for i in range(0,len(sdv))]
-	#adj_stdev = max(sdv,1.0/np.power(110*84,.5))
-	#img = (1.0/adj_stdev)*(img-m)
-	#img = np.array([(1.0/adj_sdv[i])*(img[i]-m[i]) for i in range(0,4)]).astype(np.float16)
-	return np.array(img)
+	return stats.zscore(img,axis=0)
 
 def take_shot(game):
 		img = game.sct.grab(game.processing_crop)
-		img = misc.imresize(np.array(img)[:,:,1],(110,84))
-		#img = misc.imresize(img[:,:,1],(110,84))
-		return img
+		#img = misc.imresize(np.array(img)[:,:,1],(110,84))
+		img = Image.fromarray(np.array(img)[:,:,1]).resize((84,110))
+		return np.expand_dims(np.array(img),axis=0)
 		
-def multi_add_training_images(q,e,p):
-	while not e.is_set():
-		q.put(take_shot(p))
-		
-def get_four(player_instance,process_queue):
-	rtn_array = []
-	for i in range(0,4):
-		rtn_array.append(process_queue.get())
-	
-	rm_idx = []
-	for i in range(0,4):
-		if (player_instance.get_screen_number(rtn_array[i]) != 2):
-			rm_idx.append(i)
-	
-	for i in rm_idx:
-		rtn_array.pop(i)
-	return rtn_array
-		
-"""
-def Run(player_instance,shot_process,process_event,process_queue):
-	pp = player_instance.processing_crop
-	frames = []
-	
-	if (player_instance.get_screen_number(take_shot(pp)) == 1):
-		player_instance.click_play()
-		wait_for(.5)
-		click_play()
-		wait_for(.5)
-		shot_process.start()
-		
-	while not process_queue().qsize() > 4:
-		continue
-	
-	player_instance.click_to_play()
-		
-	img_array = []
-	while(player_instance.get_screen_number(take_shot(pp)) == 2):
-		if process_queue.qsize() > 4:
-			img_array = get_four(player_instance,process_queue)
-		
-		action = get_from_tensorflow(img_array)
-		player_instance.perform(action)
-		
-		
-	process_event.set()
-	shot_process.terminate()
-	return
-"""
 
