@@ -159,7 +159,8 @@ class SSPlayer:
 def img_normalize(img):
 	print("Img Shape: ",img.shape)
 	i_max2 = np.amax(img,axis=0)
-	print("Img Max: ",i_max2)
+	print("pImg Max: ",i_max2)
+	
 	return img
 	
 def img_standardize(img):
