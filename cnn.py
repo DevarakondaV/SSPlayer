@@ -38,6 +38,7 @@ def fc_layer(m_input,size_in,size_out,name,num):
         tf.summary.histogram("biases",b)
         tf.summary.histogram("act",act)
         return act
+        
     
     
 def get_place_holders():
@@ -61,11 +62,21 @@ def create_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feat
         x2 = tf.placeholder(tf.float16,shape=[None,110,84,4],name="x2")
         next_state = tf.placeholder(tf.bool,name="next_state")
         Qnext = tf.placeholder(tf.float16,shape=[None,1],name="qnext")
+    
+    with tf.name_scope("FIFOQueue"):
+        q = tf.FIFOQueue(25,dtypes=tf.float16,name="Train_Queue")
+        img_in = q.dequeue(name="img_in")
+        num_threads = 4
+        qr = tf.train.QueueRunner(q,[img_in]*num_threads)
+        tf.train.add_queue_runner(qr)
         
+    with tf.device('/cpu:0'):
+        x_img = tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),img_in,dtype=tf.float32)
+        x_imgs = tf.cast(x_img,tf.float16)
 
-    x_img = tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),x1,dtype=tf.float32)
-    x_imgs = tf.cast(x_img,tf.float16)
-    tf.summary.image("image",x1,max_outputs=4)
+    #x_img = tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),x1,dtype=tf.float32)
+    #x_imgs = tf.cast(x_img,tf.float16)
+    tf.summary.image("image",x_imgs,max_outputs=4)
     conv_name="conv"
     fcs_name="FC"
     conv_feats[0] = 4
@@ -102,12 +113,23 @@ def create_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feat
     config = tf.ConfigProto()
     config.gpu_options.allow_growth=True
     
-    sess = tf.InteractiveSession(config=config)
-    #sess = tf.InteractiveSession()
-    sess.run(tf.global_variables_initializer())
     summ = tf.summary.merge_all()
     writer = tf.summary.FileWriter(LOGDIR)
-    return sess,writer,summ,[x1,x2,y,next_state,Qnext]
+    
+    with tf.train.MonitoredSession() as sess:
+        writer.add_graph(sess.graph)
+        it = 0
+        while not sess.should_stop():
+            a,s = sess.run([train,summ])
+            writer.add_summary(s,it)
+            it = it+1
+    return
+    #sess = tf.InteractiveSession(config=config)
+    #sess = tf.InteractiveSession()
+    #sess.run(tf.global_variables_initializer())
+    #summ = tf.summary.merge_all()
+    #writer = tf.summary.FileWriter(LOGDIR)
+    #return sess,writer,summ,[x1,x2,y,next_state,Qnext]
 
 
 # In[4]:
