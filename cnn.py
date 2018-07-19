@@ -69,13 +69,16 @@ def create_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feat
         num_threads = 4
         qr = tf.train.QueueRunner(q,[img_in]*num_threads)
         tf.train.add_queue_runner(qr)
-        
+       
     with tf.device('/cpu:0'):
         x_img = tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),img_in,dtype=tf.float32)
         x_imgs = tf.cast(x_img,tf.float16)
-
-    #x_img = tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),x1,dtype=tf.float32)
-    #x_imgs = tf.cast(x_img,tf.float16)
+    
+    """
+    x_img = tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),x1,dtype=tf.float32)
+    x_imgs = tf.cast(x_img,tf.float16)
+    """
+    
     tf.summary.image("image",x_imgs,max_outputs=4)
     conv_name="conv"
     fcs_name="FC"
@@ -113,6 +116,7 @@ def create_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feat
     config = tf.ConfigProto()
     config.gpu_options.allow_growth=True
     
+    
     summ = tf.summary.merge_all()
     writer = tf.summary.FileWriter(LOGDIR)
     
@@ -124,12 +128,14 @@ def create_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feat
             writer.add_summary(s,it)
             it = it+1
     return
-    #sess = tf.InteractiveSession(config=config)
+    
+    """
+    sess = tf.InteractiveSession(config=config)
     #sess = tf.InteractiveSession()
-    #sess.run(tf.global_variables_initializer())
-    #summ = tf.summary.merge_all()
-    #writer = tf.summary.FileWriter(LOGDIR)
-    #return sess,writer,summ,[x1,x2,y,next_state,Qnext]
+    sess.run(tf.global_variables_initializer())
+    summ = tf.summary.merge_all()
+    writer = tf.summary.FileWriter(LOGDIR)
+    return sess,writer,summ,[x1,x2,y,next_state,Qnext]
 
 
 # In[4]:
@@ -147,4 +153,4 @@ def create_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feat
 #sess,writer,summ,place_holders= create_model(learning_rate,batch_size,conv_count,fc_count,conv,fclyr,conv_k_size,conv_stride,LOGDIR)
 
 #writer.add_graph(sess.graph)
-
+"""
