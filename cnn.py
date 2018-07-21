@@ -44,13 +44,29 @@ def fc_layer(m_input,size_in,size_out,name,num):
 def get_place_holders():
     a = tf.get_default_graph().get_tensor_by_name("place_holder/x1:0")
     b = tf.get_default_graph().get_tensor_by_name("place_holder/y:0")
-    c = tf.get_default_graph().get_tensor_by_name("place_holder/x2:0")
-    d = tf.get_default_graph().get_tensor_by_name("place_holder/next_state:0")
-    e = tf.get_default_graph().get_tensor_by_name("place_holder/qnext:0")
-    return a,b,c,d,e
+    c = tf.get_default_graph().get_tensor_by_name("place_holder/next_state:0")
+    d = tf.get_default_graph().get_tensor_by_name("place_holder/qnext:0")
+    return a,b,c,d
+
+def process_data(seq):
+    img1 = seq[0]
+    img2 = seq[3]
+    img1 = tf.image.per_image_standardization(img1)
+    img2 = tf.image.per_image_standardization(img2)
+    img1 = tf.cast(img1,tf.float16)
+    img2 = tf.cast(img2,tf.float16)
+
+    return [tf.constant(1.0,dtype=tf.float16),img1]
 
 
-def create_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
+def create_datapipeline_opt(generator,batch_size):
+    with tf.name_scope("Data_PipeLine"):
+        dataset = tf.data.Dataset.from_generator(generator,output_types=tf.float16).batch(batch_size).prefetch(10)
+        dataset = dataset.map(map_func=process_data,num_parallel_calls=1)
+        return dataset.make_one_shot_iterator()
+
+
+def create_model(learning_rate,generator,batch_size,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
     if (len(conv_feats) != conv_count):
         return
     
@@ -59,25 +75,26 @@ def create_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feat
     with tf.name_scope("place_holder"):
         x1 = tf.placeholder(tf.float16,shape=[None,110,84,4],name="x1")
         y = tf.placeholder(tf.float16,shape=[None,4],name="y")
-        next_state = tf.placeholder(tf.bool,name="next_state")
+        infer = tf.placeholder(tf.bool,name="infer")
         Qnext = tf.placeholder(tf.float16,shape=[None,1],name="qnext")
     
-    with tf.name_scope("FIFOQueue"):
-        q = tf.FIFOQueue(50,dtypes=tf.float16,shapes=[50,110,84,4],name="Train_Queue")
-        img_in = q.dequeue(name="img_in")
-        num_threads = 4
-        qr = tf.train.QueueRunner(q,[img_in]*num_threads)
-        tf.train.add_queue_runner(qr)
+    #with tf.name_scope("FIFOQueue"):
+    #    q = tf.FIFOQueue(50,dtypes=tf.float16,shapes=[50,110,84,4],name="Train_Queue")
+    #    img_in = q.dequeue(name="img_in")
+    #    num_threads = 4
+    #    qr = tf.train.QueueRunner(q,[img_in]*num_threads)
+    #    tf.train.add_queue_runner(qr)
        
-    with tf.device('/cpu:0'):
-        x_img = tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),img_in,dtype=tf.float32)
-        x_imgs = tf.cast(x_img,tf.float16)
+    #with tf.device('/cpu:0'):
+    #    x_img = tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),x1,dtype=tf.float32)
+    #    x_imgs = tf.cast(x_img,tf.float16)
     
  
     #x_img = tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),x1,dtype=tf.float32)
     #x_imgs = tf.cast(x_img,tf.float16)
-   
-
+    
+    
+    
     tf.summary.image("image",x_imgs,max_outputs=4)
     conv_name="conv"
     fcs_name="FC"
@@ -123,21 +140,21 @@ def create_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feat
     summ = tf.summary.merge_all()
     writer = tf.summary.FileWriter(LOGDIR)
     
-    with tf.train.MonitoredSession() as sess:
-        writer.add_graph(sess.graph)
-        it = 0
-        while not sess.should_stop():
-            a,s = sess.run([train,summ],{x1: np.random.rand(1,110,84,4),Qnext: np.random.rand(1).reshape(1,1)})
-            writer.add_summary(s,it)
-            it = it+1
-    return
+    #with tf.train.MonitoredSession() as sess:
+    #    writer.add_graph(sess.graph)
+    #    it = 0
+    #    while not sess.should_stop():
+    #        a,s = sess.run([train,summ],{x1: np.random.rand(1,110,84,4),Qnext: np.random.rand(1).reshape(1,1)})
+    #        writer.add_summary(s,it)
+    #        it = it+1
+    #return
 
-    #sess = tf.InteractiveSession(config=config)
+    sess = tf.InteractiveSession(config=config)
     #sess = tf.InteractiveSession()
-    #sess.run(tf.global_variables_initializer())
-    #summ = tf.summary.merge_all()
-    #writer = tf.summary.FileWriter(LOGDIR)
-    #return sess,writer,summ,[x1,x2,y,next_state,Qnext]
+    sess.run(tf.global_variables_initializer())
+    summ = tf.summary.merge_all()
+    writer = tf.summary.FileWriter(LOGDIR)
+    return sess,writer,summ,[x1,y,next_state,Qnext]
 
 
 # In[4]:
