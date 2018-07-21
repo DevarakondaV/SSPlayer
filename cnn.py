@@ -48,54 +48,50 @@ def get_place_holders():
     d = tf.get_default_graph().get_tensor_by_name("place_holder/qnext:0")
     return a,b,c,d
 
-def process_data(seq):
-    img1 = seq[0]
-    img2 = seq[3]
-    img1 = tf.image.per_image_standardization(img1)
-    img2 = tf.image.per_image_standardization(img2)
-    img1 = tf.cast(img1,tf.float16)
-    img2 = tf.cast(img2,tf.float16)
-
-    return [tf.constant(1.0,dtype=tf.float16),img1]
-
+def process_data(img1,a,r,img2):
+    img1 = tf.reshape(img1,shape=[-1,4,110,84])
+    img2 = tf.reshape(img2,shape=[-1,4,110,84])
+    img1 = tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),img1,dtype=tf.float32)
+    img2 = tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),img2,dtype=tf.float32)
+    img1 = tf.reshape(tf.cast(img1,tf.float16),shape=[-1,110,84,4])
+    img2 = tf.reshape(tf.cast(img2,tf.float16),shape=[-1,110,84,4])
+    tf.summary.image("img_1",img1)
+    tf.summary.image("img_2",img2)
+    return img1,a,r,img2
+    
 
 def create_datapipeline_opt(generator,batch_size):
     with tf.name_scope("Data_PipeLine"):
-        dataset = tf.data.Dataset.from_generator(generator,output_types=tf.float16).batch(batch_size).prefetch(10)
-        dataset = dataset.map(map_func=process_data,num_parallel_calls=1)
+        dataset = tf.data.Dataset.from_generator(generator,
+                                                 (tf.float16,tf.uint8,tf.float16,tf.float16),
+                                                 output_shapes = (tf.TensorShape([None,110,84,4]),
+                                                                  tf.TensorShape([None,1]),
+                                                                  tf.TensorShape([None,1]),
+                                                                  tf.TensorShape([None,110,84,4]))).batch(32).prefetch(1)
+        dataset = dataset.map(map_func=process_data,num_parallel_calls=4)
         return dataset.make_one_shot_iterator()
 
-
+#prefetch
 def create_model(learning_rate,generator,batch_size,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
     if (len(conv_feats) != conv_count):
         return
     
     tf.reset_default_graph()
     
-    with tf.name_scope("place_holder"):
-        x1 = tf.placeholder(tf.float16,shape=[None,110,84,4],name="x1")
-        y = tf.placeholder(tf.float16,shape=[None,4],name="y")
-        infer = tf.placeholder(tf.bool,name="infer")
-        Qnext = tf.placeholder(tf.float16,shape=[None,1],name="qnext")
+    #with tf.name_scope("place_holder"):
+    #    x1 = tf.placeholder(tf.float16,shape=[None,110,84,4],name="x1")
+    #    y = tf.placeholder(tf.float16,shape=[None,4],name="y")
+    #    infer = tf.placeholder(tf.bool,name="infer")
+        #Qnext = tf.placeholder(tf.float16,shape=[None,1],name="qnext")
+      
     
-    #with tf.name_scope("FIFOQueue"):
-    #    q = tf.FIFOQueue(50,dtypes=tf.float16,shapes=[50,110,84,4],name="Train_Queue")
-    #    img_in = q.dequeue(name="img_in")
-    #    num_threads = 4
-    #    qr = tf.train.QueueRunner(q,[img_in]*num_threads)
-    #    tf.train.add_queue_runner(qr)
-       
-    #with tf.device('/cpu:0'):
-    #    x_img = tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),x1,dtype=tf.float32)
-    #    x_imgs = tf.cast(x_img,tf.float16)
-    
- 
-    #x_img = tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),x1,dtype=tf.float32)
-    #x_imgs = tf.cast(x_img,tf.float16)
-    
-    
-    
-    tf.summary.image("image",x_imgs,max_outputs=4)
+    dat_iter = create_datapipeline_opt(generator,batch_size)
+    img1,a,r,img2 = dat_iter.get_next()
+    print(img1.get_shape().as_list())
+    Qnext = tf.constant(.1,dtype=tf.float16)
+
+    x_imgs = img1
+    #tf.summary.image("image",x_imgs,max_outputs=4)
     conv_name="conv"
     fcs_name="FC"
     conv_feats[0] = 4
@@ -110,10 +106,6 @@ def create_model(learning_rate,generator,batch_size,conv_count,fc_count,conv_fea
             convs.append(conv_layer(convs[i],conv_feats[i],conv_feats[i+1],conv_k_size[p],conv_k_size[p],conv_stride[p],2,2,conv_name,str(i+1)))
             p = p+1
         
-    #dim = tf.Variable(0.0,dtype=tf.float16)
-    #dim_op = tf.assign(dim,tf.cast(tf.reduce_prod(tf.shape(convs[len(convs)-1])),tf.float16))
-    
-    
     flatten = tf.reshape(convs[conv_count-1],[-1,fc_feats[0]])
     
     p = 0
@@ -154,8 +146,8 @@ def create_model(learning_rate,generator,batch_size,conv_count,fc_count,conv_fea
     sess.run(tf.global_variables_initializer())
     summ = tf.summary.merge_all()
     writer = tf.summary.FileWriter(LOGDIR)
-    return sess,writer,summ,[x1,y,next_state,Qnext]
-
+    #return sess,writer,summ,[x1,y,infer,Qnext]
+    return sess,writer,summ
 
 # In[4]:
 
