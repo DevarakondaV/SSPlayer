@@ -71,27 +71,23 @@ def create_datapipeline_opt(generator,batch_size):
         dataset = dataset.map(map_func=process_data,num_parallel_calls=4)
         return dataset.make_one_shot_iterator()
 
-#prefetch
-def create_model(learning_rate,generator,batch_size,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
+
+def create_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
     if (len(conv_feats) != conv_count):
         return
     
     tf.reset_default_graph()
     
-    #with tf.name_scope("place_holder"):
-    #    x1 = tf.placeholder(tf.float16,shape=[None,110,84,4],name="x1")
-    #    y = tf.placeholder(tf.float16,shape=[None,4],name="y")
-    #    infer = tf.placeholder(tf.bool,name="infer")
-        #Qnext = tf.placeholder(tf.float16,shape=[None,1],name="qnext")
-      
+    with tf.name_scope("place_holder"):
+        x1 = tf.placeholder(tf.float16,shape=[None,110,84,4],name="x1")
+        y = tf.placeholder(tf.float16,shape=[None,4],name="y")
+        next_state = tf.placeholder(tf.bool,name="next_state")
+        Qnext = tf.placeholder(tf.float16,shape=[None,1],name="qnext")
     
-    dat_iter = create_datapipeline_opt(generator,batch_size)
-    img1,a,r,img2 = dat_iter.get_next()
-    print(img1.get_shape().as_list())
-    Qnext = tf.constant(.1,dtype=tf.float16)
-
-    x_imgs = img1
-    #tf.summary.image("image",x_imgs,max_outputs=4)
+ 
+    
+    
+    tf.summary.image("image",x1,max_outputs=4)
     conv_name="conv"
     fcs_name="FC"
     conv_feats[0] = 4
@@ -100,12 +96,12 @@ def create_model(learning_rate,generator,batch_size,conv_count,fc_count,conv_fea
     p = 0
     with tf.name_scope("convolution_layers"):
         convs = []
-        convs.append(x_imgs)
+        convs.append(x1)
         p = 0
         for i in range(0,conv_count-1):
             convs.append(conv_layer(convs[i],conv_feats[i],conv_feats[i+1],conv_k_size[p],conv_k_size[p],conv_stride[p],2,2,conv_name,str(i+1)))
             p = p+1
-        
+    
     flatten = tf.reshape(convs[conv_count-1],[-1,fc_feats[0]])
     
     p = 0
@@ -146,22 +142,4 @@ def create_model(learning_rate,generator,batch_size,conv_count,fc_count,conv_fea
     sess.run(tf.global_variables_initializer())
     summ = tf.summary.merge_all()
     writer = tf.summary.FileWriter(LOGDIR)
-    #return sess,writer,summ,[x1,y,infer,Qnext]
-    return sess,writer,summ
-
-# In[4]:
-
-
-#conv_k_size = [8,4]
-#conv_stride = [4,2]
-#conv = [0,16,32]
-#fclyr = [0,125,4]
-#conv_count = len(conv)
-#fc_count = len(fclyr)
-#learning_rate = 1e-4
-#batch_size = 10
-#LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log"
-#sess,writer,summ,place_holders= create_model(learning_rate,batch_size,conv_count,fc_count,conv,fclyr,conv_k_size,conv_stride,LOGDIR)
-
-#writer.add_graph(sess.graph)
-
+    return sess,writer,summ,[x1,y,next_state,Qnext]
