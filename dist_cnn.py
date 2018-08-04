@@ -133,13 +133,14 @@ def build_train_queue(batch_size):
                                   tf.TensorShape([batch_size,1]),
                                   tf.TensorShape([batch_size,110,84,4])),
                          name="tq",shared_name="train_queue")
+        
     return q
 
 def build_infer_queue():
     with tf.name_scope("InferQueue"):
         q = tf.PriorityQueue(capacity=2,
                              types=tf.uint8,
-                             shapes=[1,110,84,4],
+                             shapes=[()],
                              name="iq",
                              shared_name="infer_queue")
     return q
@@ -187,91 +188,70 @@ def create_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,f
     if (len(conv_feats) != conv_count):
         return
 
-    cl_spec = {
-        'local': ['localhost:2222','localhost:2223']
-    }
-    
     # 0 is Trainer....1 is inference
 
     tf.reset_default_graph()
     
     with tf.name_scope("infer_place_holder"):
-        #x1 = tf.placeholder_with_default(tf.cast(
-        #    tf.constant(0,shape=[1,110,84,4]),tf.uint8),shape=[None,110,84,4],name="x1")
-        x1 = tf.placeholder(tf.uint8,name="x1")
-        tr = tf.placeholder(tf.bool,name="train_bool")
-    
-    
-    with tf.name_scope("stat_vars"):
-        i1 = tf.cast(tf.constant(0.0,shape=[batch_size,110,84,4],name="i1"),tf.uint8)
-        a = tf.cast(tf.constant(0.0,shape=[batch_size,1],name="a"),tf.uint8)
-        r = tf.cast(tf.constant(0.0,shape=[batch_size,1],name="r"),tf.float16)
+        x1 = tf.placeholder(tf.uint8,shape=[1,110,84,4],name="x1")
  
+    #with tf.device("/job:local/task:0"):
+    #    img1 = tf.placeholder(tf.uint8,shape=[None,110,84,4],name="img1")
+    #    a = tf.placeholder(tf.uint8,shape=[None,1],name="img1")
+    #    r = tf.placeholder(tf.float16,shape=[None,1],name="img1")
+    #    img2 = tf.placeholder(tf.uint8,shape=[None,110,84,4],name="img1")
     
     train_q = build_train_queue(batch_size)
-    infer_q = build_infer_queue()
     
     with tf.device("/job:local/task:0"):
         q_s1 = tf.Print(train_q.size(),[train_q.size()],message="Q Size1: ")
     with tf.device("/job:local/task:1"):
         q_s2 = tf.Print(train_q.size(),[train_q.size()],message="Q Size2: ")
     
+    std_infer_img = standardize_img(x1)
     
-    infer_q.enqueue((1,x1))
+    #Test Variable
     with tf.device("/job:local/task:0"):
         img1,a,r,img2 = train_q.dequeue(name="Dequeue")
-        infer_q.enqueue((2,img2))
-    
-    #def f_true():
-    #    i1,a,r,i2 = train_q.dequeue(name="train_dequeue")
-    #    return i1,a,r,i2
-    #def f_false():
-    #    return i1,a,r,i1
-    
-    #cond1 = tf.greater(train_q.size(),0)
-    #img1,a,r,img2 = tf.cond(cond1,f_true,f_false,"dequeue_conditional")
-    
-    #with tf.device("/job:local/task:1"):
-    #    cond2 = tf.equal(tf.reduce_max(x1),tf.cast(tf.constant(0),tf.uint8))
-    #    infer_img = tf.cond(cond2,lambda: img2,lambda: x1,name="train_conditional")
+        #qr = tf.train.QueueRunner(train_q)
+        #tf.train.add_queue_runner(qr)
 
-    infer_img = infer_q.dequeue()
-    std_infer_img = standardize_img(infer_img)
-    std_img1 = standardize_img(img1)
-    #tf.summary.image("image_s1",img1,max_outputs=4)
-    #tf.summary.image("image_s2",img2,max_outputs=4)
-    
+
+    input_var = tf.Variable(tf.zeros([batch_size,110,84,4],dtype=tf.float16),name="input_var")
+    assign_infer_op = tf.assign(input_var,standardize_img(img2))
+    assign_train_op = tf.assign(input_var,standardize_img(img1))
+
     with tf.device("/job:local/task:1"):
         infer_output = build_graph("Inference",std_infer_img,
-                                   conv_count,fc_count,
-                                   conv_feats,fc_feats,conv_k_size,conv_stride,False)
+                                    conv_count,fc_count,
+                                    conv_feats,fc_feats,conv_k_size,conv_stride,False)
 
     with tf.device("/job:local/task:0"):
-        train_output = build_graph("Train",std_img1,
+        train_output = build_graph("Train",input_var,
                                    conv_count,fc_count,
                                    conv_feats,fc_feats,conv_k_size,conv_stride,True)
 
     with tf.device("/job:local/task:1"):
-        Qnext = tf.reduce_max(infer_output,name="Qnext")
-        gamma_seq = tf.tile(gamma,[batch_size])
-        y = tf.add(r,tf.multiply(gamma,Qnext),name="y")
-    
+        Qnext_val = tf.reduce_max(infer_output,name="Qnext_val")
+        action = tf.argmax(infer_output,axis=1,name="action")
+
     with tf.device("/job:local/task:0"):
         with tf.name_scope("Trainer"):
-            loss = tf.reduce_sum(tf.pow(y-train_output,2))
-            tf.summary.scalar("loss",loss)
-            train = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss,name="trainer")
+            with tf.control_dependencies([assign_infer_op]):
+                Qnext = tf.reduce_max(train_output,name="Qnext_train")
+                #gamma_seq = tf.tile(gamma,[batch_size])
+                y = tf.add(r,tf.multiply(gamma,Qnext),name="y")
+            with tf.control_dependencies([assign_train_op]):
+                loss = tf.reduce_sum(tf.pow(y-train_output,2))
+                tf.summary.scalar("loss",loss)
+                train = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss,name="trainer")
         
     with tf.device("/job:local/task:0"):
         with tf.name_scope("weight_update_ops"):
             ops = build_update_infer_weights_op("conv","FC",conv_count,fc_count)
-    
-    with tf.device("/job:local/task:1"):
-        Qnext_val = tf.reduce_max(infer_output,name="Qnext_val")
-        action = tf.argmax(infer_output,axis=1,name="action")
 
     summ = tf.summary.merge_all()
     writer = tf.summary.FileWriter(LOGDIR)
     #writer.add_summary(summ.eval(),g_step.eval())
-    return writer,summ,train_q,q_s1,q_s2,action
+    return writer,summ,train,action,x1,train_q
 
