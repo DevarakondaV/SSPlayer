@@ -136,19 +136,37 @@ def build_train_queue(batch_size):
         
     return q
 
-def build_infer_queue():
-    with tf.name_scope("InferQueue"):
-        q = tf.PriorityQueue(capacity=2,
-                             types=tf.uint8,
-                             shapes=[()],
-                             name="iq",
-                             shared_name="infer_queue")
-    return q
     
+def conv_img_float(img_frames):
+    img1 = tf.expand_dims(tf.image.convert_image_dtype(img_frames[:,:,0],tf.float16),axis=2)
+    img2 = tf.expand_dims(tf.image.convert_image_dtype(img_frames[:,:,1],tf.float16),axis=2)
+    img3 = tf.expand_dims(tf.image.convert_image_dtype(img_frames[:,:,2],tf.float16),axis=2)
+    img4 = tf.expand_dims(tf.image.convert_image_dtype(img_frames[:,:,3],tf.float16),axis=2)
+    return tf.concat([img1,img2,img3,img4],axis=2)
+
+def standardize_frames(img_frames):
+    img1 = tf.expand_dims(img_frames[:,:,0],axis=2)
+    img2 = tf.expand_dims(img_frames[:,:,1],axis=2)
+    img3 = tf.expand_dims(img_frames[:,:,2],axis=2)
+    img4 = tf.expand_dims(img_frames[:,:,3],axis=2)
+
+    print(img1.dtype)
+
+    std_img1 = tf.image.per_image_standardization(img1)
+    std_img2 = tf.image.per_image_standardization(img2)
+    std_img3 = tf.image.per_image_standardization(img3)
+    std_img4 = tf.image.per_image_standardization(img4)
+
+    print(std_img1.dtype)
+    frames = tf.concat([std_img1,std_img2,std_img3,std_img4],axis=2)
+    print(frames.dtype)
+    return frames
+
 def standardize_img(img_array):
-    img_rshp = tf.reshape(img_array,shape=[-1,4,110,84])
-    tf.map_fn(lambda frame:tf.image.per_image_standardization(frame),img_rshp,parallel_iterations=4)
-    return tf.cast(tf.reshape(img_rshp,shape=[-1,110,84,4]),tf.float16)
+    img_std = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), 
+                        img_array,dtype=tf.float32,
+                        parallel_iterations=4)
+    return tf.cast(img_std,tf.float16)
 
 def build_update_infer_weights_op(conv_name,fc_name,conv_count,fc_count):
     num_conv = conv_count
@@ -258,7 +276,10 @@ def infer_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
     with tf.name_scope("infer_place_holder"):
         x1 = tf.placeholder(tf.uint8,shape=[None,110,84,4],name="x1")
         
+    #tf.summary.image("image",x1)
     std_img = standardize_img(x1)
+    #tf.summary.image("imagestd",std_img)
+
     infer_output = build_graph("Inference",std_img,
                                 conv_count,fc_count,
                                 conv_feats,fc_feats,conv_k_size,conv_stride,False)
@@ -285,10 +306,17 @@ def train_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc
         enqueue_op = train_q.enqueue((s_img1,s_a,s_r,s_img2))
         q_s1 = tf.Print(train_q.size(),[train_q.size()],message="Q Size1: ")
         img1,a,r,img2 = train_q.dequeue(name="dequeue")
-           
+
+        std_img1 = standardize_img(img1)
+        std_img2 = standardize_img(img2)
+
+        tf.summary.image("std_img1",img1)
+
+        pimg = tf.Print(std_img1,[std_img1],"val: ")
+
         input_var = tf.Variable(tf.zeros([batch_size,110,84,4],dtype=tf.float16),name="input_var")
-        assign_infer_op = tf.assign(input_var,standardize_img(img2))
-        assign_train_op = tf.assign(input_var,standardize_img(img1))
+        assign_infer_op = tf.assign(input_var,std_img2)
+        assign_train_op = tf.assign(input_var,std_img1)
         
         train_output = build_graph("Train",input_var,
                                     conv_count,fc_count,
@@ -310,4 +338,4 @@ def train_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc
     summ = tf.summary.merge_all()
     writer = tf.summary.FileWriter(LOGDIR)
     #return writer,summ,train,train_q,q_s1
-    return writer,summ,train,enqueue_op,q_s1,s_img1,s_a,s_r,s_img2
+    return writer,summ,train,enqueue_op,q_s1,s_img1,s_a,s_r,s_img2,pimg,ops

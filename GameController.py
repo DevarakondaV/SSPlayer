@@ -8,11 +8,13 @@ import mss.tools
 import win32api, win32con
 from scipy import stats
 
+
 def wait_for(sec):
 	t = time.time()+sec
 	while(True):
 		if (time.time()>t):
 			break
+
 
 class SSPlayer:
 	
