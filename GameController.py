@@ -8,11 +8,13 @@ import mss.tools
 import win32api, win32con
 from scipy import stats
 
+
 def wait_for(sec):
 	t = time.time()+sec
 	while(True):
 		if (time.time()>t):
 			break
+
 
 class SSPlayer:
 	
@@ -74,7 +76,8 @@ class SSPlayer:
 		return app
 	
 	def crop_image_for_test(self,img):
-		return img[:,0:8,10:27]
+		#return img[:,0:8,10:27]
+		return img[0:8,10:27,:]
 	
 	def kill(self):
 		self.app.kill()
@@ -141,16 +144,16 @@ class SSPlayer:
 		if (np.array_equal(img,self.mainscene)):
 			return 1
 		elif (np.array_equal(img,self.playscene)):
-			self.reward = self.reward
+			self.reward = self.reward-1
 			return 2
 		else:
-			self.reward = 0
+			self.reward = -1
 			return 3
 			
 	
 	def get_screen_number2(self,img):
 		img = self.crop_image_for_test(img)
-		check_m = np.array_equiv(self.playscene,img)
+		check_m = np.array_equiv(self.playscene,np.rollaxis(img,2,0))
 		return check_m
 			
 	
@@ -159,7 +162,8 @@ class SSPlayer:
 def img_normalize(img):
 	print("Img Shape: ",img.shape)
 	i_max2 = np.amax(img,axis=0)
-	print("Img Max: ",i_max2)
+	print("pImg Max: ",i_max2)
+	
 	return img
 	
 def img_standardize(img):
@@ -169,6 +173,6 @@ def take_shot(game):
 		img = game.sct.grab(game.processing_crop)
 		#img = misc.imresize(np.array(img)[:,:,1],(110,84))
 		img = Image.fromarray(np.array(img)[:,:,1]).resize((84,110))
-		return np.expand_dims(np.array(img),axis=0)
+		return np.expand_dims(np.array(img),axis=2)
 		
 
