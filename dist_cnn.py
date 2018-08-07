@@ -27,6 +27,8 @@ def conv_layer(m_input,size_in,size_out,k_size_w,k_size_h,conv_stride,pool_k_siz
         conv = tf.nn.conv2d(m_input,w,strides=[1,conv_stride,conv_stride,1],padding="SAME")
         act = tf.nn.leaky_relu((conv+b),alpha=0.1)
         tf.summary.histogram("weights",w)
+        if (int(num) == 1):
+            tf.summary.image("conv_weights",tf.transpose(w,perm=[3,0,1,2]))
         tf.summary.histogram("biases",b)
         tf.summary.histogram("act",act)
         return tf.nn.max_pool(act,ksize=[1,pool_k_size,pool_k_size,1],strides=[1,pool_stride_size,pool_stride_size,1],padding='SAME')

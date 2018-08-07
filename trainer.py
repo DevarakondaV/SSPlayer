@@ -84,12 +84,12 @@ def dist_run(sess,game,greed,M,batch_size,ops,phs):
                 greed = .1
         wait_for(1)
         game.click_to_play()
-        while game.get_screen_number(take_shot(game)):
+        while game.get_screen_number2(take_shot(game)):
             frames1,test = get_4_frames(game)
             if (not test):
                 break  
-            a = np.asarray(np.random.randint(0,5)).astype(np.uint8) if (np.random.random_sample(1) <= greed) else np.asarray(dist_infer_action(sess,frames1,ops,phs)).astype(np.float16)     
-            r,frames2,test = send_action_to_game_controller(game,a)
+            a = [np.asarray(np.random.randint(0,5)).astype(np.uint8)] if (np.random.random_sample(1) <= greed) else np.asarray(dist_infer_action(sess,frames1,ops,phs)).astype(np.float16)
+            r,frames2,test = send_action_to_game_controller(game,a[0])
             if (not test):
                 break
             store_exp((frames1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),frames2))
@@ -103,6 +103,23 @@ def dist_run(sess,game,greed,M,batch_size,ops,phs):
     
     return
 
+
+def dist_play(sess,game,M,ops,phs):
+    for i in range(0,M):
+        wait_for(1)
+        game.click_to_play()
+        while game.get_screen_number2(take_shot(game)):
+            frames,test = get_4_frames(game)
+            if (not test):
+                break
+            a = dist_infer_action(sess,frames,ops,phs)
+            r,frames,test = send_action_to_game_controller(game,a[0])
+            if (not test):
+                break
+        game.release_click()
+        wait_for(.3)
+        game.click_replay()
+        print("Play Iteration: ",i)
 """
 def play_game(game,M):
     for i in range(0,M):
