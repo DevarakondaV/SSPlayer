@@ -75,7 +75,7 @@ else:
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 0),config=config) as sess:
             writer.add_graph(sess.graph)
             #while not sess.should_stop():
-            dist_run(sess,game,.9,15,batch_size,ops,phs)
+            dist_run(sess,game,.9,5,batch_size,ops,phs)
     else:
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 0),config=config) as sess:
             pp = 0
