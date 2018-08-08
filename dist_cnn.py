@@ -25,10 +25,9 @@ def conv_layer(m_input,size_in,size_out,k_size_w,k_size_h,conv_stride,pool_k_siz
                         trainable=trainable_vars,
                         name="b{}".format(num))
         conv = tf.nn.conv2d(m_input,w,strides=[1,conv_stride,conv_stride,1],padding="SAME")
-        act = tf.nn.leaky_relu((conv+b),alpha=0.1)
+        act = tf.nn.leaky_relu((conv+b),alpha=0.3)
         tf.summary.histogram("weights",w)
-        if (int(num) == 1):
-            tf.summary.image("conv_weights",tf.transpose(w,perm=[3,0,1,2]))
+        flatten_weights_summarize(w,num,trainable_vars)
         tf.summary.histogram("biases",b)
         tf.summary.histogram("act",act)
         return tf.nn.max_pool(act,ksize=[1,pool_k_size,pool_k_size,1],strides=[1,pool_stride_size,pool_stride_size,1],padding='SAME')
@@ -47,7 +46,7 @@ def fc_layer(m_input,size_in,size_out,trainable_vars,name,num):
                         trainable=trainable_vars,
                         name="b{}".format(num))
         z = tf.matmul(m_input,w)
-        act = tf.nn.leaky_relu(z+b,alpha=0.1,name=("act"+num))
+        act = tf.nn.leaky_relu(z+b,alpha=0.3,name=("act"+num))
         tf.summary.histogram("weights",w)
         tf.summary.histogram("biases",b)
         tf.summary.histogram("act",act)
@@ -126,14 +125,14 @@ def build_train_data_pipeline(filenames,batchsize):
         
         
 
-def build_train_queue(batch_size):
+def build_train_queue(batch_size,img_shp):
     with tf.name_scope("TrainQueue"):
-        q = tf.FIFOQueue(capacity=25,
+        q = tf.FIFOQueue(capacity=50,
                          dtypes= (tf.uint8,tf.uint8,tf.float16,tf.uint8),
-                         shapes= (tf.TensorShape([batch_size,110,84,4]),
+                         shapes= (img_shp,
                                   tf.TensorShape([batch_size,1]),
                                   tf.TensorShape([batch_size,1]),
-                                  tf.TensorShape([batch_size,110,84,4])),
+                                  img_shp),
                          name="tq",shared_name="train_queue")
         
     return q
@@ -277,9 +276,11 @@ def infer_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
     
     with tf.name_scope("infer_place_holder"):
         x1 = tf.placeholder(tf.uint8,shape=[None,110,84,4],name="x1")
-        
+
+    #x1 = tf.boolean_mask(x1,tf.constant(0,shape=[1,30,84,4]))    
+    sl_x1 = x1[:,10:110,:,:]
     #tf.summary.image("image",x1)
-    std_img = standardize_img(x1)
+    std_img = standardize_img(sl_x1)
     #tf.summary.image("imagestd",std_img)
 
     infer_output = build_graph("Inference",std_img,
@@ -297,26 +298,30 @@ def train_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc
     
     with tf.device("/job:worker/task:1"):    
         with tf.name_scope("train_place_holder"):
-            s_img1 = tf.placeholder(tf.uint8,shape=[None,110,84,4],name="s_img1")
-            s_a = tf.placeholder(tf.uint8,shape=[None,1],name="s_a")
-            s_r = tf.placeholder(tf.float16,shape=[None,1],name="s_r")
-            s_img2 = tf.placeholder(tf.uint8,shape=[None,110,84,4],name="s_img2")
+            s_img1 = tf.placeholder(tf.uint8,shape=[batch_size,110,84,4],name="s_img1")
+            s_a = tf.placeholder(tf.uint8,shape=[batch_size,1],name="s_a")
+            s_r = tf.placeholder(tf.float16,shape=[batch_size,1],name="s_r")
+            s_img2 = tf.placeholder(tf.uint8,shape=[batch_size,110,84,4],name="s_img2")
        
+        with tf.name_scope("slice_image"):
+            sl_img1 = s_img1[:,10:110,:,:]
+            sl_img2 = s_img2[:,10:110,:,:]
+
         with tf.name_scope("queue"):
-            train_q = build_train_queue(batch_size)
+            train_q = build_train_queue(batch_size,sl_img1.get_shape())
         
-        enqueue_op = train_q.enqueue((s_img1,s_a,s_r,s_img2))
+        enqueue_op = train_q.enqueue((sl_img1,s_a,s_r,sl_img2))
         q_s1 = tf.Print(train_q.size(),[train_q.size()],message="Q Size1: ")
         img1,a,r,img2 = train_q.dequeue(name="dequeue")
 
         std_img1 = standardize_img(img1)
         std_img2 = standardize_img(img2)
 
-        tf.summary.image("std_img1",img1)
+        tf.summary.image("std_img1",std_img1)
 
         pimg = tf.Print(std_img1,[std_img1],"val: ")
 
-        input_var = tf.Variable(tf.zeros([batch_size,110,84,4],dtype=tf.float16),name="input_var")
+        input_var = tf.Variable(tf.zeros(sl_img1.get_shape(),dtype=tf.float16),name="input_var")
         assign_infer_op = tf.assign(input_var,std_img2)
         assign_train_op = tf.assign(input_var,std_img1)
         
@@ -341,3 +346,16 @@ def train_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc
     writer = tf.summary.FileWriter(LOGDIR)
     #return writer,summ,train,train_q,q_s1
     return writer,summ,train,enqueue_op,q_s1,s_img1,s_a,s_r,s_img2,pimg,ops
+
+def flatten_weights_summarize(w,num,trainable):
+    #[width,height,input,output]
+    if (trainable):
+        w_n = tf.transpose(w,perm=[2,0,1,3])
+        w_shp = w_n.get_shape().as_list()
+        print(w_shp)
+        for i in range(0,w_shp[len(w_shp)-1]):
+            tf.summary.image("conv_w"+num,tf.expand_dims(w_n[:,:,:,i],axis=3))
+    
+
+
+

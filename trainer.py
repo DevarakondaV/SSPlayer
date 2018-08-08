@@ -77,9 +77,9 @@ def dist_add_to_queue(sess,batch_size,ops,phs):
 def dist_run(sess,game,greed,M,batch_size,ops,phs):
     global exp
     for i in range(0,M):
-        if (i % 50 == 0):
+        if (i % 100 == 0):
             if (greed >= .2):
-                greed = greed-.2
+                greed = greed-.1
             else: 
                 greed = .1
         wait_for(1)
@@ -93,7 +93,7 @@ def dist_run(sess,game,greed,M,batch_size,ops,phs):
             if (not test):
                 break
             store_exp((frames1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),frames2))
-            if (len(exp) > 10):
+            if (len(exp) > batch_size):
                 dist_add_to_queue(sess,batch_size,ops,phs)
         game.release_click()
         wait_for(.3)

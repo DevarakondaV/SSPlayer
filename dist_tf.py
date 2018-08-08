@@ -36,7 +36,7 @@ conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 1e-4
 gamma = np.array([.9]).astype(np.float16)
-batch_size = 10
+batch_size = 32
 LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log"    
 app_dir = r"c:\Users\devar\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
 
@@ -59,7 +59,8 @@ else:
 
     ops = {
         'action': a,'enqueue_op': enqueue_op,
-        'train': train,'uwb': uwb
+        'train': train,'uwb': uwb,
+        'q_sl' : q_sl
     }
     
     phs = {
@@ -75,14 +76,21 @@ else:
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 0),config=config) as sess:
             writer.add_graph(sess.graph)
             #while not sess.should_stop():
-            dist_run(sess,game,.9,25,batch_size,ops,phs)
-            key_req = input("Enter any key to play")
-            dist_play(sess,game,3,ops,phs)
+            dist_run(sess,game,.9,500,batch_size,ops,phs)
+            play = input("Play again? y/n : ")
+            num_times = int(input("Number of times? : "))
+            while (play == "y"):
+                dist_play(sess,game,num_times,ops,phs)
+                play = input("Play again? y/n : ")
+                num_times = int(input("Number of times? : "))
+
     else:
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 0),config=config) as sess:
             pp = 0
             while not sess.should_stop():
-                tt,qq,s = sess.run([train,q_sl,summ],{x1: np.random.rand(1,110,84,4).astype(np.uint8)})
+                sess.run([q_sl])
+                wait_for(.1)
+                tt,s = sess.run([train,summ],{x1: np.random.rand(1,110,84,4).astype(np.uint8)})
                 writer.add_summary(s,pp)
                 pp = pp+1
 
