@@ -38,8 +38,8 @@ fc_count = len(fclyr)
 learning_rate = 1e-4
 gamma = np.array([.9]).astype(np.float16)
 batch_size = 32
-LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log"    
-app_dir = r"c:\Users\devar\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
+LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log"    
+app_dir = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
 
 if s_name == "ps":
     server = tf.train.Server(cl_spec,job_name="ps",task_index=0,config=config)
@@ -52,7 +52,7 @@ else:
                     conv,fclyr,
                     conv_k_size,conv_stride,LOGDIR)
         
-        writer,summ,train,enqueue_op,q_sl,s_img1,s_a,s_r,s_img2,pimg,uwb = train_model(learning_rate,gamma,
+        writer,summ,train,enqueue_op,q_sl,s_img1,s_a,s_r,s_img2,uwb = train_model(learning_rate,gamma,
                                                      batch_size,conv_count,
                                                      fc_count,conv,
                                                      fclyr,conv_k_size,
@@ -72,7 +72,7 @@ else:
     }
 
     if (t_num == 0):
-        game = SSPlayer(app_dir,2)
+        game = SSPlayer(app_dir,1)
         wait_for(1)
         game.click_play()
         print(server.target)
@@ -98,12 +98,12 @@ else:
                 greed_frames = int(input("Greed Frames Limit: "))
 
     else:
-        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir='E:\TFtmp\model',
+        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir='tmp\model',
                                                     save_secs=None,save_steps=1000,
                                                     saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
                                                     scaffold=None)
         summary_hook = tf.train.SummarySaverHook(   save_steps=1000,save_secs=None,
-                                                    output_dir='E:\TFtmp\sum',summary_writer=None,
+                                                    output_dir='tmp\sum',summary_writer=None,
                                                     scaffold=None,summary_op=summ)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
                                                 hooks = [saver_hook,summary_hook],
