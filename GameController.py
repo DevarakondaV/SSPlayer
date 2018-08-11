@@ -5,6 +5,7 @@ from PIL import Image
 import numpy as np
 import mss
 import mss.tools
+import math
 import win32api, win32con
 from scipy import stats
 
@@ -18,25 +19,22 @@ def wait_for(sec):
 
 class SSPlayer:
 	
-	__slots__ = ['l_o_d',
-				'app',
-				'reward',
-				'window_width',
-				'window_height',
-				'window_screen_loc',
-				'mainscene',
-				'playscene',
-				'processing_crop',
-				'play_click_loc',
-				'playing_click_loc',
-				'replay_click_loc',
-				'sct']
+	__slots__ = ['l_o_d','app','reward',
+				'window_width','window_height',
+				'window_screen_loc','mainscene',
+				'playscene','processing_crop',
+				'play_click_loc','playing_click_loc',
+				'replay_click_loc','sct',
+				'move_pixels','x_scale_factor',
+				'y_scale_factor']
 
 	def __init__(self,dir,l_or_d):
 		self.l_o_d = l_or_d
 		self.app = self.launch_app(dir)
-		self.reward = 1
+		self.reward = 0
 		self.move_pixels = 4
+		self.x_scale_factor = 84/320
+		self.y_scale_factor = 110/480
 		self.sct = mss.mss()
 	
 		
@@ -145,10 +143,10 @@ class SSPlayer:
 		if (np.array_equal(img,self.mainscene)):
 			return 1
 		elif (np.array_equal(img,self.playscene)):
-			self.reward = self.reward-1
+			#self.reward = self.reward-1
 			return 2
 		else:
-			self.reward = -1
+			#self.reward = -1
 			return 3
 			
 	
@@ -157,26 +155,74 @@ class SSPlayer:
 		check_m = np.array_equiv(self.playscene,np.rollaxis(img,2,0))
 		return check_m
 			
-	
+	#Reward Functions
 	#Has to be called before shifting mouse position
-	def calculate_reward(self,img,a):
-		#Only look at last frame
-		frame = img[:,:,4]
+
+	#Spatial Reward
+	def reward_1(self,img,a):
+		frame = img[:,:,3]
 		x,y = win32api.GetCursorPos()
 		
-		#0,1,2,3,4
-		#up,down,left,right,stay
+		if (self.l_o_d == 2):
+			x = x-13
+			y = y-58
+		else :
+			x = x-8
+			y = y-31
+
+		new_x1 = int(x*self.x_scale_factor)-12
+		new_y1 = int(y*self.y_scale_factor)-12
+
 		if a is 0:
-			y = y+self.move_pixels
-		elif a is 1:
 			y = y-self.move_pixels
+		elif a is 1:
+			y = y+self.move_pixels
 		elif a is 2:
 			x = x-self.move_pixels
 		elif a is 3:
 			x = x+self.move_pixels
-	return
-	
-		return
+
+		new_x2 = int(x*self.x_scale_factor)-12
+		new_y2 = int(y*self.y_scale_factor)-12
+
+		#Enforcing Conditions to keep frame inside
+		#First frame 
+		o_x1 = new_x1 if (new_x1 > 0) else 0
+		o_y1 = new_y1 if (new_y1 > 0) else 0
+		a1 = o_y1-15 if ((o_y1-15) > 0) else 0
+		b1 = o_y1+4 if ((o_y1+4) < 110) else 110
+		c1 = o_x1-5 if ((o_x1-5) > 0) else 0
+		d1 = o_x1+5 if ((o_x1+5) < 84) else 84
+		#Second Frame
+		o_x2 = new_x2 if (new_x2 > 0) else 0
+		o_y2 = new_y2 if (new_y2 > 0) else 0
+		a2 = o_y2-15 if ((o_y2-15) > 0) else 0
+		b2 = o_y2+4 if ((o_y2+4) < 110) else 110
+		c2 = o_x2-5 if ((o_x2-5) > 0) else 0
+		d2 = o_x2+5 if ((o_x2+5) < 84) else 84
+		
+		crop1 = frame[a1:b1,c1:d1]
+		crop2 = frame[a2:b2,c2:d2]
+		crop1_empty = True if (np.mean(crop1) < 10) else False
+		crop2_empty = True if (np.mean(crop2) < 10) else False	
+
+		if (crop1_empty and not crop2_empty):
+			self.reward = -1
+		elif (crop1_empty and crop2_empty):
+			self.reward = 1
+		elif (not crop1_empty and crop2_empty):
+			self.reward = 2
+		else:
+			self.reward = 0
+		return self.reward
+
+	#Temporal Scaled-Sigmoid Reward
+	def reward_2(self,seq):
+		survival_time = seq[2]
+		reward = 1.0/(25*(1+math.exp(-survival_time)))
+		seq[2] = reward
+		print(survival_time,reward)
+		return seq
 
 
 
@@ -195,5 +241,3 @@ def take_shot(game):
 		#img = misc.imresize(np.array(img)[:,:,1],(110,84))
 		img = Image.fromarray(np.array(img)[:,:,1]).resize((84,110))
 		return np.expand_dims(np.array(img),axis=2)
-		
-

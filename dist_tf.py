@@ -27,11 +27,12 @@ ir = np.random.rand(10,1).astype(np.float16)
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
-
-conv_k_size = [8,4]
-conv_stride = [4,2]
-conv = [0,16,32]
-fclyr = [0,125,5]
+#[8,4]
+#16,8
+conv_k_size = [20,10,4]
+conv_stride = [2,2,1]
+conv = [0,8,16,32]
+fclyr = [0,125,45,5]
 conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 1e-4
@@ -46,7 +47,7 @@ if s_name == "ps":
 else:
     server = tf.train.Server(cl_spec,job_name="worker",task_index=t_num,config=config)
     with tf.device(tf.train.replica_device_setter(cluster=cl_spec)):
-        x1,a = infer_model(learning_rate,batch_size,
+        x1,a,q_vals_pr = infer_model(learning_rate,batch_size,
                     conv_count,fc_count,
                     conv,fclyr,
                     conv_k_size,conv_stride,LOGDIR)
@@ -56,11 +57,12 @@ else:
                                                      fc_count,conv,
                                                      fclyr,conv_k_size,
                                                      conv_stride,LOGDIR)
-
+        
+        saver = tf.train.Saver()
     ops = {
         'action': a,'enqueue_op': enqueue_op,
         'train': train,'uwb': uwb,
-        'q_sl' : q_sl
+        'q_sl' : q_sl, 'q_vals_pr': q_vals_pr
     }
     
     phs = {
@@ -73,25 +75,40 @@ else:
         game = SSPlayer(app_dir,2)
         wait_for(1)
         game.click_play()
-        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 0),config=config) as sess:
-            writer.add_graph(sess.graph)
-            #while not sess.should_stop():
-            dist_run(sess,game,.9,500,batch_size,ops,phs)
-            play = input("Play again? y/n : ")
+        print(server.target)
+        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
+                                               config=config) as sess:
+            train_or_play = input("T for train,P for play,E for end: T/P/E: ")
+            frames_or_iter = input("Frames or Iter: F/I: ")
             num_times = int(input("Number of times? : "))
-            while (play == "y"):
-                dist_play(sess,game,num_times,ops,phs)
-                play = input("Play again? y/n : ")
+            greed = float(input("Greed: "))
+            greed_frames = int(input("Greed Frames Limit: "))
+            while (train_or_play is not "E"):
+                if (train_or_play == "T" or train_or_play == "t"):
+                    if (frames_or_iter is "I"):
+                        dist_run(sess,game,greed,num_times,batch_size,ops,phs)
+                    elif frames_or_iter is "F":
+                        frame_train_reward_2(sess,game,num_times,greed_frames,batch_size,ops,phs)
+                elif train_or_play is "P" or train_or_play is "p":
+                    dist_play(sess,game,num_times,ops,phs)
+                train_or_play = input("T for train,P for play,E for end: T/P/E: ")
+                frames_or_iter = input("Frames or Iter: F/I: ")
                 num_times = int(input("Number of times? : "))
+                greed = float(input("Greed: "))
+                greed_frames = int(input("Greed Frames Limit: "))
 
     else:
-        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 0),config=config) as sess:
-            pp = 0
+        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir='E:\TFtmp\model',
+                                                    save_secs=None,save_steps=1000,
+                                                    saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
+                                                    scaffold=None)
+        summary_hook = tf.train.SummarySaverHook(   save_steps=1000,save_secs=None,
+                                                    output_dir='E:\TFtmp\sum',summary_writer=None,
+                                                    scaffold=None,summary_op=summ)
+        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
+                                                hooks = [saver_hook,summary_hook],
+                                                save_summaries_steps=1,config=config) as sess:
             while not sess.should_stop():
-                sess.run([q_sl])
-                wait_for(.1)
-                tt,s = sess.run([train,summ],{x1: np.random.rand(1,110,84,4).astype(np.uint8)})
-                writer.add_summary(s,pp)
-                pp = pp+1
+                tt = sess.run([train,q_sl],{x1: np.random.rand(1,110,84,4).astype(np.uint8)})
 
     

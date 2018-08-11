@@ -15,6 +15,7 @@ import tensorflow as tf
 def conv_layer(m_input,size_in,size_out,k_size_w,k_size_h,conv_stride,pool_k_size,pool_stride_size,trainable_vars,name,num):
     sdev = np.power(2.0/(k_size_w*k_size_h*size_in),0.5)
     print("sdev"+name+num+": ",sdev)
+    sdev = .1
     with tf.name_scope(name+num):
         w = tf.Variable(tf.truncated_normal([k_size_w,k_size_h,size_in,size_out],stddev=sdev,dtype=tf.float16),
                         dtype=tf.float16,
@@ -26,6 +27,7 @@ def conv_layer(m_input,size_in,size_out,k_size_w,k_size_h,conv_stride,pool_k_siz
                         name="b{}".format(num))
         conv = tf.nn.conv2d(m_input,w,strides=[1,conv_stride,conv_stride,1],padding="SAME")
         act = tf.nn.leaky_relu((conv+b),alpha=0.3)
+        #act = tf.nn.relu(conv+b)
         tf.summary.histogram("weights",w)
         flatten_weights_summarize(w,num,trainable_vars)
         tf.summary.histogram("biases",b)
@@ -36,6 +38,7 @@ def conv_layer(m_input,size_in,size_out,k_size_w,k_size_h,conv_stride,pool_k_siz
 def fc_layer(m_input,size_in,size_out,trainable_vars,name,num):
     sdev = np.power(2.0/(size_in*size_out),0.5)
     print("sdev"+name+num+": ",sdev)
+    sdev = .1
     with tf.name_scope(name+num):
         w = tf.Variable(tf.truncated_normal([size_in, size_out],stddev=sdev,dtype=tf.float16),
                         dtype=tf.float16,
@@ -47,6 +50,7 @@ def fc_layer(m_input,size_in,size_out,trainable_vars,name,num):
                         name="b{}".format(num))
         z = tf.matmul(m_input,w)
         act = tf.nn.leaky_relu(z+b,alpha=0.3,name=("act"+num))
+        #act = tf.nn.relu(z+b)
         tf.summary.histogram("weights",w)
         tf.summary.histogram("biases",b)
         tf.summary.histogram("act",act)
@@ -127,7 +131,7 @@ def build_train_data_pipeline(filenames,batchsize):
 
 def build_train_queue(batch_size,img_shp):
     with tf.name_scope("TrainQueue"):
-        q = tf.FIFOQueue(capacity=50,
+        q = tf.FIFOQueue(capacity=25,
                          dtypes= (tf.uint8,tf.uint8,tf.float16,tf.uint8),
                          shapes= (img_shp,
                                   tf.TensorShape([batch_size,1]),
@@ -169,12 +173,12 @@ def standardize_img(img_array):
                         parallel_iterations=4)
     return tf.cast(img_std,tf.float16)
 
+def get_tensor(name):
+    return tf.get_default_graph().get_tensor_by_name(name)
+
 def build_update_infer_weights_op(conv_name,fc_name,conv_count,fc_count):
     num_conv = conv_count
     num_fc = fc_count
-    
-    def get_tensor(name):
-        return tf.get_default_graph().get_tensor_by_name(name)
     
     infer_conv_w = [get_tensor("Inference/Convolution_Layers/{}{}/w{}:0".format(conv_name,i,i)) for i in range(1,num_conv)]
     infer_conv_b = [get_tensor("Inference/Convolution_Layers/{}{}/b{}:0".format(conv_name,i,i)) for i in range(1,num_conv)]
@@ -274,22 +278,22 @@ def infer_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
     if (len(conv_feats) != conv_count):
         return
     
-    with tf.name_scope("infer_place_holder"):
-        x1 = tf.placeholder(tf.uint8,shape=[None,110,84,4],name="x1")
+    with tf.device("/job:worker/task:0"):
+        with tf.name_scope("infer_place_holder"):
+            x1 = tf.placeholder(tf.uint8,shape=[None,110,84,4],name="x1")
 
-    #x1 = tf.boolean_mask(x1,tf.constant(0,shape=[1,30,84,4]))    
-    sl_x1 = x1[:,10:110,:,:]
-    #tf.summary.image("image",x1)
-    std_img = standardize_img(sl_x1)
-    #tf.summary.image("imagestd",std_img)
-
-    infer_output = build_graph("Inference",std_img,
-                                conv_count,fc_count,
-                                conv_feats,fc_feats,conv_k_size,conv_stride,False)
     
-    Qnext_val = tf.reduce_max(infer_output,name="Qnext_val")
-    action = tf.argmax(infer_output,axis=1,name="action")
-    return x1,action
+        sl_x1 = x1[:,10:110,:,:]
+        std_img = standardize_img(sl_x1)
+
+        infer_output = build_graph("Inference",std_img,
+                                    conv_count,fc_count,
+                                    conv_feats,fc_feats,conv_k_size,conv_stride,False)
+        
+        Qnext_val = tf.reduce_max(infer_output,name="Qnext_val")
+        q_vals_pr = tf.Print(Qnext_val,[Qnext_val],"Qval: ")
+        action = tf.argmax(infer_output,axis=1,name="action")
+        return x1,action,Qnext_val
     
     
 def train_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
@@ -330,15 +334,27 @@ def train_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc
                                     conv_feats,fc_feats,conv_k_size,conv_stride,True)
         
         with tf.name_scope("Trainer"):
+            global_step = tf.train.create_global_step()
             with tf.control_dependencies([assign_infer_op]):
+                qmax_idx = tf.argmax(train_output,axis=1,name="qmax_idx")
+                idxs = tf.concat((tf.transpose([tf.range(0,batch_size,dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
                 Qnext = tf.reduce_max(train_output,name="Qnext_train")
-            #gamma_seq = tf.tile(gamma,[batch_size])
-                y = tf.add(r,tf.multiply(gamma,Qnext),name="y")
+                target_q = tf.add(r,tf.multiply(gamma,Qnext),name="y")
+                y = tf.Variable(train_output)
+                tf.scatter_nd_update(y,tf.expand_dims(idxs,axis=1),target_q)
+                #y = tf.scattr_nd(idxs,Qnext,)er_nd([qmax_idx],train_output,shape=train_output.get_shape())
+
             with tf.control_dependencies([assign_train_op]):
-                loss = tf.reduce_sum(tf.pow(y-train_output,2))
+                #loss = tf.reduce_sum(tf.pow(y-train_output,2))
+                #loss = tf.nn.l2_loss(tf.pow(y-train_output,2))
+                loss = tf.losses.huber_loss(y,train_output,delta=2.0)
                 tf.summary.scalar("loss",loss)
-                train = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss,name="trainer")
-    
+                train = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss,global_step=global_step,name="trainer")
+                #train = tf.train.AdamOptimizer(learning_rate).minimize(loss,name="trainer")
+
+    #w = get_tensor("Train/Dense_Layers/FC2/w2:0")
+    #q_s1 = tf.Print(w,[w],message="weightsC: ")
+
     with tf.name_scope("weight_update_ops"):
         ops = build_update_infer_weights_op("conv","FC",conv_count,fc_count)
         
@@ -347,15 +363,11 @@ def train_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc
     #return writer,summ,train,train_q,q_s1
     return writer,summ,train,enqueue_op,q_s1,s_img1,s_a,s_r,s_img2,pimg,ops
 
+
 def flatten_weights_summarize(w,num,trainable):
     #[width,height,input,output]
     if (trainable):
         w_n = tf.transpose(w,perm=[2,0,1,3])
         w_shp = w_n.get_shape().as_list()
-        print(w_shp)
         for i in range(0,w_shp[len(w_shp)-1]):
             tf.summary.image("conv_w"+num,tf.expand_dims(w_n[:,:,:,i],axis=3))
-    
-
-
-
