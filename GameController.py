@@ -219,9 +219,10 @@ class SSPlayer:
 	#Temporal Scaled-Sigmoid Reward
 	def reward_2(self,seq):
 		survival_time = seq[2]
-		reward = 1.0/(25*(1+math.exp(-survival_time)))
+		#reward = 1.0/(25*(1+math.exp(-survival_time)))
+		reward = math.sqrt(survival_time)/5.0
 		seq[2] = reward
-		print(survival_time,reward)
+		#print(survival_time,reward)
 		return seq
 
 

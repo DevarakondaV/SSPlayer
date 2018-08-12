@@ -98,12 +98,12 @@ else:
                 greed_frames = int(input("Greed Frames Limit: "))
 
     else:
-        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir='tmp\model',
-                                                    save_secs=None,save_steps=1000,
+        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir='E:\TFtmp\model',
+                                                    save_secs=3600,save_steps=None,
                                                     saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
                                                     scaffold=None)
-        summary_hook = tf.train.SummarySaverHook(   save_steps=1000,save_secs=None,
-                                                    output_dir='tmp\sum',summary_writer=None,
+        summary_hook = tf.train.SummarySaverHook(   save_steps=None,save_secs=900,
+                                                    output_dir='E:\TFtmp\sum',summary_writer=None,
                                                     scaffold=None,summary_op=summ)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
                                                 hooks = [saver_hook,summary_hook],

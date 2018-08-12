@@ -161,7 +161,7 @@ def frame_train_reward_1(sess,game,frame_limit,greed_frames,batch_size,ops,phs):
     return
 
 def frame_train_reward_2(sess,game,frame_limit,greed_frames,batch_size,ops,phs):
-    global process_frames
+    global process_frames,exp
     Qs = []
     while(process_frames < frame_limit):
         greed = get_greed(greed_frames,process_frames)
@@ -193,6 +193,10 @@ def frame_train_reward_2(sess,game,frame_limit,greed_frames,batch_size,ops,phs):
         wait_for(.3)
         if not game.get_screen_number2(take_shot(game)):
             break
+        if (process_frames % 1000) is 0:
+            print("Exp size: ", len(exp))
+            print("Number process Frames: ",process_frames)
+            print("greed: ",greed)
     iters = np.arange(0,len(Qs))
     plt.plot(iters,Qs)
     plt.show()
@@ -207,9 +211,11 @@ def dist_play(sess,game,M,ops,phs):
             frames,test = get_4_frames(game)
             if (not test):
                 break
-            a = np.asarray(dist_infer_action(sess,frames,ops,phs)).astype(np.float16)
-            print(a[0])
-            r,frames,test = send_action_to_game_controller(game,frames,a[0])
+            a,q= np.asarray(dist_infer_action(sess,frames,ops,phs)).astype(np.float16)
+            #a,q = dist_infer_action(sess,frames,ops,phs)
+            #a = np.argmax(a[0])
+            print(a)
+            frames,test = send_action_to_game_controller(game,frames,a)
             if (not test):
                 break
         game.release_click()
