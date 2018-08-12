@@ -163,7 +163,9 @@ def frame_train_reward_1(sess,game,frame_limit,greed_frames,batch_size,ops,phs):
 def frame_train_reward_2(sess,game,frame_limit,greed_frames,batch_size,ops,phs):
     global process_frames,exp
     Qs = []
+    runs = 0
     while(process_frames < frame_limit):
+        runs = runs+1
         greed = get_greed(greed_frames,process_frames)
         wait_for(1)
         game.click_to_play()
@@ -193,7 +195,7 @@ def frame_train_reward_2(sess,game,frame_limit,greed_frames,batch_size,ops,phs):
         wait_for(.3)
         if not game.get_screen_number2(take_shot(game)):
             break
-        if (process_frames % 1000) is 0:
+        if (runs % 100) is 0:
             print("Exp size: ", len(exp))
             print("Number process Frames: ",process_frames)
             print("greed: ",greed)

@@ -10,8 +10,8 @@ def kill_all(process):
 
 
 #relevent directories
-py_dir = r"C:\Users\Vishnu\Envs\RL\Scripts\python.exe"
-dist_tf_dir = r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\dist_tf.py"
+py_dir = r"C:\Users\devar\Envs\RL\Scripts\python.exe"
+dist_tf_dir = r"C:\Users\devar\Documents\EngProj\SSPlayer\dist_tf.py"
 
 #Popen arguments
 ps_args = [py_dir,dist_tf_dir,"ps","0"]
