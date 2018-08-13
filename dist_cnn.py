@@ -460,6 +460,7 @@ def train_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc
                 idxs = tf.concat((tf.transpose([tf.range(0,batch_size,dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
                 Qnext = tf.reduce_max(train_output,name="Qnext_train")
                 target_q = tf.add(r,tf.multiply(gamma,Qnext),name="y")
+                p_r = tf.Print(r,[r],message= "Reward: ")
                 y = tf.Variable(train_output)
                 tf.scatter_nd_update(y,tf.expand_dims(idxs,axis=1),target_q)
 
@@ -472,7 +473,7 @@ def train_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc
         
     summ = tf.summary.merge_all()
     writer = tf.summary.FileWriter(LOGDIR)
-    return writer,summ,train,enqueue_op,q_s1,s_img1,s_a,s_r,s_img2,ops
+    return writer,summ,train,enqueue_op,q_s1,s_img1,s_a,s_r,s_img2,ops,p_r
 
 
 def flatten_weights_summarize(w,num,trainable):

@@ -20,7 +20,7 @@ worker1 = [py_dir,dist_tf_dir,"worker","1"]
 
 
 #Start Process
-ps_proc = subprocess.Popen(ps_args)
+ps_proc = subprocess.Popen(ps_args,creationflags=subprocess.CREATE_NEW_CONSOLE)
 w0_proc = subprocess.Popen(worker0,creationflags=subprocess.CREATE_NEW_CONSOLE)
 w1_proc = subprocess.Popen(worker1,creationflags=subprocess.CREATE_NEW_CONSOLE)
 

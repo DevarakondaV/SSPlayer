@@ -35,7 +35,7 @@ conv = [0,8,16,32]
 fclyr = [0,125,45,5]
 conv_count = len(conv)
 fc_count = len(fclyr)
-learning_rate = 1e-4
+learning_rate = 1.0
 gamma = np.array([.9]).astype(np.float16)
 batch_size = 32
 LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log"    
@@ -52,7 +52,7 @@ else:
                     conv,fclyr,
                     conv_k_size,conv_stride,LOGDIR)
         
-        writer,summ,train,enqueue_op,q_sl,s_img1,s_a,s_r,s_img2,uwb = train_model(learning_rate,gamma,
+        writer,summ,train,enqueue_op,q_sl,s_img1,s_a,s_r,s_img2,uwb,p_r = train_model(learning_rate,gamma,
                                                      batch_size,conv_count,
                                                      fc_count,conv,
                                                      fclyr,conv_k_size,
@@ -62,7 +62,8 @@ else:
     ops = {
         'action': a,'enqueue_op': enqueue_op,
         'train': train,'uwb': uwb,
-        'q_sl' : q_sl, 'q_vals_pr': q_vals_pr
+        'q_sl' : q_sl, 'q_vals_pr': q_vals_pr,
+        'p_r': p_r
     }
     
     phs = {

@@ -55,7 +55,7 @@ def random_minibatch_sample(batchsize):
 def store_exp(seq):
     global exp
     global process_frames
-    if (len(exp) > 1e6):
+    if (process_frames > 1e6):
         exp.pop(0)
     process_frames = process_frames+8
     exp.append(seq)    
@@ -81,7 +81,7 @@ def add_rewards_and_store(game,seq,survival_time):
         seq[i][2] = timestamps[len(seq)-1-i]
 
     for i in seq:
-        store_exp(game.reward_2(i))
+        store_exp(game.reward_3(i))
 
 def dist_add_to_queue(sess,batch_size,ops,phs):
     enqueue_op = ops['enqueue_op']
