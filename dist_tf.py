@@ -3,6 +3,7 @@ import sys
 import numpy as np
 from dist_cnn import *
 from trainer import *
+from gsheets import *
 
 s_name = str(sys.argv[1])
 t_num = int(sys.argv[2])
@@ -35,9 +36,9 @@ conv = [0,8,16,32]
 fclyr = [0,125,45,5]
 conv_count = len(conv)
 fc_count = len(fclyr)
-learning_rate = 1.0
+learning_rate = 0.01
 gamma = np.array([.9]).astype(np.float16)
-batch_size = 32
+batch_size = 40
 LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log"    
 app_dir = r"c:\Users\devar\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
 
@@ -73,6 +74,9 @@ else:
     }
 
     if (t_num == 0):
+        client_id = "456939362137-afd9l2m6mbesr5g95q8vik15r5qev42d.apps.googleusercontent.com"
+        client_secret = "Z2-U9K-OoxksV-oxYy-DkToV"
+        g_sheets = gsheets(["Exp size","Number process Frames","greed"],client_id,client_secret)
         game = SSPlayer(app_dir,2)
         wait_for(1)
         game.click_play()
@@ -89,7 +93,7 @@ else:
                     if (frames_or_iter is "I"):
                         dist_run(sess,game,greed,num_times,batch_size,ops,phs)
                     elif frames_or_iter is "F":
-                        frame_train_reward_2(sess,game,num_times,greed_frames,batch_size,ops,phs)
+                        frame_train_reward_2(sess,game,num_times,greed_frames,batch_size,ops,phs,g_sheets)
                 elif train_or_play is "P" or train_or_play is "p":
                     dist_play(sess,game,num_times,ops,phs)
                 train_or_play = input("T for train,P for play,E for end: T/P/E: ")
@@ -99,12 +103,12 @@ else:
                 greed_frames = int(input("Greed Frames Limit: "))
 
     else:
-        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir='E:\TFtmp\model',
+        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=r'E:\TFtmp\test\model',
                                                     save_secs=3600,save_steps=None,
                                                     saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
                                                     scaffold=None)
         summary_hook = tf.train.SummarySaverHook(   save_steps=None,save_secs=900,
-                                                    output_dir='E:\TFtmp\sum',summary_writer=None,
+                                                    output_dir=r'E:\TFtmp\test\sum',summary_writer=None,
                                                     scaffold=None,summary_op=summ)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
                                                 hooks = [saver_hook,summary_hook],

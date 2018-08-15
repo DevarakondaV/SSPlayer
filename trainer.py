@@ -55,7 +55,7 @@ def random_minibatch_sample(batchsize):
 def store_exp(seq):
     global exp
     global process_frames
-    if (process_frames > 1e6):
+    if (process_frames > 1000):
         exp.pop(0)
     process_frames = process_frames+8
     exp.append(seq)    
@@ -160,7 +160,7 @@ def frame_train_reward_1(sess,game,frame_limit,greed_frames,batch_size,ops,phs):
     plt.show()
     return
 
-def frame_train_reward_2(sess,game,frame_limit,greed_frames,batch_size,ops,phs):
+def frame_train_reward_2(sess,game,frame_limit,greed_frames,batch_size,ops,phs,g_sheets):
     global process_frames,exp
     Qs = []
     runs = 0
@@ -195,10 +195,12 @@ def frame_train_reward_2(sess,game,frame_limit,greed_frames,batch_size,ops,phs):
         wait_for(.3)
         if not game.get_screen_number2(take_shot(game)):
             break
-        if (runs % 100) is 0:
+        if (runs % 2) is 0:
             print("Exp size: ", len(exp))
             print("Number process Frames: ",process_frames)
             print("greed: ",greed)
+            g_sheets.add_values({"Exp size": len(exp),"Number process Frames": process_frames,"greed": greed})
+            
     iters = np.arange(0,len(Qs))
     plt.plot(iters,Qs)
     plt.show()
@@ -213,9 +215,9 @@ def dist_play(sess,game,M,ops,phs):
             frames,test = get_4_frames(game)
             if (not test):
                 break
-            a,q= np.asarray(dist_infer_action(sess,frames,ops,phs)).astype(np.float16)
-            #a,q = dist_infer_action(sess,frames,ops,phs)
-            #a = np.argmax(a[0])
+            #a,q= np.asarray(dist_infer_action(sess,frames,ops,phs)).astype(np.float16)
+            a,q = dist_infer_action(sess,frames,ops,phs)
+            a = np.argmax(a[0])
             print(a)
             frames,test = send_action_to_game_controller(game,frames,a)
             if (not test):
