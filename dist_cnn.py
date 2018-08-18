@@ -368,7 +368,7 @@ def infer_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
         return x1,action,Qnext_val
     
     
-def train_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
+def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
     """
     This function builds a tensorflow graph for the purpose of Training. It is designed for distributed tensorflow use.
 
@@ -456,7 +456,8 @@ def train_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc
             #Forcing inference on state 2. Required for Q learning
             with tf.control_dependencies([assign_infer_op]):
                 qmax_idx = tf.argmax(train_output,axis=1,name="qmax_idx")
-                
+                gamma = tf.cond(global_step > 50000,lambda: tf.constant(.9,tf.float16),lambda: tf.cast(tf.divide(tf.cast(global_step,tf.float16),tf.constant(50000,tf.float16)),tf.float16))
+                tf.summary.scalar("gamma",gamma)
                 #Determine predicted value output
                 idxs = tf.concat((tf.transpose([tf.range(0,batch_size,dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
                 Qnext = tf.reduce_max(train_output,name="Qnext_train")
@@ -474,7 +475,7 @@ def train_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc
         
     summ = tf.summary.merge_all()
     writer = tf.summary.FileWriter(LOGDIR)
-    return writer,summ,train,enqueue_op,q_s1,s_img1,s_a,s_r,s_img2,ops,p_r
+    return writer,summ,train,enqueue_op,q_s1,s_img1,s_a,s_r,s_img2,ops,p_r,gamma
 
 
 def flatten_weights_summarize(w,num,trainable):

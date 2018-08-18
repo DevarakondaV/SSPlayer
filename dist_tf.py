@@ -53,7 +53,7 @@ else:
                     conv,fclyr,
                     conv_k_size,conv_stride,LOGDIR)
         
-        writer,summ,train,enqueue_op,q_sl,s_img1,s_a,s_r,s_img2,uwb,p_r = train_model(learning_rate,gamma,
+        writer,summ,train,enqueue_op,q_sl,s_img1,s_a,s_r,s_img2,uwb,p_r,gamma = train_model(learning_rate,
                                                      batch_size,conv_count,
                                                      fc_count,conv,
                                                      fclyr,conv_k_size,
@@ -64,7 +64,7 @@ else:
         'action': a,'enqueue_op': enqueue_op,
         'train': train,'uwb': uwb,
         'q_sl' : q_sl, 'q_vals_pr': q_vals_pr,
-        'p_r': p_r
+        'p_r': p_r, 'gamma': gamma
     }
     
     phs = {
