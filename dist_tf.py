@@ -77,6 +77,7 @@ else:
         client_id = "456939362137-afd9l2m6mbesr5g95q8vik15r5qev42d.apps.googleusercontent.com"
         client_secret = "Z2-U9K-OoxksV-oxYy-DkToV"
         g_sheets = gsheets(["Exp size","Number process Frames","greed"],client_id,client_secret)
+        #g_sheets = 0
         game = SSPlayer(app_dir,2)
         wait_for(1)
         game.click_play()
@@ -103,11 +104,13 @@ else:
                 greed_frames = int(input("Greed Frames Limit: "))
 
     else:
+        #3600 saver
+        #summ  = 900
         saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=r'E:\TFtmp\test\model',
                                                     save_secs=3600,save_steps=None,
                                                     saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
                                                     scaffold=None)
-        summary_hook = tf.train.SummarySaverHook(   save_steps=None,save_secs=900,
+        summary_hook = tf.train.SummarySaverHook(   save_steps=None,save_secs=300,
                                                     output_dir=r'E:\TFtmp\test\sum',summary_writer=None,
                                                     scaffold=None,summary_op=summ)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),

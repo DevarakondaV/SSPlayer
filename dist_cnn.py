@@ -44,6 +44,7 @@ def conv_layer(m_input,size_in,size_out,k_size_w,k_size_h,conv_stride,pool_k_siz
         #Convolution and activations
         conv = tf.nn.conv2d(m_input,w,strides=[1,conv_stride,conv_stride,1],padding="SAME")
         act = tf.nn.leaky_relu((conv+b),alpha=0.3)
+        intermediate_summary_img(act,num,trainable_vars)
         
         #summaries
         tf.summary.histogram("weights",w)
@@ -485,3 +486,9 @@ def flatten_weights_summarize(w,num,trainable):
         w_shp = w_n.get_shape().as_list()
         for i in range(0,w_shp[len(w_shp)-1]):
             tf.summary.image("conv_w"+num,tf.expand_dims(w_n[:,:,:,i],axis=3))
+
+def intermediate_summary_img(img,num,trainable):
+    s_img = img[0,:,:,:]
+    if (trainable):
+        s_img_n = tf.expand_dims(tf.transpose(s_img,perm=[2,0,1]),axis=3)
+        tf.summary.image("img"+num,s_img_n)

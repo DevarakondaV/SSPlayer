@@ -55,7 +55,7 @@ def random_minibatch_sample(batchsize):
 def store_exp(seq):
     global exp
     global process_frames
-    if (process_frames > 1000):
+    if (process_frames > 1000000):
         exp.pop(0)
     process_frames = process_frames+8
     exp.append(seq)    
@@ -195,7 +195,7 @@ def frame_train_reward_2(sess,game,frame_limit,greed_frames,batch_size,ops,phs,g
         wait_for(.3)
         if not game.get_screen_number2(take_shot(game)):
             break
-        if (runs % 2) is 0:
+        if (runs % 100) is 0:
             print("Exp size: ", len(exp))
             print("Number process Frames: ",process_frames)
             print("greed: ",greed)
