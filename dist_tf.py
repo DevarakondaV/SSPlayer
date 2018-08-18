@@ -74,10 +74,7 @@ else:
     }
 
     if (t_num == 0):
-        client_id = "456939362137-afd9l2m6mbesr5g95q8vik15r5qev42d.apps.googleusercontent.com"
-        client_secret = "Z2-U9K-OoxksV-oxYy-DkToV"
-        g_sheets = gsheets(["Exp size","Number process Frames","greed"],client_id,client_secret)
-        #g_sheets = 0
+        g_sheets = 0
         game = SSPlayer(app_dir,2)
         wait_for(1)
         game.click_play()

@@ -199,7 +199,7 @@ def frame_train_reward_2(sess,game,frame_limit,greed_frames,batch_size,ops,phs,g
             print("Exp size: ", len(exp))
             print("Number process Frames: ",process_frames)
             print("greed: ",greed)
-            g_sheets.add_values({"Exp size": len(exp),"Number process Frames": process_frames,"greed": greed})
+            #g_sheets.add_values({"Exp size": len(exp),"Number process Frames": process_frames,"greed": greed})
             
     iters = np.arange(0,len(Qs))
     plt.plot(iters,Qs)
