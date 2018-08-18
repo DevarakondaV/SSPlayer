@@ -463,7 +463,7 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
                 Qnext = tf.reduce_max(train_output,name="Qnext_train")
                 target_q = tf.add(r,tf.multiply(gamma,Qnext),name="y")
                 p_r = tf.Print(r,[r],message= "Reward: ")
-                y = tf.Variable(train_output)
+                y = tf.Variable(train_output,trainable=False)
                 tf.scatter_nd_update(y,tf.expand_dims(idxs,axis=1),target_q)
 
             #Forcing training on state 1. Required for Q learning
