@@ -80,8 +80,14 @@ def add_rewards_and_store(game,seq,survival_time):
     for i in range(0,len(seq)):
         seq[i][2] = timestamps[len(seq)-1-i]
 
+    r = 0
     for i in seq:
-        store_exp(game.reward_3(i))
+        n_seq = game.reward_3(i)
+        r = r+n_seq[2]
+        store_exp(n_seq)
+        #store_exp(game.reward_3(i))
+
+    return np.array(r).astype(np.uint8)
 
 def dist_add_to_queue(sess,batch_size,ops,phs):
     enqueue_op = ops['enqueue_op']
@@ -183,12 +189,12 @@ def frame_train_reward_2(sess,game,frame_limit,greed_frames,batch_size,ops,phs,g
                 break
             if (len(exp) > batch_size):
                 dist_add_to_queue(sess,batch_size,ops,phs)
-            if process_frames > greed_frames:
-                q_max = q_max+q
+            #if process_frames > greed_frames:
+            #    q_max = q_max+q
         survival_time = time.time()-t_init
         game.release_click()
         wait_for(.3)
-        add_rewards_and_store(game,seq,survival_time)
+        q_max = add_rewards_and_store(game,seq,survival_time)
         Qs.append(q_max)
         sess.run([ops['uwb']])
         game.click_replay()

@@ -33,12 +33,12 @@ config.gpu_options.allow_growth = True
 conv_k_size = [20,10,4]
 conv_stride = [2,2,1]
 conv = [0,8,16,32]
-fclyr = [0,125,45,5]
+fclyr = [0,125,45] #5
 conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 0.01
 gamma = np.array([.9]).astype(np.float16)
-batch_size = 40
+batch_size = 32
 LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log"    
 app_dir = r"c:\Users\devar\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
 
@@ -53,7 +53,7 @@ else:
                     conv,fclyr,
                     conv_k_size,conv_stride,LOGDIR)
         
-        writer,summ,train,enqueue_op,q_sl,s_img1,s_a,s_r,s_img2,uwb,p_r,gamma = train_model(learning_rate,
+        writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,uwb,p_r,gamma = train_model(learning_rate,
                                                      batch_size,conv_count,
                                                      fc_count,conv,
                                                      fclyr,conv_k_size,
@@ -63,8 +63,9 @@ else:
     ops = {
         'action': a,'enqueue_op': enqueue_op,
         'train': train,'uwb': uwb,
-        'q_sl' : q_sl, 'q_vals_pr': q_vals_pr,
-        'p_r': p_r, 'gamma': gamma
+        'p_queues' : p_queues, 'q_vals_pr': q_vals_pr,
+        'p_r': p_r, 'gamma': gamma,
+        'p_delta': p_delta,
     }
     
     phs = {
@@ -102,18 +103,19 @@ else:
 
     else:
         #3600 saver
-        #summ  = 900
+        #summ  = 300
         saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=r'E:\TFtmp\test\model',
                                                     save_secs=3600,save_steps=None,
                                                     saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
                                                     scaffold=None)
-        summary_hook = tf.train.SummarySaverHook(   save_steps=None,save_secs=300,
+        summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
                                                     output_dir=r'E:\TFtmp\test\sum',summary_writer=None,
                                                     scaffold=None,summary_op=summ)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
                                                 hooks = [saver_hook,summary_hook],
                                                 save_summaries_steps=1,config=config) as sess:
             while not sess.should_stop():
-                tt = sess.run([train,q_sl],{x1: np.random.rand(1,110,84,4).astype(np.uint8)})
+                tt = sess.run([train,p_queues],{x1: np.random.rand(1,110,84,4).astype(np.uint8)})
+                #print(tt[2])
 
     

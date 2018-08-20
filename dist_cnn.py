@@ -25,9 +25,9 @@ def conv_layer(m_input,size_in,size_out,k_size_w,k_size_h,conv_stride,pool_k_siz
 
     #He et Al. Standardeviation
     sdev = np.power(2.0/(k_size_w*k_size_h*size_in),0.5)
+    #Xavier Initialization
+    sdev = np.power(2.0/(size_in+size_out),0.5)
     print("sdev"+name+num+": ",sdev)
-    #Overriding He et Al. for more Variation
-    sdev = .1
     
     with tf.name_scope(name+num):
 
@@ -43,7 +43,10 @@ def conv_layer(m_input,size_in,size_out,k_size_w,k_size_h,conv_stride,pool_k_siz
 
         #Convolution and activations
         conv = tf.nn.conv2d(m_input,w,strides=[1,conv_stride,conv_stride,1],padding="SAME")
+        #act = tf.nn.relu((conv+b),name="relu")
         act = tf.nn.leaky_relu((conv+b),alpha=0.3)
+        #act = tf.sigmoid((conv+b),name="sigmoid")
+        #act = tf.tanh((conv+b),name="tanh")
         intermediate_summary_img(act,num,trainable_vars)
         
         #summaries
@@ -72,9 +75,8 @@ def fc_layer(m_input,size_in,size_out,trainable_vars,name,num):
 
     #He et al. Standardeviation
     sdev = np.power(2.0/(size_in*size_out),0.5)
+    sdev = np.power(2.0/(size_in+size_out),0.5)
     print("sdev"+name+num+": ",sdev)
-    sdev = .1
-    
     
     with tf.name_scope(name+num):
         #Weights and biases
@@ -87,9 +89,30 @@ def fc_layer(m_input,size_in,size_out,trainable_vars,name,num):
                         trainable=trainable_vars,
                         name="b{}".format(num))
         z = tf.matmul(m_input,w)
+        #act = tf.nn.relu(z+b,name="relu")
         act = tf.nn.leaky_relu(z+b,alpha=0.3,name=("act"+num))
-       
+        #act = tf.sigmoid(z+b,name="sigmoid")
+        #act = tf.tanh((z+b),name="tanh")
         #Summaries
+        tf.summary.histogram("weights",w)
+        tf.summary.histogram("biases",b)
+        tf.summary.histogram("act",act)
+        return act
+
+def final_linear_layer(m_input,size_in,size_out,trainable_vars,name="final",num="1"):
+    sdev = np.power(2.0/(size_in+size_out),.5)
+    print("sdev"+name+num+": ",sdev)
+
+    with tf.name_scope(name+num):
+        w = tf.Variable(tf.truncated_normal([size_in,size_out],stddev=sdev,dtype=tf.float16),
+                        dtype=tf.float16,trainable=trainable_vars,
+                        name="w{}".format(num))
+        b = tf.Variable(tf.constant(0.0,shape=[size_out],dtype=tf.float16),
+                        dtype=tf.float16,trainable=trainable_vars,
+                        name="b{}".format(num))
+
+        act = tf.matmul(m_input,w)+b
+        #act = tf.nn.softmax(act)
         tf.summary.histogram("weights",w)
         tf.summary.histogram("biases",b)
         tf.summary.histogram("act",act)
@@ -164,6 +187,7 @@ def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,
                                     fc_feats[i],fc_feats[i+1],
                                     trainable_vars,fcs_name,str(i+1)))
             output_layer = fcs[len(fcs)-1]
+            output_layer = final_linear_layer(output_layer,fc_feats[fc_count-1],5,trainable_vars,name=fcs_name,num=str(fc_count))
     return output_layer
 
         
@@ -231,7 +255,7 @@ def build_update_infer_weights_op(conv_name,fc_name,conv_count,fc_count):
     """
 
     num_conv = conv_count
-    num_fc = fc_count
+    num_fc = fc_count+1
     
     infer_conv_w = [get_tensor("Inference/Convolution_Layers/{}{}/w{}:0".format(conv_name,i,i)) for i in range(1,num_conv)]
     infer_conv_b = [get_tensor("Inference/Convolution_Layers/{}{}/b{}:0".format(conv_name,i,i)) for i in range(1,num_conv)]
@@ -416,7 +440,7 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
         with tf.name_scope("train_queue"):
             train_q = build_train_queue(batch_size,sl_img1.get_shape())
             enqueue_op = train_q.enqueue((sl_img1,s_a,s_r,sl_img2))
-            q_s1 = tf.Print(train_q.size(),[train_q.size()],message="Q Size1: ")
+            p_queues = tf.Print(train_q.size(),[train_q.size()],message="Q Size1: ")
             img1,a,r,img2 = train_q.dequeue(name="dequeue")
 
         #Standardizing Images
@@ -456,7 +480,8 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
             #Forcing inference on state 2. Required for Q learning
             with tf.control_dependencies([assign_infer_op]):
                 qmax_idx = tf.argmax(train_output,axis=1,name="qmax_idx")
-                gamma = tf.cond(global_step > 50000,lambda: tf.constant(.9,tf.float16),lambda: tf.cast(tf.divide(tf.cast(global_step,tf.float16),tf.constant(50000,tf.float16)),tf.float16))
+                #gamma = tf.cond(global_step > 10000,lambda: tf.constant(.9,tf.float16),lambda: tf.cast(tf.divide(tf.cast(global_step,tf.float16),tf.constant(10000,tf.float16)),tf.float16))
+                gamma = tf.constant(.9,tf.float16)
                 tf.summary.scalar("gamma",gamma)
                 #Determine predicted value output
                 idxs = tf.concat((tf.transpose([tf.range(0,batch_size,dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
@@ -468,14 +493,23 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
 
             #Forcing training on state 1. Required for Q learning
             with tf.control_dependencies([assign_train_op]):
-                loss = tf.losses.huber_loss(y,train_output,delta=2.0)
+                y_mean,y_var = tf.nn.moments(y,axes=[0,1])
+                delta = tf.multiply(tf.constant(1.345,tf.float32),tf.cast(tf.sqrt(y_var),tf.float32))
+                #p_queues = tf.Print([y],[y],message="y: ")
+                #loss = tf.losses.huber_loss(y,train_output,delta=delta)
+                loss = tf.nn.l2_loss(y-train_output)
                 tf.summary.scalar("loss",loss)
-                train = tf.train.GradientDescentOptimizer(decay_learning_rate).minimize(loss,global_step=global_step,name="trainer")
+                #train = tf.train.GradientDescentOptimizer(decay_learning_rate).minimize(loss,global_step=global_step,name="trainer")
                 #train = tf.train.AdamOptimizer(learning_rate).minimize(loss,name="trainer")
+                opt = tf.train.GradientDescentOptimizer(decay_learning_rate)
+                grads = opt.compute_gradients(loss)
+                capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in grads]
+                train = opt.apply_gradients(capped_gvs,global_step=global_step)
+                p_delta = tf.Print([capped_gvs[1]],[capped_gvs[1]],message="grads: ")
         
     summ = tf.summary.merge_all()
     writer = tf.summary.FileWriter(LOGDIR)
-    return writer,summ,train,enqueue_op,q_s1,s_img1,s_a,s_r,s_img2,ops,p_r,gamma
+    return writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,ops,p_r,gamma
 
 
 def flatten_weights_summarize(w,num,trainable):
