@@ -29,14 +29,15 @@ config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
 #[8,4]
+#lr = .01
 #16,8
 conv_k_size = [20,10,4]
 conv_stride = [2,2,1]
-conv = [0,8,16,32]
+conv = [0,16,32,64]
 fclyr = [0,125,45] #5
 conv_count = len(conv)
 fc_count = len(fclyr)
-learning_rate = 0.01
+learning_rate = 0.00025
 gamma = np.array([.9]).astype(np.float16)
 batch_size = 32
 LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log"    
@@ -93,6 +94,7 @@ else:
                         dist_run(sess,game,greed,num_times,batch_size,ops,phs)
                     elif frames_or_iter is "F":
                         frame_train_reward_2(sess,game,num_times,greed_frames,batch_size,ops,phs,g_sheets)
+                        #frame_train_reward_1(sess,game,num_times,greed_frames,batch_size,ops,phs)
                 elif train_or_play is "P" or train_or_play is "p":
                     dist_play(sess,game,num_times,ops,phs)
                 train_or_play = input("T for train,P for play,E for end: T/P/E: ")
@@ -115,7 +117,7 @@ else:
                                                 hooks = [saver_hook,summary_hook],
                                                 save_summaries_steps=1,config=config) as sess:
             while not sess.should_stop():
-                tt = sess.run([train,p_queues],{x1: np.random.rand(1,110,84,4).astype(np.uint8)})
+                tt = sess.run([train,p_queues,p_delta],{x1: np.random.rand(1,110,84,4).astype(np.uint8)})
                 #print(tt[2])
 
     

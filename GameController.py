@@ -226,9 +226,9 @@ class SSPlayer:
 		return seq
 
 	def reward_3(self,seq):
-		survival_time = seq[2]
-		reward = (2.0/(1+(25*math.exp(-3*survival_time))))-1
-		seq[2] = reward
+		#survival_time = seq[2]
+		#reward = (2.0/(1+(25*math.exp(-3*survival_time))))-1
+		#seq[2] = reward
 		#print(survival_time,reward)
 		return seq
 

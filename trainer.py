@@ -85,6 +85,7 @@ def add_rewards_and_store(game,seq,survival_time):
         n_seq = game.reward_3(i)
         r = r+n_seq[2]
         store_exp(n_seq)
+        #print(n_seq[2])
         #store_exp(game.reward_3(i))
 
     return np.array(r).astype(np.uint8)
@@ -143,7 +144,6 @@ def frame_train_reward_1(sess,game,frame_limit,greed_frames,batch_size,ops,phs):
             if not test:
                 break
             a,q = [np.asarray(np.random.randint(0,5)).astype(np.uint8),0] if (np.random.random_sample(1) <= greed) else np.asarray(dist_infer_action(sess,frames1,ops,phs)).astype(np.float16)
-            print(a)
             frames2,test = send_action_to_game_controller(game,frames1,a)
             r = game.reward_1(frames1,a)
             if (not test):

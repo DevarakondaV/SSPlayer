@@ -156,7 +156,7 @@ def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,
         
         #Number of kernels/neurons in the first layer
         conv_feats[0] = 4
-        fc_feats[0] = 384
+
         
         #Building Convolution Layers
         with tf.name_scope("Convolution_Layers"):
@@ -174,9 +174,12 @@ def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,
                                         conv_name,str(i+1)))
                 p = p+1
             
+            shp = convs[conv_count-1].get_shape().as_list()
+            dim = np.prod(shp[1:])
+            fc_feats[0] = dim
             #Flattening the final layer for input into dense layers
-            flatten = tf.reshape(convs[conv_count-1],[-1,fc_feats[0]])
-            
+            #flatten = tf.reshape(convs[conv_count-1],[-1,fc_feats[0]])
+            flatten = tf.reshape(convs[conv_count-1],[-1,dim])
         with tf.name_scope("Dense_Layers"):
             fcs = []
             fcs.append(flatten)
@@ -472,16 +475,16 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
             #Creating global step
             global_step = tf.train.create_global_step()
             #adding decay learning rate operation
-            decay_learning_rate = tf.train.exponential_decay(learning_rate,global_step,
-                                                             decay_steps=100000,decay_rate=0.98,
-                                                             staircase=False, name="decayLR_op")
-            tf.summary.scalar("Learning_Rate",decay_learning_rate)
+            #decay_learning_rate = tf.train.exponential_decay(learning_rate,global_step,
+            #                                                 decay_steps=100000,decay_rate=0.98,
+            #                                                 staircase=False, name="decayLR_op")
+            #tf.summary.scalar("Learning_Rate",decay_learning_rate)
             
             #Forcing inference on state 2. Required for Q learning
             with tf.control_dependencies([assign_infer_op]):
                 qmax_idx = tf.argmax(train_output,axis=1,name="qmax_idx")
                 #gamma = tf.cond(global_step > 10000,lambda: tf.constant(.9,tf.float16),lambda: tf.cast(tf.divide(tf.cast(global_step,tf.float16),tf.constant(10000,tf.float16)),tf.float16))
-                gamma = tf.constant(.9,tf.float16)
+                gamma = tf.constant(.99,tf.float16)
                 tf.summary.scalar("gamma",gamma)
                 #Determine predicted value output
                 idxs = tf.concat((tf.transpose([tf.range(0,batch_size,dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
@@ -497,15 +500,16 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
                 delta = tf.multiply(tf.constant(1.345,tf.float32),tf.cast(tf.sqrt(y_var),tf.float32))
                 #p_queues = tf.Print([y],[y],message="y: ")
                 #loss = tf.losses.huber_loss(y,train_output,delta=delta)
-                loss = tf.nn.l2_loss(y-train_output)
+                #loss = tf.nn.l2_loss(y-train_output)
+                loss = tf.losses.huber_loss(y,train_output,delta=3.0)
                 tf.summary.scalar("loss",loss)
-                #train = tf.train.GradientDescentOptimizer(decay_learning_rate).minimize(loss,global_step=global_step,name="trainer")
-                #train = tf.train.AdamOptimizer(learning_rate).minimize(loss,name="trainer")
-                opt = tf.train.GradientDescentOptimizer(decay_learning_rate)
+
+                #opt = tf.train.GradientDescentOptimizer(decay_learning_rate)
+                opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01)
                 grads = opt.compute_gradients(loss)
-                capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in grads]
-                train = opt.apply_gradients(capped_gvs,global_step=global_step)
-                p_delta = tf.Print([capped_gvs[1]],[capped_gvs[1]],message="grads: ")
+                #capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in grads]
+                train = opt.apply_gradients(grads,global_step=global_step)
+                p_delta = tf.Print([grads[1]],[grads[1]],message="grads: ")
         
     summ = tf.summary.merge_all()
     writer = tf.summary.FileWriter(LOGDIR)
