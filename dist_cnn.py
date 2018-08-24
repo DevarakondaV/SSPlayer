@@ -56,7 +56,6 @@ def conv_layer(m_input,size_in,size_out,k_size_w,k_size_h,conv_stride,pool_k_siz
         tf.summary.histogram("act",act)
         return tf.nn.max_pool(act,ksize=[1,pool_k_size,pool_k_size,1],strides=[1,pool_stride_size,pool_stride_size,1],padding='SAME')
 
-
 def fc_layer(m_input,size_in,size_out,trainable_vars,name,num):
     """
     Creates convolution Layer
@@ -118,8 +117,75 @@ def final_linear_layer(m_input,size_in,size_out,trainable_vars,name="final",num=
         tf.summary.histogram("act",act)
         return act
         
+def conv_contrib_layer(m_input,size_out,k_size_w,k_size_h,conv_stride,pool_k_size,pool_stride_size,trainable_vars,name,num):
+
+    """
+    Creates convolution Layer using the tf.contrib module
     
+    args:
+        m_input: Input into the convolution layer
+        size_in: number of input kernels
+        size_out: number of output kernels
+        k_size_w: Kernel width
+        k_size_h: Kernel Height
+        conv_stride: convolution stride
+        pool_k_size: pool kernel size. Currently pooling kernel shape is square
+        trainable_vars: Bool. Specifies if variables created in this convolution are trainable
+        name: Name of the convolution layer
+        num: Convolution layer number
+
+    Returns:
+        A tensor representing the max pool of activations of the layer
+    """
+
+    with tf.name_scope(name+num) as scope:
+        xav_init = tf.contrib.layers.xavier_initializer(uniform=False,seed=None,dtype=tf.float16)
+        conv = tf.contrib.layers.conv2d(inputs=m_input,num_outputs=size_out,
+                                        kernel_size=[k_size_w,k_size_h],stride=conv_stride,
+                                        padding="SAME",activation_fn=None,
+                                        weights_initializer=xav_init,biases_initializer=None,
+                                        trainable=trainable_vars,scope=scope)
+        b_norm = tf.contrib.layers.batch_norm(conv,decay=0.98,
+                                            center=True,scale=True,
+                                            epsilon=0.001,activation_fn=None,
+                                            is_training=True,reuse=False,
+                                            trainable=trainable_vars,scope=scope)
+        pool = tf.contrib.layers.max_pool2d(b_norm,kernel_size=pool_k_size,
+                                            stride=pool_stride_size,padding="SAME",scope=scope)
+        return pool
+
+def dense_contrib_layer(m_input,size_out,trainable_vars,name,num):
+    """
+    Creates dense layer using the tf.contrib module
     
+    args:
+        m_input: Input into the dense layer
+        size_in: number of input neurons
+        size_out: number of output neurons
+        trainable_vars: Bool. Specifies if variables created in this dense layer are trainable
+        name: Name of the dense layer
+        num: dense layer number
+
+    Returns:
+        A tensor representing the activations of the layer
+    """
+
+    with tf.name_scope(name+num) as scope:
+        xav_init=tf.contrib.layers.xavier_initializer(uniform=False,seed=None,dtype=tf.float16)
+        fc = tf.contrib.layers.fully_connected(m_input,num_outputs=size_out,
+                                                weights_initializer=xav_init,biases_initializer=tf.zeros_initializer(),
+                                                trainable=trainable_vars,scope=scope)
+        return fc
+
+def final_contrib_linact_layer(m_input,size_out,trainable_vars,name,num):
+    with tf.name_scope(name+num) as scope:
+        xav_init = tf.contrib.layers.xavier_initializer(uniform=False,seed=None,dtype=tf.float16)
+        fc = tf.contrib.layers.fully_connected(m_input,num_outputs=size_out,
+                                                weights_initializer=xav_init,biases_initializer=tf.zeros_initializer(),
+                                                trainable=trainable_vars,activation_fn=None,scope=scope)
+        return fc
+
+
 def get_place_holders():
     """
     Returns: The tensorflow name of the placeholder variables
@@ -193,7 +259,69 @@ def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,
             output_layer = final_linear_layer(output_layer,fc_feats[fc_count-1],5,trainable_vars,name=fcs_name,num=str(fc_count))
     return output_layer
 
+def build_contrib_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,trainable_vars):
+    """
+    Build the complete tensorflow graph
+
+    args:
+        name: The namescope for the graph
+        net_in: input to the graph
+        conv_count: number of convolution layers
+        fc_count: number of dense layers
+        conv_feats: List containing the number of kernels per convolution layers
+        fc_feats: List containing the number of neurons per dense layer
+        conv_k_size: List containing the size of the convolution layers
+        conv_strid: List containing the stride for each convolution layer
+        trainable_vars: Bool. Specifies if the weights/bias variables in this graph are trainable
+
+    Returns:
+        Output Layer of the Graph
+    """
+
+    with tf.name_scope(name) as scope:
+        #names of the convolution and dense layers
+        conv_name="conv"
+        fcs_name="FC"
         
+        #Number of kernels/neurons in the first layer
+        conv_feats[0] = 4
+
+        
+        #Building Convolution Layers
+        with tf.name_scope("Convolution_Layers") as scope:
+            convs = []
+            convs.append(net_in)
+            p = 0
+
+            #For loop calls conv_layer function and adds the returned max pool to convs list
+            for i in range(0,conv_count-1):
+                convs.append(conv_contrib_layer(convs[i],conv_feats[i+1],
+                                                conv_k_size[p],conv_k_size[p],
+                                                conv_stride[p],2,2,trainable_vars,
+                                                conv_name,str(i+1)))
+                p = p+1
+            
+        shp = convs[conv_count-1].get_shape().as_list()
+        dim = np.prod(shp[1:])
+        fc_feats[0] = dim
+
+
+            #flatten = tf.reshape(convs[conv_count-1],[-1,dim])
+        flatten = tf.contrib.layers.flatten(convs[conv_count-1])
+        with tf.name_scope("Dense_Layers") as scope:
+            fcs = []
+            fcs.append(flatten)
+
+            #For loop calls fc_layer and add the activations to fcs list
+            for i in range(0,fc_count-1):
+                fcs.append(dense_contrib_layer(fcs[i],fc_feats[i+1],
+                                                trainable_vars,fcs_name,str(i+1)))
+        
+        output_layer = fcs[len(fcs)-1]
+        
+        with tf.name_scope("Final_Linear_layer") as scope:
+            output_layer = final_contrib_linact_layer(output_layer,5,trainable_vars,name=fcs_name,num=str(fc_count))
+    return output_layer  
 
 def build_train_queue(batch_size,img_shp):
     """
