@@ -32,7 +32,7 @@ class SSPlayer:
 		self.l_o_d = l_or_d
 		self.app = self.launch_app(dir)
 		self.reward = 0
-		self.move_pixels = 4
+		self.move_pixels = 10
 		self.x_scale_factor = 84/320
 		self.y_scale_factor = 110/480
 		self.sct = mss.mss()
@@ -111,28 +111,36 @@ class SSPlayer:
 	def move_mouse_right(self):
 		x,y = win32api.GetCursorPos()
 		if (x < (self.processing_crop['left']+self.processing_crop['width'])):
-			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,self.move_pixels,0,0,0)
+			for i in range(0,self.move_pixels):
+				#win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,self.move_pixels,0,0,0)
+				win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,1,0,0,0)
 		else:
 			self.reward = self.reward-.5
 	
 	def move_mouse_left(self):
 		x,y = win32api.GetCursorPos()
 		if (x > self.processing_crop['left']):
-			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,-self.move_pixels,0,0,0)
+			for i in range(0,self.move_pixels):
+				#win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,-self.move_pixels,0,0,0)
+				win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,-1,0,0,0)
 		else:
 			self.reward = self.reward-.5
 
 	def move_mouse_up(self):
 		x,y = win32api.GetCursorPos()
 		if (y > self.processing_crop['top']):
-			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,-self.move_pixels,0,0)
+			for i in range(0,self.move_pixels):
+				#win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,-self.move_pixels,0,0)
+				win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,-1,0,0)
 		else:
 			self.reward = self.reward-.5
 			
 	def move_mouse_down(self):
 		x,y = win32api.GetCursorPos()
 		if (y < (self.processing_crop['top']+self.processing_crop['height']-5)):
-			win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,self.move_pixels,0,0)
+			for i in range(0,self.move_pixels):
+				#win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,self.move_pixels,0,0)
+				win32api.mouse_event(win32con.MOUSEEVENTF_MOVE,0,1,0,0)
 		else:
 			self.reward = self.reward-.5
 	
