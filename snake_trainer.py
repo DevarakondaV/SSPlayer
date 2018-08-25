@@ -5,7 +5,7 @@ from snake_con import *
 import sys
 import os
 import matplotlib.pyplot as plt
-
+from threading import Thread,current_thread
 
 def dist_infer_action(sess,frames,ops,phs):
     action = ops['action']
@@ -28,12 +28,12 @@ def send_action_to_game_controller(game,frames1,a,reward):
     
     if reward is game.reward:
         r = 0
-    elif reward > game.reward:
+    elif game.reward > reward:
         r = 1
     elif game.stop_play:
         r = -1
     frames,bval = get_4_frames(game)
-    
+    print("R: ",r)
     return frames,bval,r
 
 def random_minibatch_sample(batchsize):
@@ -67,8 +67,8 @@ def get_4_frames(game):
                          take_shot(game),
                          take_shot(game)),axis=2)
     bval = game.stop_play
-    rtnbool = True if bval else False
-    return imgs,rtnbool
+    #rtnbool = True if bval else False
+    return imgs,bval
 
 def dist_add_to_queue(sess,batch_size,ops,phs):
     enqueue_op = ops['enqueue_op']
@@ -89,12 +89,13 @@ def dist_run(sess,game,greed,M,batch_size,ops,phs):
                 greed = greed-.1
         wait_for(1)
         game.click_to_play()
+        Thread(target=game.kill_highscore_alert,args=(current_thread(),)).start()
         while game.get_screen_number2(take_shot(game)):
             frames1,test = get_4_frames(game)
             if (not test):
                 break  
             a,q = [np.asarray(np.random.randint(0,5)).astype(np.uint8),0] if (np.random.random_sample(1) <= greed) else np.asarray(dist_infer_action(sess,frames1,ops,phs)).astype(np.float16)
-            frames2,test = send_action_to_game_controller(game,frames1,a)
+            frames2,test,r = send_action_to_game_controller(game,frames1,a,0)
             r = game.reward_1(frames1,a)
             if (not test):
                 break
@@ -111,32 +112,34 @@ def dist_run(sess,game,greed,M,batch_size,ops,phs):
             return
     return
 
-def frame_train_reward_1(sess,game,frame_limit,greed_frames,batch_size,ops,phs):
+def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsheets):
     global process_frames
+    thd = Thread(target=game.kill_highscore_alert,args=(current_thread(),))
+    thd.start()
 
     while (process_frames < frame_limit):
         greed = get_greed(greed_frames,process_frames)
         reward = 0
         wait_for(1)
+        #game.start_alert_thread()
+        wait_for(.3)
         game.click_play()
         while not game.stop_play:
             frames1,test = get_4_frames(game)
-            if not test:
+            if test:
                 break
             a,q = [np.asarray(np.random.randint(0,5)).astype(np.uint8),0] if (np.random.random_sample(1) <= greed) else np.asarray(dist_infer_action(sess,frames1,ops,phs)).astype(np.float16)
             frames2,test,r = send_action_to_game_controller(game,frames1,a,reward)
-            if (not test):
-                break
             store_exp((frames1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),frames2))
+            if test:
+                break
+            reward = reward+r
             if (len(exp) > batch_size):
                 dist_add_to_queue(sess,batch_size,ops,phs)
-        game.release_click()
         wait_for(.3)
         sess.run([ops['uwb']])
-        game.click_replay()
         wait_for(.3)
-        if not game.get_screen_number2(take_shot(game)):
-            break
+        game.stop_play = False
     return
 
 

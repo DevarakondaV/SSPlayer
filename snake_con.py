@@ -72,16 +72,39 @@ class snake:
                                 'height': 447}
     
     def move_up(self):
-        ActionChains(self.chrome).send_keys(Keys.ARROW_UP).perform()
+        try:
+            ActionChains(self.chrome).send_keys(Keys.ARROW_UP).perform()
+            self.reward = self.get_score()
+        except:
+            pass
+
 
     def move_down(self):
-        ActionChains(self.chrome).send_keys(Keys.ARROW_DOWN).perform()
+        try:
+            ActionChains(self.chrome).send_keys(Keys.ARROW_DOWN).perform()
+            self.reward = self.get_score()
+        except:
+            pass
 
     def move_left(self):
-        ActionChains(self.chrome).send_keys(Keys.ARROW_LEFT).perform()
+        try:
+            ActionChains(self.chrome).send_keys(Keys.ARROW_LEFT).perform()
+            self.reward = self.get_score()
+        except:
+            pass
 
     def move_right(self):
-        ActionChains(self.chrome).send_keys(Keys.ARROW_RIGHT).perform()
+        try:
+            ActionChains(self.chrome).send_keys(Keys.ARROW_RIGHT).perform()
+            self.reward = self.get_score()
+        except:
+            pass
+    
+    def get_score(self):
+        if (self.score.text is ''):
+            return 0
+        else:
+            return int(self.score.text)
 
     def click_play(self):
         self.start_button.click()
@@ -98,17 +121,19 @@ class snake:
             print("no alert")
 
     def kill_highscore_alert(self,main_thread):
-        while not self.stop_play:
+        while main_thread.is_alive(): #not self.stop_play:
             try:
                 alert = self.chrome.switch_to.alert
                 alert.accept()
-                print("alert accepted")
-                self.reward = 0
                 self.stop_play = True
+                #print("alert accepted")
             except:
-                print("no alert")
-                self.reward = int(self.score.text)
+                #print("no alert")
                 continue
+        self.reward = 0
+    
+    #def start_alert_thread(self):
+    #    Thread(target = self.kill_highscore_alert).start()
 
 
 def take_shot(game):
