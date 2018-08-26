@@ -33,11 +33,14 @@ def wait_for(sec):
 
 class snake:
 
-    def __init__(self):
+    def __init__(self,id):
         #self.chrome_path = r'open -a /Applications/Google\ Chrome.app %s'
         self.url = "chrome-extension://kcnffeedfpaijglkkpplkbdpchgjbako/snake.html"
         self.chrome_path = r'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
-        self.ext_path = r"C:\Users\devar\AppData\Local\Google\Chrome\User Data\Default\Extensions\kcnffeedfpaijglkkpplkbdpchgjbako\1.2_0"
+        if id==1:
+            self.ext_path = r"C:\Users\devar\AppData\Local\Google\Chrome\User Data\Default\Extensions\kcnffeedfpaijglkkpplkbdpchgjbako\1.2_0"
+        elif id==2:
+            self.ext_path = r"C:\Users\Vishnu\AppData\Local\Google\Chrome\User Data\Default\Extensions\kcnffeedfpaijglkkpplkbdpchgjbako\1.2_0"
         self._launch_game()
         self.sct = mss.mss()
         self.stop_play = False
@@ -126,14 +129,9 @@ class snake:
                 alert = self.chrome.switch_to.alert
                 alert.accept()
                 self.stop_play = True
-                #print("alert accepted")
             except:
-                #print("no alert")
                 continue
-        self.reward = 0
-    
-    #def start_alert_thread(self):
-    #    Thread(target = self.kill_highscore_alert).start()
+        #self.reward = 0
 
 
 def take_shot(game):

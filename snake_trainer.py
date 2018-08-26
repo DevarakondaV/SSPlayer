@@ -15,6 +15,7 @@ def dist_infer_action(sess,frames,ops,phs):
     return a,q
 
 def send_action_to_game_controller(game,frames1,a,reward):
+    
     if (a == 0):
         game.move_up()
     elif (a == 1):
@@ -26,15 +27,23 @@ def send_action_to_game_controller(game,frames1,a,reward):
     else:
         xxxx = 1
     
-    if reward is game.reward:
-        r = 0
-    elif game.reward > reward:
-        r = 1
-    elif game.stop_play:
+
+    try:
+        alert = game.chrome.switch_to.alert
+        alert.accept()
+        game.stop_play = True
         r = -1
+    except:
+        if reward is game.reward:
+            r = 0
+        elif game.reward > reward:
+            r = 1
+        reward = game.reward
+        pass
+
     frames,bval = get_4_frames(game)
-    print("R: ",r)
-    return frames,bval,r
+    print("r: ",r)
+    return frames,bval,r,reward
 
 def random_minibatch_sample(batchsize):
     global exp
@@ -114,31 +123,30 @@ def dist_run(sess,game,greed,M,batch_size,ops,phs):
 
 def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsheets):
     global process_frames
-    thd = Thread(target=game.kill_highscore_alert,args=(current_thread(),))
-    thd.start()
+    #thd = Thread(target=game.kill_highscore_alert,args=(current_thread(),))
+    #thd.start()
 
     while (process_frames < frame_limit):
         greed = get_greed(greed_frames,process_frames)
         reward = 0
         wait_for(1)
-        #game.start_alert_thread()
-        wait_for(.3)
         game.click_play()
         while not game.stop_play:
             frames1,test = get_4_frames(game)
             if test:
                 break
             a,q = [np.asarray(np.random.randint(0,5)).astype(np.uint8),0] if (np.random.random_sample(1) <= greed) else np.asarray(dist_infer_action(sess,frames1,ops,phs)).astype(np.float16)
-            frames2,test,r = send_action_to_game_controller(game,frames1,a,reward)
+            a = 0
+            frames2,test,r,reward = send_action_to_game_controller(game,frames1,a,reward)
             store_exp((frames1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),frames2))
             if test:
                 break
-            reward = reward+r
             if (len(exp) > batch_size):
                 dist_add_to_queue(sess,batch_size,ops,phs)
         wait_for(.3)
         sess.run([ops['uwb']])
         wait_for(.3)
+        game.reward = 0
         game.stop_play = False
     return
 
