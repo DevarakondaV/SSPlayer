@@ -505,7 +505,7 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
                 tf.summary.scalar("loss",loss)
 
                 #opt = tf.train.GradientDescentOptimizer(decay_learning_rate)
-                opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01)
+                opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01,use_locking=True)
                 grads = opt.compute_gradients(loss)
                 #capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in grads]
                 train = opt.apply_gradients(grads,global_step=global_step)

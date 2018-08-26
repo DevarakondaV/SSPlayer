@@ -136,7 +136,6 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
             if test:
                 break
             a,q = [np.asarray(np.random.randint(0,5)).astype(np.uint8),0] if (np.random.random_sample(1) <= greed) else np.asarray(dist_infer_action(sess,frames1,ops,phs)).astype(np.float16)
-            a = 0
             frames2,test,r,reward = send_action_to_game_controller(game,frames1,a,reward)
             store_exp((frames1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),frames2))
             if test:
@@ -153,22 +152,22 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
 
 def dist_play(sess,game,M,ops,phs):
     for i in range(0,M):
+        reward = 0
         wait_for(1)
-        game.click_to_play()
-        while game.get_screen_number2(take_shot(game)):
-            frames,test = get_4_frames(game)
-            if (not test):
+        game.click_play()
+        while not game.stop_play:
+            frames1,test = get_4_frames(game)
+            if  test:
                 break
             #a,q= np.asarray(dist_infer_action(sess,frames,ops,phs)).astype(np.float16)
-            a,q = dist_infer_action(sess,frames,ops,phs)
-            a = np.argmax(a[0])
+            a,q = dist_infer_action(sess,frames1,ops,phs)
             print(a)
-            frames,test = send_action_to_game_controller(game,frames,a)
-            if (not test):
+            frames2,test,r,reward = send_action_to_game_controller(game,frames1,a,reward)
+            if test:
                 break
-        game.release_click()
         wait_for(.3)
-        game.click_replay()
+        game.reward = 0
+        game.stop_play = False
         print("Play Iteration: ",i)
 
 

@@ -58,7 +58,7 @@ class snake:
         #Calling url, resizing, position
         chrome = self.chrome
         chrome.get(self.url)
-        chrome.set_window_size(500,500)
+        chrome.set_window_size(1250,500)
         chrome.set_window_position(50,50)
 
 

@@ -37,8 +37,8 @@ conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 0.00025
 gamma = np.array([.9]).astype(np.float16)
-batch_size = 3
-LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log"    
+batch_size = 32
+LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log"    
 
 if s_name == "ps":
     server = tf.train.Server(cl_spec,job_name="ps",task_index=0,config=config)
@@ -74,7 +74,7 @@ else:
 
     if (t_num == 0):
         g_sheets = 0
-        game = snake(2)
+        game = snake(1)
         wait_for(1)
         print(server.target)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
@@ -105,12 +105,12 @@ else:
         dsk_chk_dir = r"E:\TFtmp\test\model"
         dsk_sum_dir = r"E:\TFtmp\test\sum"
 
-        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=lap_dir,
+        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=dsk_chk_dir,
                                                     save_secs=3600,save_steps=None,
                                                     saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
                                                     scaffold=None)
         summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
-                                                    output_dir=lap_dir,summary_writer=None,
+                                                    output_dir=dsk_sum_dir,summary_writer=None,
                                                     scaffold=None,summary_op=summ)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
                                                 hooks = [saver_hook,summary_hook],
