@@ -123,23 +123,20 @@ def dist_run(sess,game,greed,M,batch_size,ops,phs):
 
 def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsheets):
     global process_frames
-    #thd = Thread(target=game.kill_highscore_alert,args=(current_thread(),))
-    #thd.start()
-
+    
     while (process_frames < frame_limit):
         greed = get_greed(greed_frames,process_frames)
         reward = 0
         wait_for(1)
         game.click_play()
+        frames1,test = get_4_frames(game)
         while not game.stop_play:
-            frames1,test = get_4_frames(game)
-            if test:
-                break
             a,q = [np.asarray(np.random.randint(0,5)).astype(np.uint8),0] if (np.random.random_sample(1) <= greed) else np.asarray(dist_infer_action(sess,frames1,ops,phs)).astype(np.float16)
-            frames2,test,r,reward = send_action_to_game_controller(game,frames1,a,reward)
+            frames2,stop_play,r,reward = send_action_to_game_controller(game,frames1,a,reward)
             store_exp((frames1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),frames2))
-            if test:
+            if stop_play:
                 break
+            frames1 = frames2
             if (len(exp) > batch_size):
                 dist_add_to_queue(sess,batch_size,ops,phs)
         wait_for(.3)
