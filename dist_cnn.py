@@ -111,7 +111,7 @@ def final_linear_layer(m_input,size_in,size_out,trainable_vars,name="final",num=
                         dtype=tf.float16,trainable=trainable_vars,
                         name="b{}".format(num))
 
-        act = tf.matmul(m_input,w)+b
+        act = tf.matmul(m_input,w,name="Final")+b
         #act = tf.nn.softmax(act)
         tf.summary.histogram("weights",w)
         tf.summary.histogram("biases",b)

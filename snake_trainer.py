@@ -59,7 +59,7 @@ def random_minibatch_sample(batchsize):
 def store_exp(seq):
     global exp
     global process_frames
-    if (process_frames > 1000000):
+    if (process_frames > 100000):
         exp.pop(0)
     process_frames = process_frames+8
     exp.append(seq)    
@@ -109,7 +109,7 @@ def dist_run(sess,game,greed,M,batch_size,ops,phs):
             if (not test):
                 break
             store_exp((frames1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),frames2))
-            if (len(exp) > batch_size):
+            if (len(exp) > 10000):
                 dist_add_to_queue(sess,batch_size,ops,phs)
         game.release_click()
         wait_for(.3)
@@ -124,6 +124,7 @@ def dist_run(sess,game,greed,M,batch_size,ops,phs):
 def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsheets):
     global process_frames
     
+    gp = 0
     while (process_frames < frame_limit):
         greed = get_greed(greed_frames,process_frames)
         reward = 0
@@ -137,13 +138,18 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
             if stop_play:
                 break
             frames1 = frames2
-            if (len(exp) > batch_size):
+            if (len(exp) > 10000):
                 dist_add_to_queue(sess,batch_size,ops,phs)
         wait_for(.3)
         sess.run([ops['uwb']])
         wait_for(.3)
         game.reward = 0
         game.stop_play = False
+        gp = gp+1
+        if (gp % 50 == 0):
+            print("Exp size: ", len(exp))
+            print("Number process Frames: ",process_frames)
+            print("greed: ",greed)
     return
 
 
