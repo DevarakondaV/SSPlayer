@@ -14,7 +14,7 @@ def dist_infer_action(sess,frames,ops,phs):
     a,q = sess.run([action,q],{x1: [frames]})
     return a,q
 
-def send_action_to_game_controller(game,frames1,a,reward):
+def send_action_to_game_controller(game,phi1,a,reward):
     
     if (a == 0):
         game.move_up()
@@ -41,9 +41,12 @@ def send_action_to_game_controller(game,frames1,a,reward):
         reward = game.reward
         pass
 
-    frames,bval = get_4_frames(game)
-    print("r: ",r)
-    return frames,bval,r,reward
+    frame1 = phi1[:,:,3]
+    frame,bval = get_frame(game)
+    while np.array_equal(frame1,frame):
+        frame,bval = get_frame(game)
+    bval = game.stop_play
+    return frame,bval,r,reward
 
 def random_minibatch_sample(batchsize):
     global exp
@@ -79,6 +82,29 @@ def get_4_frames(game):
     #rtnbool = True if bval else False
     return imgs,bval
 
+def get_frame(game):
+    frame = take_shot(game)
+    bval = game.stop_play
+    return frame,bval
+
+def process_seq(seq):
+    #process last 4 frames and stacks for network
+
+    seq_len = len(seq)
+    idx = [i  for i in range(seq_len-1,seq_len-1-12,-3) if i >= 0]
+    frames = [seq[i] for i in idx]
+    len_frames = len(frames)
+    add_num = 4-len_frames
+    for i in range(0,add_num):
+        frames.append(np.zeros(shape=[110,142,1]))
+    
+    np_f = frames[0]
+    for i in range(1,len(frames)):
+        np_f = np.concatenate((np_f,frames[i]),axis=2)
+    return np_f
+
+
+
 def dist_add_to_queue(sess,batch_size,ops,phs):
     enqueue_op = ops['enqueue_op']
     s_img1 = phs['s_img1']
@@ -90,37 +116,6 @@ def dist_add_to_queue(sess,batch_size,ops,phs):
     sess.run([enqueue_op],{s_img1: seq_n[0],s_a: seq_n[1], s_r: seq_n[2],s_img2: seq_n[3]})
 
 
-def dist_run(sess,game,greed,M,batch_size,ops,phs):
-    global exp
-    for i in range(0,M):
-        if (i % 100 == 0):
-            if (greed >= .1 ):
-                greed = greed-.1
-        wait_for(1)
-        game.click_to_play()
-        Thread(target=game.kill_highscore_alert,args=(current_thread(),)).start()
-        while game.get_screen_number2(take_shot(game)):
-            frames1,test = get_4_frames(game)
-            if (not test):
-                break  
-            a,q = [np.asarray(np.random.randint(0,5)).astype(np.uint8),0] if (np.random.random_sample(1) <= greed) else np.asarray(dist_infer_action(sess,frames1,ops,phs)).astype(np.float16)
-            frames2,test,r = send_action_to_game_controller(game,frames1,a,0)
-            r = game.reward_1(frames1,a)
-            if (not test):
-                break
-            store_exp((frames1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),frames2))
-            if (len(exp) > 10000):
-                dist_add_to_queue(sess,batch_size,ops,phs)
-        game.release_click()
-        wait_for(.3)
-        sess.run([ops['uwb']])
-        game.click_replay()
-        wait_for(.3)
-        print("Iteration: ",i)
-        if (not game.get_screen_number2(take_shot(game))):
-            return
-    return
-
 def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsheets):
     global process_frames
     
@@ -130,14 +125,33 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
         reward = 0
         wait_for(1)
         game.click_play()
-        frames1,test = get_4_frames(game)
+        
+        frame_test,bval = get_frame(game)
+        frame,bval = get_frame(game)
+        while np.array_equal(frame_test,frame): 
+            frame,bval = get_frame(game)
+        
+        print("frames: ",np.shape(frame))
+        seq = []
+        seq.append(frame)
+        phi1 = process_seq(seq)        
         while not game.stop_play:
-            a,q = [np.asarray(np.random.randint(0,5)).astype(np.uint8),0] if (np.random.random_sample(1) <= greed) else np.asarray(dist_infer_action(sess,frames1,ops,phs)).astype(np.float16)
-            frames2,stop_play,r,reward = send_action_to_game_controller(game,frames1,a,reward)
-            store_exp((frames1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),frames2))
+            #a,q = [np.asarray(np.random.randint(0,5)).astype(np.uint8),0] if (np.random.random_sample(1) <= greed) else np.asarray(dist_infer_action(sess,frames1,ops,phs)).astype(np.float16)
+            r_a = np.random.random_sample(1)
+            if (r_a <= greed):
+                a = np.asarray(np.random.randint(0,5))
+            else:
+                a,q = np.array(dist_infer_action(sess,phi1,ops,phs)).astype(np.float16)
+            frame,stop_play,r,reward = send_action_to_game_controller(game,phi1,a,reward)
+            seq.append(a)
+            seq.append(r)
+            seq.append(frame)
+            phi2 = process_seq(seq)
+            store_exp((phi1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),phi2))
+            #store_exp((frames1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),frames2))
             if stop_play:
                 break
-            frames1 = frames2
+            phi1 = phi2
             if (len(exp) > 10000):
                 dist_add_to_queue(sess,batch_size,ops,phs)
         wait_for(.3)
@@ -150,6 +164,9 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
             print("Exp size: ", len(exp))
             print("Number process Frames: ",process_frames)
             print("greed: ",greed)
+        if gp == 1:
+            save_seq_img(seq)
+        break
     return
 
 
@@ -173,6 +190,13 @@ def dist_play(sess,game,M,ops,phs):
         game.stop_play = False
         print("Play Iteration: ",i)
 
+
+def save_seq_img(seq):
+    seq_len = len(seq)
+    idx = [i  for i in range(seq_len-1,seq_len-1-12,-3) if i >= 0]
+    imgs = [seq[i] for i in idx]
+    for i in range(0,len(imgs)):
+        Image.fromarray(imgs[i]).save("imgs/test"+str(i)+".png")
 
 exp = []
 process_frames = 0
