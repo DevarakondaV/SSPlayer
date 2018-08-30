@@ -190,7 +190,7 @@ def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,
                                     fc_feats[i],fc_feats[i+1],
                                     trainable_vars,fcs_name,str(i+1)))
             output_layer = fcs[len(fcs)-1]
-            output_layer = final_linear_layer(output_layer,fc_feats[fc_count-1],5,trainable_vars,name=fcs_name,num=str(fc_count))
+            output_layer = final_linear_layer(output_layer,fc_feats[fc_count-1],4,trainable_vars,name=fcs_name,num=str(fc_count))
     return output_layer
 
         
@@ -375,13 +375,13 @@ def infer_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
     #Placing the operations on worker 0. Not Cheif
     with tf.device("/job:worker/task:0"):
         with tf.name_scope("infer_place_holder"):
-            x1 = tf.placeholder(tf.uint8,shape=[None,110,84,4],name="x1")
+            x1 = tf.placeholder(tf.uint8,shape=[None,100,100,4],name="x1")
 
     
         #Slicing Image for unnecessary frames
-        sl_x1 = x1[:,10:110,:,:]
+        #sl_x1 = x1[:,10:110,:,:]
 
-        std_img = standardize_img(sl_x1)
+        std_img = standardize_img(x1)
 
         #Building graph for inference
         infer_output = build_graph("Inference",std_img,
@@ -430,19 +430,19 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
     #This model operations live on worker 1. Is Cheif
     with tf.device("/job:worker/task:1"):    
         with tf.name_scope("train_place_holder"):
-            s_img1 = tf.placeholder(tf.uint8,shape=[batch_size,110,84,4],name="s_img1")
+            s_img1 = tf.placeholder(tf.uint8,shape=[batch_size,100,100,4],name="s_img1")
             s_a = tf.placeholder(tf.uint8,shape=[batch_size,1],name="s_a")
             s_r = tf.placeholder(tf.float16,shape=[batch_size,1],name="s_r")
-            s_img2 = tf.placeholder(tf.uint8,shape=[batch_size,110,84,4],name="s_img2")
+            s_img2 = tf.placeholder(tf.uint8,shape=[batch_size,100,100,4],name="s_img2")
        
-        with tf.name_scope("slice_image"):
-            sl_img1 = s_img1[:,10:110,:,:]
-            sl_img2 = s_img2[:,10:110,:,:]
+        #with tf.name_scope("slice_image"):
+        #    sl_img1 = s_img1[:,10:110,:,:]
+        #    sl_img2 = s_img2[:,10:110,:,:]
 
         #Building Queue Operations
         with tf.name_scope("train_queue"):
-            train_q = build_train_queue(batch_size,sl_img1.get_shape())
-            enqueue_op = train_q.enqueue((sl_img1,s_a,s_r,sl_img2))
+            train_q = build_train_queue(batch_size,s_img1.get_shape())
+            enqueue_op = train_q.enqueue((s_img1,s_a,s_r,s_img2))
             p_queues = tf.Print(train_q.size(),[train_q.size()],message="Q Size1: ")
             img1,a,r,img2 = train_q.dequeue(name="dequeue")
 
@@ -456,7 +456,7 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
         #Assignment Operations for training purposes
         with tf.name_scope("Assignment_Ops"):
             with tf.name_scope("Training_Ops"):
-                input_var = tf.Variable(tf.zeros(sl_img1.get_shape(),dtype=tf.float16),name="input_var")
+                input_var = tf.Variable(tf.zeros(s_img1.get_shape(),dtype=tf.float16),name="input_var")
                 assign_infer_op = tf.assign(input_var,std_img2)
                 assign_train_op = tf.assign(input_var,std_img1)
         

@@ -1,7 +1,8 @@
 import time
 from timeit import timeit,Timer
 import numpy as np
-from snake_con import *
+from PIL import Image
+from t048_con import *
 import sys
 import os
 import matplotlib.pyplot as plt
@@ -17,38 +18,32 @@ def dist_infer_action(sess,frames,ops,phs):
 def send_action_to_game_controller(game,phi1,a,reward):
     
     if (a == 0):
-        game.move_up()
+        game.move(game.up)
     elif (a == 1):
-        game.move_down()
+        game.move(game.down)
     elif (a == 2):
-        game.move_left()
+        game.move(game.left)
     elif (a == 3):
-        game.move_right()
-    else:
-        xxxx = 1
+        game.move(game.right)
     
-    frame1 = phi1[:,:,0]
-    wait_for(.07)
+    wait_for(.5)
     frame,bval = get_frame(game)
-    if np.array_equal(frame1,frame):
-        wait_for(1)
 
+    #game.retry_button.click()
     try:
-        alert = game.chrome.switch_to.alert
-        alert.accept()
+        game.chrome.find_element_by_xpath("/html/body/div[2]/div[3]/div[1]/div/a[2]").click()
         game.stop_play = True
         r = -1
     except:
-        if reward is game.reward:
+        #print("never")
+        if  game.reward == reward:
             r = 0
         elif game.reward > reward:
             r = 1
         reward = game.reward
         pass
 
-    #frame1 = phi1[:,:,0]
-    #wait_for(.08)
-    #frame,bval = get_frame(game)
+    #print("reward: ", r)
     return frame,bval,r,reward
 
 def random_minibatch_sample(batchsize):
@@ -76,14 +71,6 @@ def get_greed(greed_frames,frames):
         return 0.1
     return (((.1-1)/greed_frames)*frames)+1
 
-def get_4_frames(game):
-    imgs = np.concatenate((take_shot(game),
-                         take_shot(game),
-                         take_shot(game),
-                         take_shot(game)),axis=2)
-    bval = game.stop_play
-    #rtnbool = True if bval else False
-    return imgs,bval
 
 def get_frame(game):
     frame = take_shot(game)
@@ -100,7 +87,7 @@ def process_seq(seq):
     add_num = 4-len_frames
     for i in range(0,add_num):
         #frames.append(np.zeros(shape=[110,142,1]))
-        frames.insert(0,np.zeros(shape=[110,142,1]))
+        frames.insert(0,np.zeros(shape=[100,100,1]))
 
     np_f = frames[0]
     for i in range(1,len(frames)):
@@ -132,13 +119,8 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
         greed = get_greed(greed_frames,process_frames)
         reward = 0
         wait_for(1)
-        game.click_play()
         
-        frame_test,bval = get_frame(game)
         frame,bval = get_frame(game)
-        while np.array_equal(frame_test,frame): 
-            frame,bval = get_frame(game)
-        
         fff =[]
         seq = []
         seq.append(frame)
@@ -162,7 +144,7 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
             if stop_play:
                 break
             phi1 = phi2
-            if (len(exp) > 1000):
+            if (len(exp) > batch_size):
                 dist_add_to_queue(sess,batch_size,ops,phs)
         wait_for(.3)
         sess.run([ops['uwb']])
@@ -175,9 +157,9 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
             print("Exp size: ", len(exp))
             print("Number process Frames: ",process_frames)
             print("greed: ",greed)
-        #if (gp == 1):
-        #    save_seq_img(fff)
-        #    break
+        save_seq_img(fff)
+        if (gp == 2):
+            break
     return
 
 

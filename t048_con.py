@@ -33,11 +33,11 @@ class t048:
         self.url = r"chrome-extension://jfnbjbahocpfkbbadndnocljpjpccggf/index.html"
         self.chrome_path = r'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
         if id==1:
-            self.ext_path = r"C:\Users\devar\AppData\Local\Google\Chrome\User Data\Default\Extensions\kcnffeedfpaijglkkpplkbdpchgjbako\1.2_0"
-            self.processing_crop = {'left':155,
-                                    'top': 250,
-                                    'width': 273,
-                                    'height': 273}
+            self.ext_path = r"C:\Users\devar\AppData\Local\Google\Chrome\User Data\Default\Extensions\jfnbjbahocpfkbbadndnocljpjpccggf\1.5_0"
+            self.processing_crop = {'left':310,
+                                    'top': 500,
+                                    'width': 546,
+                                    'height': 546}
         elif id==2:
             #self.ext_path = r"C:\Users\Vishnu\AppData\Local\Google\Chrome\User Data\Default\Extensions\kcnffeedfpaijglkkpplkbdpchgjbako\1.2_0"
             self.ext_path = r"C:\Users\Vishnu\AppData\Local\Google\Chrome\User Data\Default\Extensions\jfnbjbahocpfkbbadndnocljpjpccggf\1.5_0"
@@ -51,6 +51,10 @@ class t048:
         self.stop_play = False
         self.reward = 0
 
+        self.up = Keys.ARROW_UP
+        self.down = Keys.ARROW_DOWN
+        self.left = Keys.ARROW_LEFT
+        self.right = Keys.ARROW_RIGHT
 
     def _launch_game(self):
         """
@@ -69,6 +73,7 @@ class t048:
         self.new_game_button = chrome.find_element_by_xpath("/html/body/div[2]/div[2]/a")
         #Check if retry button visible
         self.retry_buttom = chrome.find_element_by_xpath("/html/body/div[2]/div[3]/div[1]/div/a[2]")
+        self.score = chrome.find_element_by_xpath("/html/body/div[2]/div[1]/div/div[1]")
 
         chrome.execute_script("window.scrollTo(0,225)")
 
@@ -86,15 +91,29 @@ class t048:
         wait_for(.1)
         win32api.keybd_event(key,0,2,0)
 
+    def move(self,ks):
+        try:
+            ActionChains(self.chrome).send_keys(ks).perform()
+            #print("reward: ",self.reward)
+        except:
+            print("pass")
+            pass
+        self.reward = self.get_reward()
+        
+    def get_reward(self):
+        txt = self.score.text
+        while "+" in txt:
+            txt = self.score.text
+        
+        return int(txt)
+
+    
+
 def take_shot(game):
     img = game.sct.grab(game.processing_crop)
     img = Image.fromarray(np.array(img)[:,:,1]).resize((100,100))
     #print("shape: ",np.array(img).shape)
     #Image.fromarray(np.array(img)).save("imgs/test.png")
-    img = np.expand_dims(np.array(img))
+    img = np.expand_dims(np.array(img),axis=2)
     return img
-
-game = t048(2)
-take_shot(game)
-
 
