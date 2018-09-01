@@ -6,7 +6,7 @@ from t048_con import *
 import sys
 import os
 import matplotlib.pyplot as plt
-import cv2
+#import cv2
 
 def dist_infer_action(sess,frames,ops,phs):
     action = ops['action']

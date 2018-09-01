@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from dist_cnn import *
 from t048_trainer import *
-from gsheets import *
+#from gsheets import *
 
 s_name = str(sys.argv[1])
 t_num = int(sys.argv[2])
@@ -31,17 +31,17 @@ config.gpu_options.allow_growth = True
 #[8,4]
 #lr = .01
 #16,8
-conv_k_size = [20,10,4]
-conv_stride = [2,2,1]
-conv = [0,16,32,64]
-fclyr = [0,125,45] #5
+conv_k_size = [8,4]
+conv_stride = [4,2]
+conv = [0,16,32]
+fclyr = [0,256] #5
 conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 0.00025
 gamma = np.array([.9]).astype(np.float16)
-batch_size = 32
-LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log"    
-app_dir = r"c:\Users\devar\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
+batch_size = 2
+LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log"    
+
 
 if s_name == "ps":
     server = tf.train.Server(cl_spec,job_name="ps",task_index=0,config=config)
@@ -104,14 +104,19 @@ else:
                 greed_frames = int(input("Greed Frames Limit: "))
 
     else:
+        lap_dir = r'C:\Users\Vishnu\Documents\EngProj\SSPlayer\log'
+        dsk_chk_dir = r"E:\TFtmp\test\model"
+        dsk_sum_dir = r"E:\TFtmp\test\sum"
+        
+        
         #3600 saver
         #summ  = 300
-        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=r'E:\TFtmp\test\model',
+        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=lap_dir,
                                                     save_secs=3600,save_steps=None,
                                                     saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
                                                     scaffold=None)
         summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
-                                                    output_dir=r'E:\TFtmp\test\sum',summary_writer=None,
+                                                    output_dir=lap_dir,summary_writer=None,
                                                     scaffold=None,summary_op=summ)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
                                                 hooks = [saver_hook,summary_hook],

@@ -501,7 +501,7 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
                 #p_queues = tf.Print([y],[y],message="y: ")
                 #loss = tf.losses.huber_loss(y,train_output,delta=delta)
                 #loss = tf.nn.l2_loss(y-train_output)
-                loss = tf.losses.huber_loss(y,train_output,delta=3.0)
+                loss = tf.losses.huber_loss(y,train_output,delta=1.0)
                 tf.summary.scalar("loss",loss)
 
                 #opt = tf.train.GradientDescentOptimizer(decay_learning_rate)
@@ -531,3 +531,14 @@ def intermediate_summary_img(img,num,trainable):
     if (trainable):
         s_img_n = tf.expand_dims(tf.transpose(s_img,perm=[2,0,1]),axis=3)
         tf.summary.image("img"+num,s_img_n)
+        """
+        s_img_1 = tf.expand_dims(img[:,:,:,0],axis=3)
+        s_img_2 = tf.expand_dims(img[:,:,:,1],axis=3)
+        s_img_3 = tf.expand_dims(img[:,:,:,2],axis=3)
+        s_img_4 = tf.expand_dims(img[:,:,:,3],axis=3)
+
+        tf.summary.image("img"+num+"1",s_img_1)
+        tf.summary.image("img"+num+"2",s_img_2)
+        tf.summary.image("img"+num+"3",s_img_3)
+        tf.summary.image("img"+num+"4",s_img_4)
+        """
