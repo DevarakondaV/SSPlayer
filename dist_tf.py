@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from dist_cnn import *
 from trainer import *
-from gsheets import *
+#from gsheets import *
 
 s_name = str(sys.argv[1])
 t_num = int(sys.argv[2])
@@ -40,8 +40,8 @@ fc_count = len(fclyr)
 learning_rate = 0.00025
 gamma = np.array([.9]).astype(np.float16)
 batch_size = 32
-LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log"    
-app_dir = r"c:\Users\devar\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
+LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log"    
+app_dir = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\Release.win32\ShapeScape.exe"
 
 if s_name == "ps":
     server = tf.train.Server(cl_spec,job_name="ps",task_index=0,config=config)
@@ -77,7 +77,7 @@ else:
 
     if (t_num == 0):
         g_sheets = 0
-        game = SSPlayer(app_dir,2)
+        game = SSPlayer(app_dir,1)
         wait_for(1)
         game.click_play()
         print(server.target)

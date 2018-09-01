@@ -452,64 +452,50 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
             std_img2 = standardize_img(img2)
             tf.summary.image("std_img1",std_img1)
             tf.summary.image("std_img2",std_img2)
-
-        #Assignment Operations for training purposes
-        with tf.name_scope("Assignment_Ops"):
-            with tf.name_scope("Training_Ops"):
-                input_var = tf.Variable(tf.zeros(sl_img1.get_shape(),dtype=tf.float16),name="input_var")
-                assign_infer_op = tf.assign(input_var,std_img2)
-                assign_train_op = tf.assign(input_var,std_img1)
         
         #Building Training model
-        train_output = build_graph("Train",input_var,
+        train_output = build_graph("Train",std_img1,
                                     conv_count,fc_count,
                                     conv_feats,fc_feats,conv_k_size,conv_stride,True)
         
+        #Building Target model
+        target_output = build_graph("Target",std_img2,
+                                    conv_count,fc_count,
+                                    conv_feats,fc_feats,conv_k_size,conv_stride,False)
+
         #Assignment operations for updating inference graph
         with tf.name_scope("Assignment_Ops"):
             with tf.name_scope("weight_update_ops"):
                 ops = build_update_infer_weights_op("conv","FC",conv_count,fc_count)
-        
-        with tf.name_scope("Trainer"):
 
-            #Creating global step
-            global_step = tf.train.create_global_step()
-            #adding decay learning rate operation
-            #decay_learning_rate = tf.train.exponential_decay(learning_rate,global_step,
-            #                                                 decay_steps=100000,decay_rate=0.98,
-            #                                                 staircase=False, name="decayLR_op")
-            #tf.summary.scalar("Learning_Rate",decay_learning_rate)
-            
-            #Forcing inference on state 2. Required for Q learning
-            with tf.control_dependencies([assign_infer_op]):
-                qmax_idx = tf.argmax(train_output,axis=1,name="qmax_idx")
-                #gamma = tf.cond(global_step > 10000,lambda: tf.constant(.9,tf.float16),lambda: tf.cast(tf.divide(tf.cast(global_step,tf.float16),tf.constant(10000,tf.float16)),tf.float16))
-                gamma = tf.constant(.99,tf.float16)
-                tf.summary.scalar("gamma",gamma)
-                #Determine predicted value output
-                idxs = tf.concat((tf.transpose([tf.range(0,batch_size,dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
-                Qnext = tf.reduce_max(train_output,name="Qnext_train")
-                target_q = tf.add(r,tf.multiply(gamma,Qnext),name="y")
-                p_r = tf.Print(r,[r],message= "Reward: ")
-                y = tf.Variable(train_output,trainable=False)
+        global_step = tf.train.create_global_step()
+
+        with tf.name_scope("Q_Algo"):
+            qmax_idx = tf.argmax(target_output,axis=1,name="qmax_idx")
+            gamma = tf.constant(0.99,tf.float16)
+            idxs = tf.concat((tf.transpose([tf.range(0,batch_size,dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
+            Qnext = tf.reduce_max(target_output,name="Qnext_target")
+            target_q = tf.add(r,tf.multiply(gamma,Qnext),name="y")
+            y = tf.Variable(tf.zeros(shape=target_output.get_shape(),dtype=tf.float16),trainable=False)
+            assign_y = tf.assign(y,target_output)
+            with tf.control_dependencies([assign_y]):
                 tf.scatter_nd_update(y,tf.expand_dims(idxs,axis=1),target_q)
+                tf.summary.histogram("y",y)
+            #y = np.random.rand(32,5)
+            #gamma = 0
 
-            #Forcing training on state 1. Required for Q learning
-            with tf.control_dependencies([assign_train_op]):
-                y_mean,y_var = tf.nn.moments(y,axes=[0,1])
-                delta = tf.multiply(tf.constant(1.345,tf.float32),tf.cast(tf.sqrt(y_var),tf.float32))
-                #p_queues = tf.Print([y],[y],message="y: ")
-                #loss = tf.losses.huber_loss(y,train_output,delta=delta)
-                #loss = tf.nn.l2_loss(y-train_output)
-                loss = tf.losses.huber_loss(y,train_output,delta=3.0)
-                tf.summary.scalar("loss",loss)
+        with tf.name_scope("Trainer"):
+            #Creating global step
+            loss = tf.losses.huber_loss(y,train_output,delta=1.0)
+            tf.summary.scalar("loss",loss)
+            opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01)
+            grads = opt.compute_gradients(loss)
+            
+            train = opt.apply_gradients(grads,global_step=global_step)
+            p_delta = tf.Print([grads[1]],[grads[1]],message="grads: ")
+        
+        p_r = 0
 
-                #opt = tf.train.GradientDescentOptimizer(decay_learning_rate)
-                opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01)
-                grads = opt.compute_gradients(loss)
-                #capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in grads]
-                train = opt.apply_gradients(grads,global_step=global_step)
-                p_delta = tf.Print([grads[1]],[grads[1]],message="grads: ")
         
     summ = tf.summary.merge_all()
     writer = tf.summary.FileWriter(LOGDIR)
