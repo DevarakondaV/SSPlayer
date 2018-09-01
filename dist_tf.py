@@ -104,14 +104,18 @@ else:
                 greed_frames = int(input("Greed Frames Limit: "))
 
     else:
+        lap_dir = r'C:\Users\Vishnu\Documents\EngProj\SSPlayer\log'
+        dsk_chk_dir = r"E:\TFtmp\test\model"
+        dsk_sum_dir = r"E:\TFtmp\test\sum"
+        
         #3600 saver
         #summ  = 300
-        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=r'E:\TFtmp\test\model',
+        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=lap_dir,
                                                     save_secs=3600,save_steps=None,
                                                     saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
                                                     scaffold=None)
         summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
-                                                    output_dir=r'E:\TFtmp\test\sum',summary_writer=None,
+                                                    output_dir=lap_dir,summary_writer=None,
                                                     scaffold=None,summary_op=summ)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
                                                 hooks = [saver_hook,summary_hook],
