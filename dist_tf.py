@@ -77,7 +77,7 @@ else:
 
     if (t_num == 0):
         g_sheets = 0
-        game = t048(1)
+        game = t048(2)
         wait_for(1)
         #game.click_play()
         print(server.target)
