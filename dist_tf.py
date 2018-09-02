@@ -54,7 +54,7 @@ else:
                     conv,fclyr,
                     conv_k_size,conv_stride,LOGDIR)
         
-        writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,uwb,p_r,gamma = train_model(learning_rate,
+        writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,infer_ops,target_ops,p_r,gamma,global_step = train_model(learning_rate,
                                                      batch_size,conv_count,
                                                      fc_count,conv,
                                                      fclyr,conv_k_size,
@@ -63,10 +63,11 @@ else:
         saver = tf.train.Saver()
     ops = {
         'action': a,'enqueue_op': enqueue_op,
-        'train': train,'uwb': uwb,
+        'train': train,'uwb': infer_ops,
         'p_queues' : p_queues, 'q_vals_pr': q_vals_pr,
         'p_r': p_r, 'gamma': gamma,
-        'p_delta': p_delta,
+        'p_delta': p_delta, 'target_ops': target_ops,
+        'global_step': global_step
     }
     
     phs = {
@@ -121,7 +122,9 @@ else:
                                                 hooks = [saver_hook,summary_hook],
                                                 save_summaries_steps=1,config=config) as sess:
             while not sess.should_stop():
-                tt = sess.run([train,p_queues,p_delta],{x1: np.random.rand(1,110,84,4).astype(np.uint8)})
+                tt = sess.run([train,p_queues,p_delta,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
                 #print(tt[2])
+                if tt[3] % 50 == 0:
+                    sess.run([infer_ops],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
 
     
