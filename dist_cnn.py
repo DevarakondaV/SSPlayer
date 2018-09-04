@@ -325,7 +325,7 @@ def target_weight_update_ops(conv_name,fc_name,conv_count,fc_count):
     """
 
     num_conv = conv_count
-    num_fc = fc_count
+    num_fc = fc_count+1
     
     Target_conv_w = [get_tensor("Target/Convolution_Layers/{}{}/w{}:0".format(conv_name,i,i)) for i in range(1,num_conv)]
     Target_conv_b = [get_tensor("Target/Convolution_Layers/{}{}/b{}:0".format(conv_name,i,i)) for i in range(1,num_conv)]
