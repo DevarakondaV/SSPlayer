@@ -62,7 +62,7 @@ def store_exp(seq):
     global process_frames
     if (process_frames > 500000):
         exp.pop(0)
-    process_frames = process_frames+2
+    #process_frames = process_frames+2
     exp.append(seq)    
     return
 
@@ -73,8 +73,10 @@ def get_greed(greed_frames,frames):
 
 
 def get_frame(game):
+    global process_frames
     frame = take_shot(game)
     bval = game.stop_play
+    process_frames = process_frames+1
     return frame,bval
 
 def process_seq(seq):
@@ -146,6 +148,7 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
             phi1 = phi2
             if (len(exp) > batch_size):
                 dist_add_to_queue(sess,batch_size,ops,phs)
+            print(len(exp),process_frames)
         wait_for(.3)
         sess.run([ops['uwb']])
         wait_for(.3)

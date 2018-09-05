@@ -39,9 +39,9 @@ conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 0.00025
 gamma = np.array([.9]).astype(np.float16)
-batch_size = 32
-LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log"    
-
+batch_size = 2
+#LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log"    
+LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log"
 
 if s_name == "ps":
     server = tf.train.Server(cl_spec,job_name="ps",task_index=0,config=config)
@@ -78,7 +78,7 @@ else:
 
     if (t_num == 0):
         g_sheets = 0
-        game = t048(1)
+        game = t048(2)
         wait_for(1)
         #game.click_play()
         print(server.target)
@@ -111,12 +111,12 @@ else:
         
         #3600 saver
         #summ  = 300
-        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=dsk_chk_dir,
+        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=lap_dir,
                                                     save_secs=3600,save_steps=None,
                                                     saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
                                                     scaffold=None)
         summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
-                                                    output_dir=dsk_sum_dir,summary_writer=None,
+                                                    output_dir=lap_dir,summary_writer=None,
                                                     scaffold=None,summary_op=summ)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
                                                 hooks = [saver_hook,summary_hook],
@@ -124,7 +124,8 @@ else:
             while not sess.should_stop():
                 tt = sess.run([train,p_queues,p_delta,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
                 #print(tt[2])
-                if tt[3] % 50 == 0:
+                if tt[3] % 10 == 0:
+                    print(tt[3])
                     sess.run([infer_ops],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
 
     
