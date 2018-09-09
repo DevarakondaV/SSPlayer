@@ -39,7 +39,7 @@ conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 0.00025
 gamma = np.array([.9]).astype(np.float16)
-batch_size = 2
+batch_size = 5
 #LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log"    
 LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log"
 
@@ -122,10 +122,10 @@ else:
                                                 hooks = [saver_hook,summary_hook],
                                                 save_summaries_steps=1,config=config) as sess:
             while not sess.should_stop():
-                tt = sess.run([train,p_queues,p_delta,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
+                tt = sess.run([train,p_delta,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
                 #print(tt[2])
-                if tt[3] % 3 == 0:
-                    print(tt[3])
+                if tt[2] % 50 == 0:
+                    print(tt[2])
                     sess.run([infer_ops,target_ops],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
 
     
