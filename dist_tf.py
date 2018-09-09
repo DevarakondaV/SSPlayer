@@ -63,7 +63,7 @@ else:
         saver = tf.train.Saver()
     ops = {
         'action': a,'enqueue_op': enqueue_op,
-        'train': train,'uwb': infer_ops,
+        'train': train,'infer_ops': infer_ops,
         'p_queues' : p_queues, 'q_vals_pr': q_vals_pr,
         'p_r': p_r, 'gamma': gamma,
         'p_delta': p_delta, 'target_ops': target_ops,
@@ -124,8 +124,8 @@ else:
             while not sess.should_stop():
                 tt = sess.run([train,p_queues,p_delta,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
                 #print(tt[2])
-                if tt[3] % 10 == 0:
+                if tt[3] % 3 == 0:
                     print(tt[3])
-                    sess.run([infer_ops],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
+                    sess.run([infer_ops,target_ops],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
 
     

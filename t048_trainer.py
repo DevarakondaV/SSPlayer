@@ -150,8 +150,6 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
                 dist_add_to_queue(sess,batch_size,ops,phs)
             print(len(exp),process_frames)
         wait_for(.3)
-        sess.run([ops['uwb']])
-        wait_for(.3)
         game.reward = 0
         game.stop_play = False
         gp = gp+1
