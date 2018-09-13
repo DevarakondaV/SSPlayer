@@ -34,7 +34,7 @@ config.gpu_options.allow_growth = True
 conv_k_size = [8,4]
 conv_stride = [4,2]
 conv = [0,16,32]
-fclyr = [0,256] #5
+fclyr = [0,256,128,64] #5
 conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 0.00025
@@ -124,7 +124,7 @@ else:
             while not sess.should_stop():
                 tt = sess.run([train,p_delta,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
                 #print(tt[2])
-                if tt[2] % 50 == 0:
+                if tt[2] % 10 == 0:
                     print(tt[2])
                     sess.run([infer_ops,target_ops],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
 

@@ -25,6 +25,7 @@ def dist_infer_action(sess,frames,ops,phs):
     x1 = phs['x1']
     q = ops['q_vals_pr']
     a,q = sess.run([action,q],{x1: [frames]})
+    print("QQQ",q)
     return a,q
 
 def send_action_to_game_controller(game,phi1,a,reward):
@@ -55,6 +56,8 @@ def send_action_to_game_controller(game,phi1,a,reward):
     elif (a == 3):
         print(a,"right")
         game.move(game.right)
+    else:
+        print(a,"what")
     
     #Waiting for the graphics to catch up
     wait_for(.5)
@@ -73,13 +76,21 @@ def send_action_to_game_controller(game,phi1,a,reward):
         #IF the internal reward for the game iteration has changed 
         #then the reward has increased. Therefore the action taken
         #as an associated reward of 1. Else 0.
+        
+        
         if  game.reward == reward:
             r = 0
         elif game.reward > reward:
             r = 1
+        #r = game.reward-reward
         reward = game.reward
         pass
-
+    
+    #if frames are equal then reward needs to be hanged to -1
+    chk_frm = phi1[:,:,0]
+    if np.array_equal(chk_frm,np.squeeze(frame)):
+        r = -.3
+    print("state r: ",r)
     #print("reward: ", r)
     return frame,bval,r,reward
 
@@ -116,7 +127,7 @@ def store_exp(seq):
     global process_frames
 
     #Older experience is phased out by poping from exp buffer
-    if (process_frames > 500000):
+    if (process_frames > 10000):
         exp.pop(0)
     #process_frames = process_frames+2
 
@@ -260,11 +271,12 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
             #cv2.waitKey(1)
             r_a = np.random.random_sample(1)
             if (r_a <= greed):
-                print(greed,"greedy: ")
-                a = np.asarray(np.random.randint(0,5))
+                #print(greed,"greedy: ")
+                a = np.asarray(np.random.randint(0,4))
             else:
-                print("Not Greedy: ")
-                a,q = np.array(dist_infer_action(sess,phi1,ops,phs)).astype(np.float16)
+                #a,q = np.array(dist_infer_action(sess,phi1,ops,phs)).astype(np.float16)
+                a,q = dist_infer_action(sess,phi1,ops,phs)
+                #print(a,q)
             frame,stop_play,r,reward = send_action_to_game_controller(game,phi1,a,reward)
             seq.append(a)
             seq.append(r)
@@ -275,21 +287,18 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
             if stop_play:
                 break
             phi1 = phi2
-            if (len(exp) > 5):
+            if (len(exp) > batch_size):
                 dist_add_to_queue(sess,batch_size,ops,phs)
             #print(len(exp),process_frames)
         wait_for(.3)
         game.reward = 0
         game.stop_play = False
         gp = gp+1
-        #print(len(exp),process_frames)
         if (gp % 50 == 0):
             print("Exp size: ", len(exp))
             print("Number process Frames: ",process_frames)
             print("greed: ",greed)
         save_seq_img(fff)
-        if (gp == 2):
-            break
     return
 
 
