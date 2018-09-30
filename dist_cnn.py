@@ -533,7 +533,7 @@ def infer_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
         return
     
     #Placing the operations on worker 0. Not Cheif
-    with tf.device("/job:worker/task:0"):
+    with tf.device("/job:worker/task:1"):
         with tf.name_scope("infer_place_holder"):
             x1 = tf.placeholder(tf.uint8,shape=[None,100,100,4],name="x1")
 
@@ -589,7 +589,7 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
         return
     
     #This model operations live on worker 1. Is Cheif
-    with tf.device("/job:worker/task:1"):    
+    with tf.device("/job:worker/task:0"):    
         with tf.name_scope("train_place_holder"):
             s_img1 = tf.placeholder(tf.uint8,shape=[batch_size,100,100,4],name="s_img1")
             s_a = tf.placeholder(tf.uint8,shape=[batch_size,1],name="s_a")
