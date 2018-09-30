@@ -76,6 +76,10 @@ else:
         's_img2': s_img2
     }
 
+    lap_dir = r'C:\Users\Vishnu\Documents\EngProj\SSPlayer\log'
+    dsk_chk_dir = r"E:\TFtmp\test\model"
+    dsk_sum_dir = r"E:\TFtmp\test\sum"
+
     if (t_num == 0):
         g_sheets = 0
         game = t048(2)
@@ -83,7 +87,7 @@ else:
         #game.click_play()
         print(server.target)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
-                                               config=config) as sess:
+                                               config=config,checkpoint_dir=lap_dir) as sess:
             train_or_play = input("T for train,P for play,E for end: T/P/E: ")
             frames_or_iter = input("Frames or Iter: F/I: ")
             num_times = int(input("Number of times? : "))
@@ -105,9 +109,6 @@ else:
                 greed_frames = int(input("Greed Frames Limit: "))
 
     else:
-        lap_dir = r'C:\Users\Vishnu\Documents\EngProj\SSPlayer\log'
-        dsk_chk_dir = r"E:\TFtmp\test\model"
-        dsk_sum_dir = r"E:\TFtmp\test\sum"
         
         #3600 saver
         #summ  = 300
@@ -120,7 +121,7 @@ else:
                                                     scaffold=None,summary_op=summ)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
                                                 hooks = [saver_hook,summary_hook],
-                                                save_summaries_steps=1,config=config) as sess:
+                                                save_summaries_steps=1,config=config,checkpoint_dir=lap_dir) as sess:
             while not sess.should_stop():
                 tt = sess.run([train,p_delta,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
                 #print(tt[2])

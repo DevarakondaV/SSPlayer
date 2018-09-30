@@ -8,6 +8,8 @@ import os
 import matplotlib.pyplot as plt
 #import cv2
 
+from pynput import keyboard
+
 def dist_infer_action(sess,frames,ops,phs):
     """
         Function infers action from the inference network
@@ -255,50 +257,66 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
     #winname = "frame"
     #cv2.namedWindow(winname) 
     #cv2.moveWindow(winname, 2700,300)
-    while (process_frames < frame_limit):
-        reward = 0
-        wait_for(1)
-        
-        frame,bval = get_frame(game)
-        fff =[]
-        seq = []
-        seq.append(frame)
-        fff.append(frame)
-        phi1 = process_seq(seq)        
-        while not game.stop_play:
-            greed = get_greed(greed_frames,process_frames)
-            #cv2.imshow(winname,frame)
-            #cv2.waitKey(1)
-            r_a = np.random.random_sample(1)
-            if (r_a <= greed):
-                #print(greed,"greedy: ")
-                a = np.asarray(np.random.randint(0,4))
-            else:
-                #a,q = np.array(dist_infer_action(sess,phi1,ops,phs)).astype(np.float16)
-                a,q = dist_infer_action(sess,phi1,ops,phs)
-                #print(a,q)
-            frame,stop_play,r,reward = send_action_to_game_controller(game,phi1,a,reward)
-            seq.append(a)
-            seq.append(r)
+
+    force_kill = False
+
+    def stop_training(key):
+        print(key)
+        if key == keyboard.Key.esc:
+            print("Kill loop")
+            nonlocal force_kill
+            force_kill = True
+            return
+
+    with keyboard.Listener(on_press=stop_training) as listener:
+        while (process_frames < frame_limit):
+            reward = 0
+            wait_for(1)
+            
+            frame,bval = get_frame(game)
+            fff =[]
+            seq = []
             seq.append(frame)
             fff.append(frame)
-            phi2 = process_seq(seq)
-            store_exp((phi1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),phi2))
-            if stop_play:
-                break
-            phi1 = phi2
-            if (len(exp) > batch_size):
-                dist_add_to_queue(sess,batch_size,ops,phs)
-            #print(len(exp),process_frames)
-        wait_for(.3)
-        game.reward = 0
-        game.stop_play = False
-        gp = gp+1
-        if (gp % 50 == 0):
-            print("Exp size: ", len(exp))
-            print("Number process Frames: ",process_frames)
-            print("greed: ",greed)
-        save_seq_img(fff)
+            phi1 = process_seq(seq)        
+            while not game.stop_play:
+                greed = get_greed(greed_frames,process_frames)
+                #cv2.imshow(winname,frame)
+                #cv2.waitKey(1)
+                r_a = np.random.random_sample(1)
+                if (r_a <= greed):
+                    #print(greed,"greedy: ")
+                    a = np.asarray(np.random.randint(0,4))
+                else:
+                    #a,q = np.array(dist_infer_action(sess,phi1,ops,phs)).astype(np.float16)
+                    a,q = dist_infer_action(sess,phi1,ops,phs)
+                    #print(a,q)
+                frame,stop_play,r,reward = send_action_to_game_controller(game,phi1,a,reward)
+                seq.append(a)
+                seq.append(r)
+                seq.append(frame)
+                fff.append(frame)
+                phi2 = process_seq(seq)
+                store_exp((phi1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),phi2))
+                if stop_play:
+                    break
+                phi1 = phi2
+                if (len(exp) > batch_size):
+                    dist_add_to_queue(sess,batch_size,ops,phs)
+                if force_kill:
+                    game.stop_play = True
+            wait_for(.3)
+            game.reward = 0
+            if force_kill:
+                break    
+            game.stop_play = False
+            gp = gp+1
+            if (gp % 50 == 0):
+                print("Exp size: ", len(exp))
+                print("Number process Frames: ",process_frames)
+                print("greed: ",greed)
+            save_seq_img(fff)
+        listener.stop()
     return
 
 
@@ -326,6 +344,11 @@ def dist_play(sess,game,M,ops,phs):
 def save_seq_img(seq):
     for i in range(0,len(seq)):
         Image.fromarray(np.squeeze(seq[i])).save("imgs/test"+str(i)+".png")
+
+
+
+
+
 
 exp = []
 process_frames = 0

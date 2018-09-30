@@ -655,7 +655,8 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
             
             train = opt.apply_gradients(grads,global_step=global_step)
             #p_delta = tf.Print([grads[1]],[grads[1]],message="grads: ")
-            p_delta = tf.Print([y],[y],message="y: ")
+            op = tf.get_default_graph().get_tensor_by_name("Inference/Dense_Layers/FC3/act3/Maximum:0")
+            p_delta = tf.Print([op],[op],message="op: ")
         p_r = 0
 
         
