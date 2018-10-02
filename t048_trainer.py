@@ -6,6 +6,7 @@ from t048_con import *
 import sys
 import os
 import matplotlib.pyplot as plt
+import tensorflow as tf
 #import cv2
 
 from pynput import keyboard
@@ -23,10 +24,21 @@ def dist_infer_action(sess,frames,ops,phs):
             q: float. Q value of the action
     """
 
+    run_metadata = tf.RunMetadata()
+
     action = ops['action']
     x1 = phs['x1']
     q = ops['q_vals_pr']
-    a,q = sess.run([action,q],{x1: [frames]})
+
+    s_img1 = phs['s_img1']
+    s_a = phs['s_a']
+    s_r = phs['s_r']
+    s_img2 = phs['s_img2']
+    print("Before infer")
+    
+    
+    #a,q = sess.run([action,q],{x1: [frames]},options=tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE),run_metadata=run_metadata)
+    a = sess.run([action],{s_img1: np.random.rand(5,100,100,4),s_a: np.random.rand(5,1).astype(np.float16), s_r: np.random.rand(5,1).astype(np.float16),s_img2: np.random.rand(5,100,100,4),x1: [frames]})
     print("QQQ",q)
     return a,q
 
@@ -225,11 +237,12 @@ def dist_add_to_queue(sess,batch_size,ops,phs):
     s_a = phs['s_a']
     s_r = phs['s_r']
     s_img2 = phs['s_img2']
+    x1 = phs['x1']
 
     #Grab training batch
     seq_n = random_minibatch_sample(batch_size)
     #Add to training queue
-    sess.run([enqueue_op],{s_img1: seq_n[0],s_a: seq_n[1], s_r: seq_n[2],s_img2: seq_n[3]})
+    sess.run([enqueue_op],{s_img1: seq_n[0],s_a: seq_n[1], s_r: seq_n[2],s_img2: seq_n[3],x1: np.random.rand(1,100,100,4)})
 
 
 def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsheets):
@@ -301,8 +314,8 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
                 if stop_play:
                     break
                 phi1 = phi2
-                if (len(exp) > batch_size):
-                    dist_add_to_queue(sess,batch_size,ops,phs)
+                #if (len(exp) > batch_size):
+                 #   dist_add_to_queue(sess,batch_size,ops,phs)
                 if force_kill:
                     game.stop_play = True
             wait_for(.3)

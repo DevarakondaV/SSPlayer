@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.python import debug as tf_debug
 import sys
 import numpy as np
 from dist_cnn import *
@@ -48,19 +49,21 @@ if s_name == "ps":
     server.join()
 else:
     server = tf.train.Server(cl_spec,job_name="worker",task_index=t_num,config=config)
-    with tf.device(tf.train.replica_device_setter(cluster=cl_spec)):
+    with tf.device(tf.train.replica_device_setter( worker_device="/job:worker/task:%d" % t_num,cluster=cl_spec)):
         x1,a,q_vals_pr = infer_model(learning_rate,batch_size,
                     conv_count,fc_count,
                     conv,fclyr,
                     conv_k_size,conv_stride,LOGDIR)
-        
+
         writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,infer_ops,target_ops,p_r,gamma,global_step = train_model(learning_rate,
                                                      batch_size,conv_count,
                                                      fc_count,conv,
                                                      fclyr,conv_k_size,
                                                      conv_stride,LOGDIR)
-        
+
         saver = tf.train.Saver()
+    
+
     ops = {
         'action': a,'enqueue_op': enqueue_op,
         'train': train,'infer_ops': infer_ops,
@@ -132,27 +135,26 @@ else:
     
         """
 
+    saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=lap_dir,
+                                                    save_secs=3600,save_steps=None,
+                                                    saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
+                                                    scaffold=None)
+    summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
+                                                    output_dir=lap_dir,summary_writer=None,
+                                                    scaffold=None,summary_op=summ)
 
 
-    if (t_num == 1):
+    if (t_num == 0):
         g_sheets = 0
         game = t048(2)
         wait_for(1)
         #game.click_play()
         print(server.target)
-
-        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=lap_dir,
-                                                    save_secs=3600,save_steps=None,
-                                                    saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
-                                                    scaffold=None)
-        summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
-                                                    output_dir=lap_dir,summary_writer=None,
-                                                    scaffold=None,summary_op=summ)
-
-
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 0),
                                                 hooks=[saver_hook,summary_hook], config=config,
                                                 checkpoint_dir=lap_dir) as sess:
+            #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+            #sess = tf_debug.TensorBoardDebugWrapperSession(sess, 'localhost:6006')
             train_or_play = input("T for train,P for play,E for end: T/P/E: ")
             frames_or_iter = input("Frames or Iter: F/I: ")
             num_times = int(input("Number of times? : "))
@@ -177,9 +179,11 @@ else:
         
         #3600 saver
         #summ  = 300
+        print(server.target)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 0),
-                                                save_summaries_steps=1,config=config,checkpoint_dir=lap_dir) as sess:
+                                                hooks = [saver_hook,summary_hook], save_summaries_steps=1,config=config,checkpoint_dir=lap_dir) as sess:
             while not sess.should_stop():
+                print("Active")
                 tt = sess.run([train,p_delta,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
                 #print(tt[2])
                 if tt[2] % 10 == 0:

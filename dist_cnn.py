@@ -533,9 +533,9 @@ def infer_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
         return
     
     #Placing the operations on worker 0. Not Cheif
-    with tf.device("/job:worker/task:1"):
+    with tf.device("/job:worker/task:0"):
         with tf.name_scope("infer_place_holder"):
-            x1 = tf.placeholder(tf.uint8,shape=[None,100,100,4],name="x1")
+            x1 = tf.placeholder(tf.uint8,shape=[1,100,100,4],name="x1")
 
     
         #Slicing Image for unnecessary frames
@@ -551,7 +551,7 @@ def infer_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
         #Some operations for using the model
         Qnext_val = tf.reduce_max(infer_output,name="Qnext_val")
         #q_vals_pr = tf.Print(Qnext_val,[Qnext_val],"Qval: ")
-        q_vals_pr = tf.Print(infer_output,[infer_output],"Qvals: ")
+        q_vals_pr = tf.Print(infer_output,[infer_output],"Test: ")
         action = tf.argmax(infer_output,axis=1,name="action")
         return x1,action,q_vals_pr
     
@@ -589,7 +589,7 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
         return
     
     #This model operations live on worker 1. Is Cheif
-    with tf.device("/job:worker/task:0"):    
+    with tf.device("/job:worker/task:1"):    
         with tf.name_scope("train_place_holder"):
             s_img1 = tf.placeholder(tf.uint8,shape=[batch_size,100,100,4],name="s_img1")
             s_a = tf.placeholder(tf.uint8,shape=[batch_size,1],name="s_a")
@@ -600,6 +600,9 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
         #    sl_img1 = s_img1[:,10:110,:,:]
         #    sl_img2 = s_img2[:,10:110,:,:]
 
+
+        
+    with tf.device("job:worker/task:0"):
         #Building Queue Operations
         with tf.name_scope("train_queue"):
             train_q = build_train_queue(batch_size,s_img1.get_shape())
@@ -607,6 +610,9 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
             p_queues = tf.Print(train_q.size(),[train_q.size()],message="Q Size1: ")
             img1,a,r,img2 = train_q.dequeue(name="dequeue")
 
+
+
+    with tf.device("job:worker/task:1"):
         #Standardizing Images
         with tf.name_scope("Img_PreProc"):
             std_img1 = standardize_img(img1)
@@ -660,7 +666,7 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
         p_r = 0
 
         
-    summ = tf.summary.merge_all()
+        summ = tf.summary.merge_all()
     #writer = tf.summary.FileWriter(LOGDIR)
     writer = 0
     return writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,infer_ops,target_ops,p_r,gamma,global_step

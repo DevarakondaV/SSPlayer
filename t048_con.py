@@ -63,6 +63,8 @@ class t048:
         
         self.chrome_options = Options()
         self.chrome_options.add_argument("--load-extension="+self.ext_path)
+        self.chrome_options.add_argument("--ignore-certificate-errors")
+        self.chrome_options.add_argument("--ignore-ssl-errors")
         self.chrome = webdriver.Chrome(chrome_options=self.chrome_options)
 
         chrome = self.chrome
