@@ -49,19 +49,22 @@ if s_name == "ps":
     server.join()
 else:
     server = tf.train.Server(cl_spec,job_name="worker",task_index=t_num,config=config)
-    with tf.device(tf.train.replica_device_setter( worker_device="/job:worker/task:%d" % t_num,cluster=cl_spec)):
-        x1,a,q_vals_pr = infer_model(learning_rate,batch_size,
-                    conv_count,fc_count,
-                    conv,fclyr,
-                    conv_k_size,conv_stride,LOGDIR)
+    #dev_rep_setter = tf.train.replica_device_setter( worker_device="/job:worker/task:%d" % t_num,cluster=cl_spec)
+    #dev_rep_setter = tf.train.replica_device_setter(cluster=cl_spec)
+    #print("#################",dev_rep_setter)
+    #with tf.device(dev_rep_setter):
+    x1,a,q_vals_pr = infer_model(learning_rate,batch_size,
+                conv_count,fc_count,
+                conv,fclyr,
+                conv_k_size,conv_stride,LOGDIR)
 
-        writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,infer_ops,target_ops,p_r,gamma,global_step = train_model(learning_rate,
-                                                     batch_size,conv_count,
-                                                     fc_count,conv,
-                                                     fclyr,conv_k_size,
-                                                     conv_stride,LOGDIR)
+    writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,infer_ops,target_ops,p_r,gamma,global_step,p_op = train_model(learning_rate,
+                                                    batch_size,conv_count,
+                                                    fc_count,conv,
+                                                    fclyr,conv_k_size,
+                                                    conv_stride,LOGDIR)
 
-        saver = tf.train.Saver()
+        #saver = tf.train.Saver()
     
 
     ops = {
@@ -70,7 +73,7 @@ else:
         'p_queues' : p_queues, 'q_vals_pr': q_vals_pr,
         'p_r': p_r, 'gamma': gamma,
         'p_delta': p_delta, 'target_ops': target_ops,
-        'global_step': global_step
+        'global_step': global_step,'p_op': p_op,
     }
     
     phs = {
@@ -153,6 +156,8 @@ else:
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 0),
                                                 hooks=[saver_hook,summary_hook], config=config,
                                                 checkpoint_dir=lap_dir) as sess:
+           
+            #print("#######",tf.get_default_graph().get_operations())
             #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
             #sess = tf_debug.TensorBoardDebugWrapperSession(sess, 'localhost:6006')
             train_or_play = input("T for train,P for play,E for end: T/P/E: ")
@@ -181,13 +186,13 @@ else:
         #summ  = 300
         print(server.target)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 0),
-                                                hooks = [saver_hook,summary_hook], save_summaries_steps=1,config=config,checkpoint_dir=lap_dir) as sess:
+                                                save_summaries_steps=1,config=config,checkpoint_dir=lap_dir) as sess:
             while not sess.should_stop():
                 print("Active")
-                tt = sess.run([train,p_delta,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
+                #tt = sess.run([train,p_delta,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
                 #print(tt[2])
-                if tt[2] % 10 == 0:
-                    print(tt[2])
-                    sess.run([infer_ops,target_ops],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
+                #if tt[2] % 10 == 0:
+                #    print(tt[2])
+                #    sess.run([infer_ops,target_ops],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
 
     
