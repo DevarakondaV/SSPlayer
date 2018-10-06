@@ -86,57 +86,6 @@ else:
     dsk_chk_dir = r"E:\TFtmp\test\model"
     dsk_sum_dir = r"E:\TFtmp\test\sum"
 
-    """
-    if (t_num == 0):
-        g_sheets = 0
-        game = t048(2)
-        wait_for(1)
-        #game.click_play()
-        print(server.target)
-        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
-                                               config=config,checkpoint_dir=lap_dir) as sess:
-            train_or_play = input("T for train,P for play,E for end: T/P/E: ")
-            frames_or_iter = input("Frames or Iter: F/I: ")
-            num_times = int(input("Number of times? : "))
-            greed = float(input("Greed: "))
-            greed_frames = int(input("Greed Frames Limit: "))
-            while (train_or_play is not "E"):
-                if (train_or_play == "T" or train_or_play == "t"):
-                    if (frames_or_iter is "I"):
-                        dist_run(sess,game,greed,num_times,batch_size,ops,phs)
-                    elif frames_or_iter is "F":
-                        frame_train_reward(sess,game,num_times,greed_frames,batch_size,ops,phs,g_sheets)
-                        #frame_train_reward_1(sess,game,num_times,greed_frames,batch_size,ops,phs)
-                elif train_or_play is "P" or train_or_play is "p":
-                    dist_play(sess,game,num_times,ops,phs)
-                train_or_play = input("T for train,P for play,E for end: T/P/E: ")
-                frames_or_iter = input("Frames or Iter: F/I: ")
-                num_times = int(input("Number of times? : "))
-                greed = float(input("Greed: "))
-                greed_frames = int(input("Greed Frames Limit: "))
-
-    else:
-        
-        #3600 saver
-        #summ  = 300
-        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=lap_dir,
-                                                    save_secs=3600,save_steps=None,
-                                                    saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
-                                                    scaffold=None)
-        summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
-                                                    output_dir=lap_dir,summary_writer=None,
-                                                    scaffold=None,summary_op=summ)
-        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 1),
-                                                hooks = [saver_hook,summary_hook],
-                                                save_summaries_steps=1,config=config,checkpoint_dir=lap_dir) as sess:
-            while not sess.should_stop():
-                tt = sess.run([train,p_delta,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
-                #print(tt[2])
-                if tt[2] % 10 == 0:
-                    print(tt[2])
-                    sess.run([infer_ops,target_ops],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
-    
-        """
 
     saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=lap_dir,
                                                     save_secs=3600,save_steps=None,
@@ -153,7 +102,7 @@ else:
         wait_for(1)
         #game.click_play()
         print(server.target)
-        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 0),
+        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=True,
                                                 hooks=[saver_hook,summary_hook], config=config,
                                                 checkpoint_dir=lap_dir) as sess:
            
@@ -185,14 +134,14 @@ else:
         #3600 saver
         #summ  = 300
         print(server.target)
-        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=(t_num == 0),
+        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=False,
                                                 save_summaries_steps=1,config=config,checkpoint_dir=lap_dir) as sess:
             while not sess.should_stop():
-                print("Active")
-                #tt = sess.run([train,p_delta,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
-                #print(tt[2])
-                #if tt[2] % 10 == 0:
-                #    print(tt[2])
-                #    sess.run([infer_ops,target_ops],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
+                #print("Active")
+                tt = sess.run([train,p_delta,global_step],{s_img1: np.random.rand(5,100,100,4),s_a: np.random.rand(5,1).astype(np.float16), s_r: np.random.rand(5,1).astype(np.float16),s_img2: np.random.rand(5,100,100,4),x1: np.random.rand(1,100,100,4).astype(np.uint8)})
+                print(tt[2])
+                if tt[2] % 10 == 0:
+                    print(tt[2])
+                    sess.run([infer_ops,target_ops],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
 
     

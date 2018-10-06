@@ -37,7 +37,7 @@ def dist_infer_action(sess,frames,ops,phs):
     s_img2 = phs['s_img2']
     print("Before infer")
     
-    a,q = sess.run([action,q],{x1: [frames]})
+    #a,q = sess.run([action,q],{x1: [frames]})
     #a,q = sess.run([action,q],{x1: [frames]},options=tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE),run_metadata=run_metadata)
     a,q = sess.run([action,p_op],{s_img1: np.random.rand(5,100,100,4),s_a: np.random.rand(5,1).astype(np.float16), s_r: np.random.rand(5,1).astype(np.float16),s_img2: np.random.rand(5,100,100,4),x1: [frames]})
     #a,q = sess.run([action],{x1: [np.zeros((100,100,4))]})
@@ -316,8 +316,8 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops,phs,gsh
                 if stop_play:
                     break
                 phi1 = phi2
-                #if (len(exp) > batch_size):
-                 #   dist_add_to_queue(sess,batch_size,ops,phs)
+                if (len(exp) > batch_size):
+                    dist_add_to_queue(sess,batch_size,ops,phs)
                 if force_kill:
                     game.stop_play = True
             wait_for(.3)
