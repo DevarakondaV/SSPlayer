@@ -614,6 +614,7 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
             enqueue_op = train_q.enqueue((s_img1,s_a,s_r,s_img2),name="eq")
             p_queues = tf.Print(train_q.size(),[train_q.size()],message="Q Size1: ")
             img1,a,r,img2 = train_q.dequeue(name="dequeue")
+            q_size = train_q.size(name="q_size_op")
             
 
         #Standardizing Images
@@ -670,7 +671,7 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
     summ = tf.summary.merge_all()
     #writer = tf.summary.FileWriter(LOGDIR)
     writer = 0
-    return writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,infer_ops,target_ops,p_r,gamma,global_step
+    return writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,infer_ops,target_ops,p_r,gamma,global_step,q_size
 
 
 def flatten_weights_summarize(w,num,trainable):

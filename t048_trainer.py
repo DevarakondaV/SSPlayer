@@ -29,7 +29,6 @@ def dist_infer_action(sess,frames,ops,phs):
     action = ops['action']
     x1 = phs['x1']
     q = ops['q_vals_pr']
-    p_op = ops['p_op']
 
     s_img1 = phs['s_img1']
     s_a = phs['s_a']
@@ -37,9 +36,9 @@ def dist_infer_action(sess,frames,ops,phs):
     s_img2 = phs['s_img2']
     print("Before infer")
     
-    #a,q = sess.run([action,q],{x1: [frames]})
+    a,q = sess.run([action,q],{x1: [frames]})
     #a,q = sess.run([action,q],{x1: [frames]},options=tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE),run_metadata=run_metadata)
-    a,q = sess.run([action,p_op],{s_img1: np.random.rand(5,100,100,4),s_a: np.random.rand(5,1).astype(np.float16), s_r: np.random.rand(5,1).astype(np.float16),s_img2: np.random.rand(5,100,100,4),x1: [frames]})
+    #a,q = sess.run([action,p_op],{s_img1: np.random.rand(5,100,100,4),s_a: np.random.rand(5,1).astype(np.float16), s_r: np.random.rand(5,1).astype(np.float16),s_img2: np.random.rand(5,100,100,4),x1: [frames]})
     #a,q = sess.run([action],{x1: [np.zeros((100,100,4))]})
     print("QQQ",q)
     return a,q

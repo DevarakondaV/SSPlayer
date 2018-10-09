@@ -58,7 +58,7 @@ else:
                 conv,fclyr,
                 conv_k_size,conv_stride,LOGDIR)
 
-    writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,infer_ops,target_ops,p_r,gamma,global_step = train_model(learning_rate,
+    writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,infer_ops,target_ops,p_r,gamma,global_step,q_size = train_model(learning_rate,
                                                     batch_size,conv_count,
                                                     fc_count,conv,
                                                     fclyr,conv_k_size,
@@ -73,7 +73,7 @@ else:
         'p_queues' : p_queues, 'q_vals_pr': q_vals_pr,
         'p_r': p_r, 'gamma': gamma,
         'p_delta': p_delta, 'target_ops': target_ops,
-        'global_step': global_step
+        'global_step': global_step,'q_size': q_size,
     }
     
     phs = {
@@ -137,6 +137,7 @@ else:
         print(server.target)
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=False,
                                                 save_summaries_steps=1,config=config,checkpoint_dir=lap_dir) as sess:
+            
             while not sess.should_stop():
                 #print("Active")
                 """
