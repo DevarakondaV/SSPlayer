@@ -124,10 +124,11 @@ else:
                 elif train_or_play is "P" or train_or_play is "p":
                     dist_play(sess,game,num_times,ops,phs)
                 train_or_play = input("T for train,P for play,E for end: T/P/E: ")
-                frames_or_iter = input("Frames or Iter: F/I: ")
-                num_times = int(input("Number of times? : "))
-                greed = float(input("Greed: "))
-                greed_frames = int(input("Greed Frames Limit: "))
+                if (train_or_play != "E"):
+                    frames_or_iter = input("Frames or Iter: F/I: ")
+                    num_times = int(input("Number of times? : "))
+                    greed = float(input("Greed: "))
+                    greed_frames = int(input("Greed Frames Limit: "))
 
     else:
         
@@ -138,7 +139,15 @@ else:
                                                 save_summaries_steps=1,config=config,checkpoint_dir=lap_dir) as sess:
             while not sess.should_stop():
                 #print("Active")
-                tt = sess.run([train,p_delta,global_step],{s_img1: np.random.rand(5,100,100,4),s_a: np.random.rand(5,1).astype(np.float16), s_r: np.random.rand(5,1).astype(np.float16),s_img2: np.random.rand(5,100,100,4),x1: np.random.rand(1,100,100,4).astype(np.uint8)})
+                """
+                tt = sess.run([train,p_delta,global_step],{s_img1: np.random.rand(5,100,100,4),
+                                                            s_a: np.random.rand(5,1).astype(np.float16), 
+                                                            s_r: np.random.rand(5,1).astype(np.float16),
+                                                            s_img2: np.random.rand(5,100,100,4),
+                                                            x1: np.random.rand(1,100,100,4).astype(np.uint8)})
+                """
+                tt = sess.run([train])
+                
                 print(tt[2])
                 if tt[2] % 10 == 0:
                     print(tt[2])
