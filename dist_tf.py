@@ -58,7 +58,7 @@ else:
                 conv,fclyr,
                 conv_k_size,conv_stride,LOGDIR)
 
-    writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,infer_ops,target_ops,p_r,gamma,global_step,q_size = train_model(learning_rate,
+    writer,summ,train,enqueue_op,p_delta,s_img1,s_a,s_r,s_img2,infer_ops,target_ops,p_r,gamma,global_step = train_model(learning_rate,
                                                     batch_size,conv_count,
                                                     fc_count,conv,
                                                     fclyr,conv_k_size,
@@ -69,11 +69,10 @@ else:
 
     ops = {
         'action': a,'enqueue_op': enqueue_op,
-        'train': train,'infer_ops': infer_ops,
-        'p_queues' : p_queues, 'q_vals_pr': q_vals_pr,
+        'train': train,'infer_ops': infer_ops, 'q_vals_pr': q_vals_pr,
         'p_r': p_r, 'gamma': gamma,
         'p_delta': p_delta, 'target_ops': target_ops,
-        'global_step': global_step,'q_size': q_size,
+        'global_step': global_step
     }
     
     phs = {
@@ -86,29 +85,31 @@ else:
     dsk_chk_dir = r"E:\TFtmp\test\model"
     dsk_sum_dir = r"E:\TFtmp\test\sum"
 
-
-    saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=lap_dir,
-                                                    save_secs=3600,save_steps=None,
-                                                    saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
-                                                    scaffold=None)
     summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
                                                     output_dir=lap_dir,summary_writer=None,
                                                     scaffold=None,summary_op=summ)
 
-
     if (t_num == 0):
+        # THis is master thread
+        saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=lap_dir,
+                                                    save_secs=3600,save_steps=None,
+                                                    saver=tf.train.Saver(),checkpoint_basename='model.ckpt',
+                                                    scaffold=None)
+        #summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
+        #                                            output_dir=lap_dir,summary_writer=None,
+        #                                            scaffold=None,summary_op=summ)
+
         g_sheets = 0
         game = t048(2)
         wait_for(1)
         #game.click_play()
         print(server.target)
+        #with tf.train.MonitoredTrainingSession(master=server.target,is_chief=True,
+        #                                        hooks=[saver_hook,summary_hook], config=config,
+        #                                        checkpoint_dir=lap_dir) as sess:
+
         with tf.train.MonitoredTrainingSession(master=server.target,is_chief=True,
-                                                hooks=[saver_hook,summary_hook], config=config,
-                                                checkpoint_dir=lap_dir) as sess:
-           
-            #print("#######",tf.get_default_graph().get_operations())
-            #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
-            #sess = tf_debug.TensorBoardDebugWrapperSession(sess, 'localhost:6006')
+                                                hooks=[saver_hook], config=config) as sess:   
             train_or_play = input("T for train,P for play,E for end: T/P/E: ")
             frames_or_iter = input("Frames or Iter: F/I: ")
             num_times = int(input("Number of times? : "))
@@ -135,11 +136,12 @@ else:
         #3600 saver
         #summ  = 300
         print(server.target)
-        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=False,
-                                                save_summaries_steps=1,config=config,checkpoint_dir=lap_dir) as sess:
-            
+        with tf.train.MonitoredTrainingSession(master=server.target,is_chief=False,hooks=[summary_hook],
+                                                save_summaries_steps=1,config=config) as sess:
+            #writer.add_graph(sess.graph)
             while not sess.should_stop():
                 #print("Active")
+                
                 """
                 tt = sess.run([train,p_delta,global_step],{s_img1: np.random.rand(5,100,100,4),
                                                             s_a: np.random.rand(5,1).astype(np.float16), 
@@ -147,11 +149,11 @@ else:
                                                             s_img2: np.random.rand(5,100,100,4),
                                                             x1: np.random.rand(1,100,100,4).astype(np.uint8)})
                 """
-                tt = sess.run([train])
+                tt = sess.run([train,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
                 
-                print(tt[2])
-                if tt[2] % 10 == 0:
-                    print(tt[2])
+                print(tt[1])
+                if tt[1] % 10 == 0:
+                    print("global_step",tt[1])
                     sess.run([infer_ops,target_ops],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
 
     

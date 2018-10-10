@@ -612,10 +612,10 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
         with tf.name_scope("train_queue"):
             train_q = build_train_queue(batch_size,s_img1.get_shape())
             enqueue_op = train_q.enqueue((s_img1,s_a,s_r,s_img2),name="eq")
-            p_queues = tf.Print(train_q.size(),[train_q.size()],message="Q Size1: ")
-            img1,a,r,img2 = train_q.dequeue(name="dequeue")
-            q_size = train_q.size(name="q_size_op")
+            img1,a,r,img2 = train_q.dequeue(name="d")
             
+        #a = s_a
+        #r = s_r
 
         #Standardizing Images
         with tf.name_scope("Img_PreProc"):
@@ -641,6 +641,8 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
 
             with tf.name_scope("Target_weight_update_op"):
                 target_ops = target_weight_update_ops("conv","FC",conv_count,fc_count)
+
+        
 
         global_step = tf.train.create_global_step()
 
@@ -671,7 +673,7 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
     summ = tf.summary.merge_all()
     #writer = tf.summary.FileWriter(LOGDIR)
     writer = 0
-    return writer,summ,train,enqueue_op,p_queues,p_delta,s_img1,s_a,s_r,s_img2,infer_ops,target_ops,p_r,gamma,global_step,q_size
+    return writer,summ,train,enqueue_op,p_delta,s_img1,s_a,s_r,s_img2,infer_ops,target_ops,p_r,gamma,global_step
 
 
 def flatten_weights_summarize(w,num,trainable):
