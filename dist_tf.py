@@ -149,11 +149,11 @@ else:
                                                             s_img2: np.random.rand(5,100,100,4),
                                                             x1: np.random.rand(1,100,100,4).astype(np.uint8)})
                 """
-                tt = sess.run([train,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
+                tt = sess.run([train,p_delta,global_step],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
                 
-                print(tt[1])
-                if tt[1] % 10 == 0:
-                    print("global_step",tt[1])
+                
+                if tt[2] % 10 == 0:
+                    print("global_step",tt[2])
                     sess.run([infer_ops,target_ops],{x1: np.random.rand(1,100,100,4).astype(np.uint8)})
 
     

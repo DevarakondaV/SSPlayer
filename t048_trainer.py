@@ -38,9 +38,9 @@ def dist_infer_action(sess,frames,ops,phs):
     
     #a,q = sess.run([action,q],{x1: [frames]})
     #a,q = sess.run([action,q],{x1: [frames]},options=tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE),run_metadata=run_metadata)
-    a = sess.run([action],{s_img1: np.random.rand(5,100,100,4),s_a: np.random.rand(5,1).astype(np.float16), s_r: np.random.rand(5,1).astype(np.float16),s_img2: np.random.rand(5,100,100,4),x1: [frames]})
+    a,q = sess.run([action,q],{s_img1: np.random.rand(5,100,100,4),s_a: np.random.rand(5,1).astype(np.float16), s_r: np.random.rand(5,1).astype(np.float16),s_img2: np.random.rand(5,100,100,4),x1: [frames]})
     #a,q = sess.run([action],{x1: [np.zeros((100,100,4))]})
-    print("QQQ",a)
+    print("QQQ",q)
     return a,q
 
 def send_action_to_game_controller(game,phi1,a,reward):
