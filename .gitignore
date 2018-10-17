@@ -8,6 +8,7 @@ tmp/
 .ipynb_checkpoints/
 __pycache__/
 imgs/
+.vscode/
 test.py
 cord.py
 debug.log

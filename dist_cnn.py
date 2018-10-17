@@ -310,6 +310,44 @@ def infer_weight_update_ops(conv_name,fc_name,conv_count,fc_count):
     assign_ops_fc_b = [tf.assign(a,b) for a,b in zip(infer_fc_b,target_fc_b)]
     return [assign_ops_conv_w,assign_ops_conv_b,assign_ops_fc_w,assign_ops_fc_b]  
 
+def get_all_weights_bias_tensors(conv_count,fc_count):
+    """
+    Function returns the tensors of all weights and biases in network
+
+    args: None
+
+    Returns:
+        A list of all tensors that are weights and biases for the network
+    """
+
+    conv_name = "conv"
+    fc_name = "FC"
+    num_conv = conv_count
+    num_fc = fc_count+1
+
+    rtn_list = []
+
+    infer_conv_w = [get_tensor("Inference/Convolution_Layers/{}{}/w{}:0".format(conv_name,i,i)) for i in range(1,num_conv)]
+    infer_conv_b = [get_tensor("Inference/Convolution_Layers/{}{}/b{}:0".format(conv_name,i,i)) for i in range(1,num_conv)]
+    infer_fc_w = [get_tensor("Inference/Dense_Layers/{}{}/w{}:0".format(fc_name,i,i)) for i in range(1,num_fc)]
+    infer_fc_b = [get_tensor("Inference/Dense_Layers/{}{}/b{}:0".format(fc_name,i,i)) for i in range(1,num_fc)]
+    
+    target_conv_w = [get_tensor("Target/Convolution_Layers/{}{}/w{}:0".format(conv_name,i,i)) for i in range(1,num_conv)]
+    target_conv_b = [get_tensor("Target/Convolution_Layers/{}{}/b{}:0".format(conv_name,i,i)) for i in range(1,num_conv)]
+    target_fc_w = [get_tensor("Target/Dense_Layers/{}{}/w{}:0".format(fc_name,i,i)) for i in range(1,num_fc)]
+    target_fc_b = [get_tensor("Target/Dense_Layers/{}{}/b{}:0".format(fc_name,i,i)) for i in range(1,num_fc)]
+
+    train_conv_w = [get_tensor("Train/Convolution_Layers/{}{}/w{}:0".format(conv_name,i,i)) for i in range(1,num_conv)]
+    train_conv_b = [get_tensor("Train/Convolution_Layers/{}{}/b{}:0".format(conv_name,i,i)) for i in range(1,num_conv)]
+    train_fc_w = [get_tensor("Train/Dense_Layers/{}{}/w{}:0".format(fc_name,i,i)) for i in range(1,num_fc)]
+    train_fc_b = [get_tensor("Train/Dense_Layers/{}{}/b{}:0".format(fc_name,i,i)) for i in range(1,num_fc)]
+
+    rtn_list = infer_conv_w + infer_conv_b + infer_fc_w + infer_fc_b
+    rtn_list = rtn_list + target_conv_w + target_conv_b + target_fc_w + target_fc_b
+    rtn_list = rtn_list + train_conv_w + train_conv_b + train_fc_w + train_fc_b
+    return rtn_list
+
+
 def target_weight_update_ops(conv_name,fc_name,conv_count,fc_count):
     """
      Function builds operations to update target network weights and biases
@@ -343,10 +381,6 @@ def target_weight_update_ops(conv_name,fc_name,conv_count,fc_count):
     assign_ops_fc_w = [tf.assign(a,b) for a,b in zip(Target_fc_w,train_fc_w)]
     assign_ops_fc_b = [tf.assign(a,b) for a,b in zip(Target_fc_b,train_fc_b)]
     return [assign_ops_conv_w,assign_ops_conv_b,assign_ops_fc_w,assign_ops_fc_b]
-
-
-
-
 
 def create_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
     """
