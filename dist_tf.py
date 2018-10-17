@@ -91,10 +91,10 @@ else:
     dsk_sum_dir = r"E:\TFtmp\test\sum"
 
     #Saver
-    saver = tf.train.Saver(
-        var_list = get_all_weights_bias_tensors(conv_count,fc_count)
-    )
-
+    #saver = tf.train.Saver(
+    #    var_list = get_all_weights_bias_tensors(conv_count,fc_count)
+    #)
+    saver = tf.train.Saver()
 
     summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
                                                     output_dir=summary_dir,summary_writer=None,

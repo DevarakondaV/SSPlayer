@@ -570,7 +570,7 @@ def infer_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
     #with tf.device("/job:ps/task:0"):
     
     #Placing the operations on worker 0. Not Cheif
-    with tf.device("/job:worker/replica:0/task:0"):
+    with tf.device("/job:worker/replica:0/task:0/cpu:0"):
         with tf.name_scope("infer_place_holder"):
             x1 = tf.placeholder(tf.uint8,shape=[1,100,100,4],name="x1")
 
@@ -629,7 +629,7 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
 
 
     #This model operations live on worker 1. Is Cheif
-    with tf.device("/job:worker/replica:0/task:1"):    
+    with tf.device("/job:worker/replica:0/task:1/gpu:0"):    
         with tf.name_scope("train_place_holder"):
             s_img1 = tf.placeholder(tf.uint8,shape=[batch_size,100,100,4],name="s_img1")
             s_a = tf.placeholder(tf.uint8,shape=[batch_size,1],name="s_a")
@@ -643,10 +643,11 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
 
         #Building Queue Operations
         
-        with tf.name_scope("train_queue"):
-            train_q = build_train_queue(batch_size,s_img1.get_shape())
-            enqueue_op = train_q.enqueue((s_img1,s_a,s_r,s_img2),name="eq")
-            img1,a,r,img2 = train_q.dequeue(name="d")
+        with tf.device("/job:worker/replica:0/task:1/cpu:2"):
+            with tf.name_scope("train_queue"):
+                train_q = build_train_queue(batch_size,s_img1.get_shape())
+                enqueue_op = train_q.enqueue((s_img1,s_a,s_r,s_img2),name="eq")
+                img1,a,r,img2 = train_q.dequeue(name="d")
             
         #a = s_a
         #r = s_r
