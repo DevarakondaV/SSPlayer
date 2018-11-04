@@ -12,3 +12,5 @@ imgs/
 test.py
 cord.py
 debug.log
+log2/
+chkpt/
