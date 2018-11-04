@@ -118,16 +118,7 @@ def final_linear_layer(m_input,size_in,size_out,trainable_vars,name="final",num=
         tf.summary.histogram("act",act)
         return act
         
-    
-    
-def get_place_holders():
-    """
-    Returns: The tensorflow name of the placeholder variables
-    """
-    a = tf.get_default_graph().get_tensor_by_name("infer_place_holder/x1:0")
-    b = tf.get_default_graph().get_tensor_by_name("infer_place_holder/train_bool:0")
-    c = tf.get_default_graph().get_tensor_by_name("train_place_holder/seq:0")
-    return a,b,c
+
 
 
 def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,trainable_vars):
@@ -196,27 +187,6 @@ def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,
 
         
 
-def build_train_queue(batch_size,img_shp):
-    """
-    Builds FIFOQueue used in training
-
-    args:
-        batch_size: int. Training batch size
-        img_shp: shape of the image
-    
-    Returns:
-        Tensorflow FIFOQueue
-    """
-    with tf.name_scope("TrainQueue"):
-        q = tf.FIFOQueue(capacity=25,
-                         dtypes= (tf.uint8,tf.uint8,tf.float16,tf.uint8),
-                         shapes= (img_shp,
-                                  tf.TensorShape([batch_size,1]),
-                                  tf.TensorShape([batch_size,1]),
-                                  img_shp),
-                         name="tq",shared_name="train_queue")
-        
-    return q
 
 
 
@@ -523,12 +493,6 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
     #Global step for training purposes
     global_step = tf.train.create_global_step()
 
-
-    #Define conditional y initial value shape
-    #y = tf.cond(tf.equal(tf.shape(r)[0],1),lambda: tf.Variable(tf.zeros(shape=[1,4],dtype=tf.float16),trainable=False),
-    #                                        lambda: tf.Variable(tf.zeros(shape=[batch_size,4],dtype=tf.float16),trainable=False))
-    
-    
 
     #implementing Q algorithm
     with tf.name_scope("Q_Algo"):
@@ -856,8 +820,9 @@ def flatten_weights_summarize(w,num,trainable):
 def intermediate_summary_img(img,num,trainable):
     s_img = img[0,:,:,:]
     if (trainable):
-        s_img_n = tf.expand_dims(tf.transpose(s_img,perm=[2,0,1]),axis=3)
-        tf.summary.image("img"+num,s_img_n)
+        with tf.name_scope("inter_imgs"):
+            s_img_n = tf.expand_dims(tf.transpose(s_img,perm=[2,0,1]),axis=3)
+            tf.summary.image("img"+num,s_img_n)
         """
         s_img_1 = tf.expand_dims(img[:,:,:,0],axis=3)
         s_img_2 = tf.expand_dims(img[:,:,:,1],axis=3)

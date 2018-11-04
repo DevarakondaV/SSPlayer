@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from cnn import *
 from t048_trainer import *
-from gsheets import *
+#from gsheets import *
 
 
 
@@ -25,7 +25,7 @@ conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 0.00025
 gamma = np.array([.9]).astype(np.float16)
-batch_size = 5   
+batch_size = 32 
 LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2"
 
 summary_dir = LOGDIR
@@ -35,11 +35,6 @@ ops_and_tens = construct_two_network_model(learning_rate,gamma,batch_size,conv_c
 print(ops_and_tens.keys())
 writer = ops_and_tens['writer']
 summ = ops_and_tens['summ']
-s1 = ops_and_tens['place_holders/s1:0']
-s2 = ops_and_tens['place_holders/s2:0']
-sr = ops_and_tens['place_holders/r:0']
-action = ops_and_tens['action/action:0']
-q_vals_pr = ops_and_tens['action/q_vals_pr:0']
 
 saver = tf.train.Saver()
 
@@ -49,7 +44,7 @@ summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
                                                 scaffold=None,summary_op=summ)
 
 saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=chkpt_dir,
-                                                save_secs=None,save_steps=1,
+                                                save_secs=None,save_steps=5,
                                                 saver=saver,checkpoint_basename='model.ckpt',
                                                 scaffold=None)
 
