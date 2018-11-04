@@ -153,6 +153,27 @@ def get_greed(greed_frames,frames):
         return 0.1
     return (((.1-1)/greed_frames)*frames)+1
 
+def execute_train_operation(sess,batch_size,ops_and_tens):
+    """
+        Function executes a training operation
+        
+        args:
+            sess: Tensorflow Session.
+            batch_size: int. Training batch size.
+            ops_and_tens: Dictionary containing operations and tensors
+        return:
+    
+    """
+
+    train = ops_and_tens['train']
+    s1 = ops_and_tens['s1']
+    s2 = ops_and_tens['s2']
+    r = ops_and_tens['r']
+
+    #Grab training batch
+    seq_n = random_minibatch_sample(batch_size)
+    #Add to training queue
+    sess.run([train],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
 
 def get_frame(game):
     """
