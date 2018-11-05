@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import truncnorm as tn
 import tensorflow as tf
+from tensorflow.contrib.tensorboard.plugins import projector
 
 
 def conv_layer(m_input,size_in,size_out,k_size_w,k_size_h,conv_stride,pool_k_size,pool_stride_size,trainable_vars,name,num):
@@ -425,7 +426,6 @@ def create_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,f
     return writer,summ,train,action,x1,train_q,p_op,q_s1
 
 
-
 def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
     """
     This functions creates a non-distributed tensorflow model for inference and training with only two networks
@@ -454,6 +454,36 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         s2 = tf.placeholder(tf.uint8,shape=[None,100,100,4],name='s2')
         r = tf.placeholder(tf.float16,shape=[None,1],name="r")
 
+    # #Variables
+    # with tf.name_scope("variables"):
+    #     emb_var = tf.zeros(shape=[1,100,100,4],dtype=tf.uint8)
+
+    # #Embeddings
+    # with tf.name_scope("embeddings_ops"):
+    #     config = projector.ProjectorConfig()
+    #     embedding = config.embeddings.add()
+    #     embedding.tensor_name = emb_var.name
+
+    #     # Specify where you find the metadata
+    #     embedding.metadata_path = path_for_mnist_metadata #'metadata.tsv'
+
+    #     # Specify where you find the sprite (we will create this later)
+    #     embedding.sprite.image_path = path_for_mnist_sprites #'mnistdigits.png'
+    #     embedding.sprite.single_image_dim.extend([28,28])
+
+    #     # Say that you want to visualise the embeddings
+    #     projector.visualize_embeddings(summary_writer, config)
+
+    # #Conditionaly stack images based on the input size
+    # def fn_true():
+    #     # Stack the image
+    #     emb_var = tf.stack([emb_var,s1],axis=0,name='stack_tsors'):
+    #     shp_op = tf.shape(op)
+    #     return op[shp_op[0]-1]
+
+
+    # std_s1_input = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: s1)
+
     #Standardizing images
     with tf.name_scope("image_pre_proc"):
         std_img_s1 = standardize_img(s1)
@@ -471,8 +501,6 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
 
     input_img = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: std_img_s2)
 
-    # q_vals_pr = tf.Print(tf.shape(input_img),[tf.shape(input_img)],"input_img: ",name="q_vals_pr")
-    # q_vals_pr = tf.Print(std_img_s1,[std_img_s1],"img: ",name="q_vals_pr")
 
     #Building graph for inference
     inference_out = build_graph("Target",input_img,
@@ -507,7 +535,6 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         assign_y = tf.assign(y,inference_out)
         with tf.control_dependencies([assign_y]):
             tf.scatter_nd_update(y,tf.expand_dims(idxs,axis=1),target_q)
-            tf.summary.histogram("y",y)
     
 
     with tf.name_scope("Trainer"):
@@ -517,12 +544,15 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01)
         grads = opt.compute_gradients(loss)
         train = opt.apply_gradients(grads,global_step=global_step,name='train')
+        #for index, grad in enumerate(grads):
+         #   tf.summary.histogram("{}-grad".format(grads[index][1].name), grads[index])
         #p_delta = tf.Print([grads[1]],[grads[1]],message="grads: ")
 
 
     with tf.name_scope("action"):
         action = tf.argmax(inference_out[0],axis=0,name="action")
-        prt = tf.Print(action,[action],"a: ",name="q_vals_pr")  
+        tf.summary.scalar("Action: ",action)
+        prt = tf.Print(tf.shape(s1),[tf.shape(s1)],"a: ",name="q_vals_pr")  
 
     summ = tf.summary.merge_all()
     writer = tf.summary.FileWriter(LOGDIR)

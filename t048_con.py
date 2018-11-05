@@ -76,6 +76,7 @@ class t048:
         #Check if retry button visible
         self.retry_buttom = chrome.find_element_by_xpath("/html/body/div[2]/div[3]/div[1]/div/a[2]")
         self.score = chrome.find_element_by_xpath("/html/body/div[2]/div[1]/div/div[1]")
+        #self.tile_inner_elems = chrome.find_elements_by_class_name("tile-inner")
 
         chrome.execute_script("window.scrollTo(0,225)")
 
@@ -104,10 +105,17 @@ class t048:
         
     def get_reward(self):
         txt = self.score.text
-        while "+" in txt:
-            txt = self.score.text
+        tile_inner_elems = self.chrome.find_elements_by_class_name("tile-inner")
+        r = 0
+        for i in tile_inner_elems:
+            if i.text.isdigit():
+                if int(i.text) == 8:
+                    r = 1
+        return r
+        #while "+" in txt:
+        #    txt = self.score.text
         
-        return int(txt)
+        #return int(txt)
 
     
 
