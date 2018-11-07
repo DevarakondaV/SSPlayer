@@ -227,26 +227,29 @@ def get_frame(game):
     process_frames = process_frames+1
     return frame,bval
 
-def process_seq(seq):
+def process_seq(seq,batch_size):
     """
         Function process the last batchsize frames and stacks them for the network
 
         args:
             seq: List. Containg SARSA for game iteration
+            batch_size: int. Batch_size(Group sequences by)
         returns:
             np_f: numpy array: Stacked Last four frames of the sequence
     """
 
     #Determine lenght of seq (it is always changing)
     seq_len = len(seq)
+    lower_lim = batch_size*3
     #idx contains the index of the last four frames in seq
-    idx = [i  for i in range(seq_len-1,seq_len-1-12,-3) if i >= 0]
+    #idx = [i  for i in range(seq_len-1,seq_len-1-12,-3) if i >= 0]
+    idx = [i  for i in range(seq_len-1,seq_len-1-lower_lim,-3) if i >= 0]
     
     #grab the frames into list
     frames = [seq[i] for i in idx]
     
     #If lenght of frame is less than 4. -> Game just started. Add black images
-    #This shouldn't effect the training
+    #This shouldn't effect the training(Everything is zero :))
     len_frames = len(frames)
     add_num = 4-len_frames
     for i in range(0,add_num):
@@ -315,7 +318,7 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops_and_ten
                 r_a = np.random.random_sample(1)
                 if (r_a <= greed):
                     a = np.asarray(np.random.randint(0,4))
-                    print("##########ACTION RANDOM########")
+                    print("##########ACTION RANDOM######## greed: {}".format(greed))
                 else:
                     a = infer_action(sess,phi1,ops_and_tens)
                     print("##########ACTION INFERED")
@@ -329,12 +332,12 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops_and_ten
                 if stop_play:
                     break
                 phi1 = phi2
-                
-                # if (len(exp) > batch_size):
-                #     execute_train_operation(sess,batch_size,ops_and_tens,num_train_ops)
-                #     num_train_ops = num_train_ops+1
-                #     if (num_train_ops % 10) == 0:
-                #         update_target_params(sess,frame,ops_and_tens,num_train_ops/10)
+                print("##### Len Exp Vector: {} #####".format(len(exp)))
+                if (len(exp) > 100):
+                    execute_train_operation(sess,batch_size,ops_and_tens,num_train_ops)
+                    num_train_ops = num_train_ops+1
+                    if (num_train_ops % 10) == 0:
+                        update_target_params(sess,frame,ops_and_tens,num_train_ops/10)
                 
                 
                 

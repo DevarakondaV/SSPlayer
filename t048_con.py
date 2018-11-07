@@ -109,7 +109,7 @@ class t048:
         r = 0
         for i in tile_inner_elems:
             if i.text.isdigit():
-                if int(i.text) == 8:
+                if int(i.text) == 512:
                     r = 1
         return r
         #while "+" in txt:
