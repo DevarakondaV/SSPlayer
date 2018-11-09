@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 #import cv2
 
+
 from pynput import keyboard
 
 def infer_action(sess,frames,ops_and_tens):
@@ -48,7 +49,7 @@ def send_action_to_game_controller(game,phi1,a,reward):
             r: int.Reward associated with the taken action.
             reward: float. Updated total reward for the current game iteration
     """ 
-
+    
     #Telling game to perform an action based on the value of a
     if (a == 0):
         m_dir = "up"
@@ -73,6 +74,8 @@ def send_action_to_game_controller(game,phi1,a,reward):
     #Determine the new state of the game
     frame,bval = get_frame(game)
 
+
+    """
     #Try catch checks if game has ended by looking for pop up window
     try:
         #If game has ended there will be no error
@@ -92,10 +95,22 @@ def send_action_to_game_controller(game,phi1,a,reward):
         #    r = 1
         #r = game.reward-reward
         r = game.get_reward2()
-        print("################################################# r: ",r)
         reward = 0
         pass
+    """
+
+    play_again_elem = game.chrome.find_element_by_xpath("/html/body/div[2]/div[3]/div[1]/div/a[2]")
+
+    if (play_again_elem.is_displayed()):
+        game.stop_play = True
+        r = -1
+        play_again_elem.click()
+    else:
+        r = game.get_reward2()
+        reward = 0
     
+
+
     #if frames are equal then reward needs to be hanged to -1
     #chk_frm = phi1[:,:,0]
     #if np.array_equal(chk_frm,np.squeeze(frame)):
@@ -221,7 +236,8 @@ def get_frame(game):
 
 
     global process_frames
-    frame = take_shot(game)
+    #frame = take_shot(game)
+    frame = game.take_shot()
     bval = game.stop_play
 
     #append the number of processed frames
@@ -294,10 +310,16 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops_and_ten
 
     def stop_training(key):
         print(key)
+        nonlocal game
+        nonlocal force_kill
         if key == keyboard.Key.esc:
             print("Kill loop")
-            nonlocal force_kill
             force_kill = True
+            game.chrome.set_window_position(50,50)
+            return
+        elif key == keyboard.Key.num_lock:
+            game.move_win_pos()
+            #print(game.chrome.get_window_position())
             return
 
     with keyboard.Listener(on_press=stop_training) as listener:
@@ -334,7 +356,7 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops_and_ten
                     break
                 phi1 = phi2
                 print("##### Len Exp Vector: {} #####".format(len(exp)))
-                if (len(exp) > 2000):
+                if (len(exp) > batch_size):
                     execute_train_operation(sess,batch_size,ops_and_tens,num_train_ops)
                     num_train_ops = num_train_ops+1
                     if (num_train_ops % 10) == 0:

@@ -9,6 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+import io
 import win32api,win32con
 import numpy as np 
 import mss
@@ -16,7 +17,9 @@ import mss.tools
 import time
 from PIL import Image
 
-
+import psutil
+from pywinauto import Application
+from pywinauto.win32functions import SetForegroundWindow
 
 def wait_for(sec):
     t = time.time()+sec
@@ -74,6 +77,7 @@ class t048:
         self.chrome_options.add_argument("--load-extension="+self.ext_path)
         self.chrome_options.add_argument("--ignore-certificate-errors")
         self.chrome_options.add_argument("--ignore-ssl-errors")
+        
         self.chrome = webdriver.Chrome(chrome_options=self.chrome_options)
 
         chrome = self.chrome
@@ -88,6 +92,11 @@ class t048:
         #self.tile_inner_elems = chrome.find_elements_by_class_name("tile-inner")
 
         chrome.execute_script("window.scrollTo(0,225)")
+        
+        self.chrome_pid = self.chrome.service.process.pid
+        print("###################",self.chrome_pid)
+        self.app = Application().connect(process = self.chrome_pid)
+
 
     def click_at_location(self,cord):
         x = cord[0]
@@ -106,7 +115,7 @@ class t048:
     def move(self,ks):
         try:
             ActionChains(self.chrome).send_keys(ks).perform()
-            #print("reward: ",self.reward)
+
         except:
             print("pass")
             pass
@@ -181,11 +190,45 @@ class t048:
         self.count_2048 = count_2048
         return r
 
+    def take_shot(self):
+        """
+        Takes screenshot using selenium
+
+        """
+
+        chrome = self.chrome
+        game_div = chrome.find_elements_by_class_name("grid-container")
+        game_div = game_div[0]
+        #if div exists
+        if game_div is not None:
+            #Fild the location and size
+            game_div_loc = game_div.location_once_scrolled_into_view
+            game_div_size = game_div.size 
+
+            crop_points = [game_div_loc['x'],game_div_loc['y'],
+                            game_div_loc['x']+game_div_size['width'],
+                            game_div_loc['y']+game_div_size['height']]
+
+            #Take shot of entier screen
+            
+            png = chrome.get_screenshot_as_png()
+            img_bin = io.BytesIO(png)
+            with Image.open(img_bin).convert('L') as img:
+                crp_img =  img.crop(crop_points).resize((100,100))
+            img = np.expand_dims(np.array(crp_img),axis=2)
+        return img
+
+    def move_win_pos(self):
+        if self.chrome.get_window_position() == {'x': -500, 'y':50}:
+           self.chrome.set_window_position(50,50)
+        else:
+           self.chrome.set_window_position(-500,50)
+
           
 
     
 
-def take_shot(game):
+def take_shodt(game):
     img = game.sct.grab(game.processing_crop)
     img = Image.fromarray(np.array(img)[:,:,1]).resize((100,100))
     #print("shape: ",np.array(img).shape)
@@ -193,3 +236,4 @@ def take_shot(game):
     img = np.expand_dims(np.array(img),axis=2)
     return img
 
+    
