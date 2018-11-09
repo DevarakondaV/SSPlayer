@@ -91,8 +91,9 @@ def send_action_to_game_controller(game,phi1,a,reward):
         #elif game.reward > reward:
         #    r = 1
         #r = game.reward-reward
-        r = game.get_reward()
-        reward = game.reward
+        r = game.get_reward2()
+        print("################################################# r: ",r)
+        reward = 0
         pass
     
     #if frames are equal then reward needs to be hanged to -1
@@ -310,7 +311,7 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops_and_ten
             seq = []
             seq.append(frame)
             fff.append(frame)
-            phi1 = process_seq(seq)        
+            phi1 = process_seq(seq,batch_size)        
             while not game.stop_play:
                 greed = get_greed(greed_frames,process_frames)
                 #cv2.imshow(winname,frame)
@@ -327,13 +328,13 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops_and_ten
                 seq.append(r)
                 seq.append(frame)
                 fff.append(frame)
-                phi2 = process_seq(seq)
+                phi2 = process_seq(seq,batch_size)
                 store_exp((phi1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),phi2))
                 if stop_play:
                     break
                 phi1 = phi2
                 print("##### Len Exp Vector: {} #####".format(len(exp)))
-                if (len(exp) > 100):
+                if (len(exp) > 2000):
                     execute_train_operation(sess,batch_size,ops_and_tens,num_train_ops)
                     num_train_ops = num_train_ops+1
                     if (num_train_ops % 10) == 0:
