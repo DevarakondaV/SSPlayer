@@ -236,8 +236,8 @@ def get_frame(game):
 
 
     global process_frames
-    #frame = take_shot(game)
-    frame = game.take_shot()
+    frame = take_shot(game)
+    #frame = game.take_shot()
     bval = game.stop_play
 
     #append the number of processed frames
@@ -317,10 +317,10 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops_and_ten
             force_kill = True
             game.chrome.set_window_position(50,50)
             return
-        elif key == keyboard.Key.num_lock:
-            game.move_win_pos()
+        #elif key == keyboard.Key.num_lock:
+        #    game.move_win_pos()
             #print(game.chrome.get_window_position())
-            return
+        #    return
 
     with keyboard.Listener(on_press=stop_training) as listener:
 

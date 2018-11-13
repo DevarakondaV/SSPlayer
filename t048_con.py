@@ -228,7 +228,7 @@ class t048:
 
     
 
-def take_shodt(game):
+def take_shot(game):
     img = game.sct.grab(game.processing_crop)
     img = Image.fromarray(np.array(img)[:,:,1]).resize((100,100))
     #print("shape: ",np.array(img).shape)
