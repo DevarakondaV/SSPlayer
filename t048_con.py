@@ -190,39 +190,6 @@ class t048:
         self.count_2048 = count_2048
         return r
 
-    def take_shot(self):
-        """
-        Takes screenshot using selenium
-
-        """
-
-        chrome = self.chrome
-        game_div = chrome.find_elements_by_class_name("grid-container")
-        game_div = game_div[0]
-        #if div exists
-        if game_div is not None:
-            #Fild the location and size
-            game_div_loc = game_div.location_once_scrolled_into_view
-            game_div_size = game_div.size 
-
-            crop_points = [game_div_loc['x'],game_div_loc['y'],
-                            game_div_loc['x']+game_div_size['width'],
-                            game_div_loc['y']+game_div_size['height']]
-
-            #Take shot of entier screen
-            
-            png = chrome.get_screenshot_as_png()
-            img_bin = io.BytesIO(png)
-            with Image.open(img_bin).convert('L') as img:
-                crp_img =  img.crop(crop_points).resize((100,100))
-            img = np.expand_dims(np.array(crp_img),axis=2)
-        return img
-
-    def move_win_pos(self):
-        if self.chrome.get_window_position() == {'x': -500, 'y':50}:
-           self.chrome.set_window_position(50,50)
-        else:
-           self.chrome.set_window_position(-500,50)
 
           
 

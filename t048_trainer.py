@@ -75,6 +75,7 @@ def send_action_to_game_controller(game,phi1,a,reward):
     frame,bval = get_frame(game)
 
 
+
     """
     #Try catch checks if game has ended by looking for pop up window
     try:
@@ -111,13 +112,13 @@ def send_action_to_game_controller(game,phi1,a,reward):
     
 
 
-    #if frames are equal then reward needs to be hanged to -1
-    #chk_frm = phi1[:,:,0]
-    #if np.array_equal(chk_frm,np.squeeze(frame)):
-    #    r = -.3
-    print("state r: ",r)
-    #print("reward: ", r)
-    return frame,bval,r,reward
+    #if frames are equal then invalid move..reinfer action
+    chk_frm = phi1[:,:,0]
+    if np.array_equal(chk_frm,np.squeeze(frame)):
+        return 0
+    else:
+        return frame,bval,r,reward
+
 
 def random_minibatch_sample(batchsize):
     """
@@ -200,13 +201,12 @@ def execute_train_operation(sess,batch_size,ops_and_tens,n):
     #Add to training queue
     sess.run([train,prt],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
 
-def update_target_params(sess,frame,ops_and_tens,n):
+def update_target_params(sess,ops_and_tens,n):
     """
     Function updates the target network params
 
     args:
         sess:   Tensorflow session
-        frame: numpy array. Sample frame for size
         ops_and_tens:   Dictionary. Available operations and tensors
         n: int. n^th update operatino
     returns:
@@ -280,6 +280,48 @@ def process_seq(seq,batch_size):
     return np_f
 
 
+def get_action(greed,sess,phi1,ops_and_tens):
+    """
+    Function returns a greedy/infered action
+    
+    args:
+        greed: float. Probability of chosing a random action
+        sess: Tensorflow session
+        phi1: Numpy array. State 1 of sarsa
+        ops_and_tens:    Dictionary. Contains tensorflow operations
+    """
+
+    r_a = np.random.random_sample(1)
+    if (r_a <= greed):
+        a = np.asarray(np.random.randint(0,4))
+        print("##########ACTION RANDOM######## greed: {}".format(greed))
+    else:
+        a = infer_action(sess,phi1,ops_and_tens)
+        print("##########ACTION INFERED")
+    return a
+
+def train_target_update(sess,ops_and_tens,len_exp,batch_size,num_train_ops):
+    """
+    Function performs training and target network updates
+
+    args:
+        sess:       Tensorflow session
+        len_exp:    Int. Lenght of the experience vector
+        batch_size: Int. Batch size
+        ops_and_tens: Tensorflow operations and tensors
+        num_trian_ops:   Int. Nth training operation
+    
+    returns:
+        num_train_ops
+    """
+    if (len_exp > batch_size):
+        execute_train_operation(sess,batch_size,ops_and_tens,num_train_ops)
+        num_train_ops = num_train_ops+1
+        if (num_train_ops % 10) == 0:
+            update_target_params(sess,ops_and_tens,num_train_ops/10)
+    
+    return num_train_ops
+
 def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops_and_tens,gsheets):
     """
         Function responsible for playing the game
@@ -300,11 +342,6 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops_and_ten
 
     global process_frames
     gp = 0
-    #cv2.imshow("frame",np.zeros(shape=(110,110,1)))
-    #cv2.waitKey(1)
-    #winname = "frame"
-    #cv2.namedWindow(winname) 
-    #cv2.moveWindow(winname, 2700,300)
 
     force_kill = False
 
@@ -317,53 +354,39 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops_and_ten
             force_kill = True
             game.chrome.set_window_position(50,50)
             return
-        #elif key == keyboard.Key.num_lock:
-        #    game.move_win_pos()
-            #print(game.chrome.get_window_position())
-        #    return
 
     with keyboard.Listener(on_press=stop_training) as listener:
-
         num_train_ops = 0
+        
+        
         while (process_frames < frame_limit):
             reward = 0
             wait_for(1)
             frame,bval = get_frame(game)
-            fff =[]
             seq = []
             seq.append(frame)
-            fff.append(frame)
             phi1 = process_seq(seq,batch_size)        
+           
+           #While still playing game
             while not game.stop_play:
                 greed = get_greed(greed_frames,process_frames)
-                #cv2.imshow(winname,frame)
-                #cv2.waitKey(1)
-                r_a = np.random.random_sample(1)
-                if (r_a <= greed):
-                    a = np.asarray(np.random.randint(0,4))
-                    print("##########ACTION RANDOM######## greed: {}".format(greed))
-                else:
-                    a = infer_action(sess,phi1,ops_and_tens)
-                    print("##########ACTION INFERED")
-                frame,stop_play,r,reward = send_action_to_game_controller(game,phi1,a,reward,)
-                seq.append(a)
-                seq.append(r)
-                seq.append(frame)
-                fff.append(frame)
+                
+                #If actions are invalid...keep trying new actions
+                while True:
+                    a = get_action(greed,sess,phi1,ops_and_tens)
+                    rtn_val = send_action_to_game_controller(game,phi1,a,reward,)
+                    if rtn_val != 0:
+                        frame,stop_play,r,reward = rtn_val
+                        break
+                
+                seq.extend((a,r,frame))
                 phi2 = process_seq(seq,batch_size)
                 store_exp((phi1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),phi2))
                 if stop_play:
                     break
                 phi1 = phi2
                 print("##### Len Exp Vector: {} #####".format(len(exp)))
-                if (len(exp) > batch_size):
-                    execute_train_operation(sess,batch_size,ops_and_tens,num_train_ops)
-                    num_train_ops = num_train_ops+1
-                    if (num_train_ops % 10) == 0:
-                        update_target_params(sess,frame,ops_and_tens,num_train_ops/10)
-                
-                
-                
+                num_train_ops = train_target_update(sess,ops_and_tens,len(exp),batch_size,num_train_ops)
                 if force_kill:
                     game.stop_play = True
             wait_for(.3)
@@ -372,14 +395,23 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops_and_ten
                 break    
             game.stop_play = False
             gp = gp+1
-            if (gp % 50 == 0):
-                print("Exp size: ", len(exp))
-                print("Number process Frames: ",process_frames)
-                print("greed: ",greed)
-            #save_seq_img(fff)
+            print_progress(gp,greed)
         listener.stop()
     return
 
+def print_progress(gp,greed):
+    """
+    Function prints, relevent progress metrics
+
+    args:
+        gp: Int. Game Play iteration number
+        greed: Float. Greed value
+    """
+    global process_frames, exp
+    if (gp % 50 == 0):
+        print("Exp size: ", len(exp))
+        print("Number process Frames: ",process_frames)
+        print("greed: ",greed)
 
 def play(sess,game,M,ops_and_tens):
     for i in range(0,M):
