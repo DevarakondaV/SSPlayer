@@ -147,7 +147,7 @@ def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,
         fcs_name="FC"
         
         #Number of kernels/neurons in the first layer
-        conv_feats[0] = 4
+        conv_feats[0] = 10
 
         
         #Building Convolution Layers
@@ -450,8 +450,8 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
 
     #Creating placeholders
     with tf.name_scope("place_holders"):
-        s1 = tf.placeholder(tf.uint8,shape=[None,100,100,4],name='s1')
-        s2 = tf.placeholder(tf.uint8,shape=[None,100,100,4],name='s2')
+        s1 = tf.placeholder(tf.uint8,shape=[None,100,100,batch_size],name='s1')
+        s2 = tf.placeholder(tf.uint8,shape=[None,100,100,batch_size],name='s2')
         r = tf.placeholder(tf.float16,shape=[None,1],name="r")
 
     # #Variables
@@ -488,8 +488,8 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
     with tf.name_scope("image_pre_proc"):
         std_img_s1 = standardize_img(s1)
         std_img_s2 = standardize_img(s2)
-        tf.summary.image("std_img_1",std_img_s1)
-        tf.summary.image("std_img_2",std_img_s2)
+        #tf.summary.image("std_img_1",std_img_s1)
+        #tf.summary.image("std_img_2",std_img_s2)
 
     #pad tensor if its inference [Because inference is only single image]
     paddings = tf.constant([[0,batch_size-1],[0,0],[0,0],[0,0]])

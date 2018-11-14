@@ -25,7 +25,7 @@ conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 0.00025
 gamma = np.array([.9]).astype(np.float16)
-batch_size = 4
+batch_size = 10
 LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2"
 
 summary_dir = LOGDIR
