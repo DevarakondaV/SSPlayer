@@ -7,8 +7,10 @@ testimg/
 tmp/
 .ipynb_checkpoints/
 __pycache__/
-imgs/
+imgs1/
 .vscode/
 test.py
 cord.py
 debug.log
+log2/
+chkpt/
