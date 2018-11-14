@@ -66,7 +66,10 @@ def send_action_to_game_controller(game,phi1,a,reward):
     else:
         m_dir = "unknown"
     
+<<<<<<< HEAD
     print("Action = {}\tMove dir = {}".format(str(a),m_dir))
+=======
+>>>>>>> 2048_st
 
     #Waiting for the graphics to catch up
     wait_for(.5)
@@ -111,7 +114,7 @@ def send_action_to_game_controller(game,phi1,a,reward):
         reward = 0
     
 
-
+    print("Action = {}\nMove dir = {}\nReward = {}".format(str(a),m_dir,r))
     #if frames are equal then invalid move..reinfer action
     chk_frm = phi1[:,:,0]
     if np.array_equal(chk_frm,np.squeeze(frame)):
@@ -138,7 +141,6 @@ def random_minibatch_sample(batchsize):
     a = np.array([exp[i][1] for i in line_N]).squeeze().reshape(batchsize,1)
     r = np.array([exp[i][2] for i in line_N]).squeeze().reshape(batchsize,1)
     img2s = np.array([exp[i][3] for i in line_N])
-
     return (img1s,a,r,img2s)
     
 def store_exp(seq):
@@ -189,7 +191,7 @@ def execute_train_operation(sess,batch_size,ops_and_tens,n):
     
     """
 
-    print("######\tTRAINING OPERATION: {}\t#####".format(n))
+    print("TRAINING OPERATION: {}".format(n))
     train = ops_and_tens['train']
     s1 = ops_and_tens['s1']
     s2 = ops_and_tens['s2']
@@ -199,14 +201,15 @@ def execute_train_operation(sess,batch_size,ops_and_tens,n):
     #Grab training batch
     seq_n = random_minibatch_sample(batch_size)
     #Add to training queue
-    sess.run([train,prt],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
+    sess.run([train],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
 
-def update_target_params(sess,ops_and_tens,n):
+def update_target_params(sess,batch_size,ops_and_tens,n):
     """
     Function updates the target network params
 
     args:
         sess:   Tensorflow session
+        batch_size: Int. Number of seperate scenes to consider
         ops_and_tens:   Dictionary. Available operations and tensors
         n: int. n^th update operatino
     returns:
@@ -217,9 +220,9 @@ def update_target_params(sess,ops_and_tens,n):
     r = ops_and_tens['r']
     action = ops_and_tens['action']
 
-    zeros = np.zeros(shape=(100,100,4)).astype(np.uint8)
+    zeros = np.zeros(shape=(100,100,batch_size)).astype(np.uint8)
     
-    print("#####\tUPDATING TARGET PARAMS: {}\t######".format(n))
+    print("UPDATING TARGET PARAMS: {}".format(n))
     sess.run([ops_and_tens['target_ops']],{s1: [zeros],s2: [zeros],r: [[0]]})
     return
 
@@ -268,12 +271,12 @@ def process_seq(seq,batch_size):
     #If lenght of frame is less than 4. -> Game just started. Add black images
     #This shouldn't effect the training(Everything is zero :))
     len_frames = len(frames)
-    add_num = 4-len_frames
+    add_num = batch_size-len_frames
     for i in range(0,add_num):
         #frames.append(np.zeros(shape=[110,142,1]))
         frames.insert(0,np.zeros(shape=[100,100,1]))
 
-    #Concatenate the values in frames into a stack of 4 frames
+    #Concatenate the values in frames into a stack of batch size frames
     np_f = frames[0]
     for i in range(1,len(frames)):
         np_f = np.concatenate((np_f,frames[i]),axis=2)
@@ -294,10 +297,10 @@ def get_action(greed,sess,phi1,ops_and_tens):
     r_a = np.random.random_sample(1)
     if (r_a <= greed):
         a = np.asarray(np.random.randint(0,4))
-        print("##########ACTION RANDOM######## greed: {}".format(greed))
+        print("##########\tACTION RANDOM\t########## greed: {}".format(greed))
     else:
         a = infer_action(sess,phi1,ops_and_tens)
-        print("##########ACTION INFERED")
+        print("##########\tACTION INFERED\t##########")
     return a
 
 def train_target_update(sess,ops_and_tens,len_exp,batch_size,num_train_ops):
@@ -318,7 +321,7 @@ def train_target_update(sess,ops_and_tens,len_exp,batch_size,num_train_ops):
         execute_train_operation(sess,batch_size,ops_and_tens,num_train_ops)
         num_train_ops = num_train_ops+1
         if (num_train_ops % 10) == 0:
-            update_target_params(sess,ops_and_tens,num_train_ops/10)
+            update_target_params(sess,batch_size,ops_and_tens,num_train_ops/10)
     
     return num_train_ops
 
@@ -385,7 +388,7 @@ def frame_train_reward(sess,game,frame_limit,greed_frames,batch_size,ops_and_ten
                 if stop_play:
                     break
                 phi1 = phi2
-                print("##### Len Exp Vector: {} #####".format(len(exp)))
+                print("Len Exp Vector: {}".format(len(exp)))
                 num_train_ops = train_target_update(sess,ops_and_tens,len(exp),batch_size,num_train_ops)
                 if force_kill:
                     game.stop_play = True
