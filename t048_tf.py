@@ -53,7 +53,7 @@ chief_session = tf.train.ChiefSessionCreator(scaffold=None,config=config, checkp
 
 #Launch game
 g_sheets = 0
-game = t048(2)
+game = t048(1)
 wait_for(1)
 with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, summary_hook]) as sess:
     #train_or_play = input("T for train,P for play,E for end: T/P/E: ")

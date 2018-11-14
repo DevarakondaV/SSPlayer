@@ -66,10 +66,6 @@ def send_action_to_game_controller(game,phi1,a,reward):
     else:
         m_dir = "unknown"
     
-<<<<<<< HEAD
-    print("Action = {}\tMove dir = {}".format(str(a),m_dir))
-=======
->>>>>>> 2048_st
 
     #Waiting for the graphics to catch up
     wait_for(.5)
@@ -317,7 +313,7 @@ def train_target_update(sess,ops_and_tens,len_exp,batch_size,num_train_ops):
     returns:
         num_train_ops
     """
-    if (len_exp > batch_size):
+    if (len_exp > 30000):
         execute_train_operation(sess,batch_size,ops_and_tens,num_train_ops)
         num_train_ops = num_train_ops+1
         if (num_train_ops % 10) == 0:
