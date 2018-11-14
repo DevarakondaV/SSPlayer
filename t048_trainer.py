@@ -66,7 +66,7 @@ def send_action_to_game_controller(game,phi1,a,reward):
     else:
         m_dir = "unknown"
     
-    print("a:{},dir:{}".format(str(a),m_dir))
+    print("Action = {}\tMove dir = {}".format(str(a),m_dir))
 
     #Waiting for the graphics to catch up
     wait_for(.5)
@@ -153,7 +153,7 @@ def store_exp(seq):
     global process_frames
 
     #Older experience is phased out by poping from exp buffer
-    if (process_frames > 10000):
+    if (process_frames > 1000000):
         exp.pop(0)
     #process_frames = process_frames+2
 

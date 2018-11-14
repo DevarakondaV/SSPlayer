@@ -25,7 +25,7 @@ conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 0.00025
 gamma = np.array([.9]).astype(np.float16)
-batch_size = 4
+batch_size = 10
 LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2"
 
 summary_dir = LOGDIR
@@ -44,7 +44,7 @@ summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
                                                 scaffold=None,summary_op=summ)
 
 saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=chkpt_dir,
-                                                save_secs=None,save_steps=5,
+                                                save_secs=None,save_steps=500,
                                                 saver=saver,checkpoint_basename='model.ckpt',
                                                 scaffold=None)
 
@@ -56,11 +56,16 @@ g_sheets = 0
 game = t048(2)
 wait_for(1)
 with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, summary_hook]) as sess:
-    train_or_play = input("T for train,P for play,E for end: T/P/E: ")
-    frames_or_iter = input("Frames or Iter: F/I: ")
-    num_times = int(input("Number of times? : "))
-    greed = float(input("Greed: "))
-    greed_frames = int(input("Greed Frames Limit: "))
+    #train_or_play = input("T for train,P for play,E for end: T/P/E: ")
+    #frames_or_iter = input("Frames or Iter: F/I: ")
+    #num_times = int(input("Number of times? : "))
+    #greed = float(input("Greed: "))
+    #greed_frames = int(input("Greed Frames Limit: "))
+    train_or_play = "T"
+    frames_or_iter = "F"
+    num_times = 10000000
+    greed = 0
+    greed_frames = 1000000
     while (train_or_play is not "E"):
         if (train_or_play == "T" or train_or_play == "t"):
             if (frames_or_iter is "I"):
