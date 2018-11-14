@@ -26,10 +26,10 @@ fc_count = len(fclyr)
 learning_rate = 0.00025
 gamma = np.array([.9]).astype(np.float16)
 batch_size = 10
-LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2"
+LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log2"
 
 summary_dir = LOGDIR
-chkpt_dir = LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2"
+chkpt_dir = LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log2"
 
 ops_and_tens = construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv,fclyr,conv_k_size,conv_stride,LOGDIR)
 print(ops_and_tens.keys())
