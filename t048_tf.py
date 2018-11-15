@@ -61,12 +61,15 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
     num_times = int(input("Number of times? : "))
     greed = float(input("Greed: "))
     greed_frames = int(input("Greed Frames Limit: "))
+
+    game_trainer = Trainer(sess,game,num_times,greed_frames,10,batch_size,ops_and_tens,g_sheets)
+
     while (train_or_play is not "E"):
         if (train_or_play == "T" or train_or_play == "t"):
             if (frames_or_iter is "I"):
                 iter_train_reward(sess,game,num_times,greed_frames,batch_size,ops_and_tens,g_sheets)
             elif frames_or_iter is "F":
-                frame_train_reward(sess,game,num_times,greed_frames,batch_size,ops_and_tens,g_sheets)
+                game_trainer.train()
         elif train_or_play is "P" or train_or_play is "p":
             play(sess,game,num_times,ops_and_tens)
         train_or_play = input("T for train,P for play,E for end: T/P/E: ")
