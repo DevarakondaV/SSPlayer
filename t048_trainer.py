@@ -52,6 +52,10 @@ class Trainer:
         self.game_play_iteration = 0        #Number of iterations of game play
         self.num_train_ops = 0              #Number of trianing operations
         
+        self.tsv_file = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2\labels.tsv"
+        self.em_vec = []
+
+
     #Helper Methods
     def infer_action(self,frames):
         """
@@ -69,12 +73,15 @@ class Trainer:
         r = self.ops_and_tens['r']
         action = self.ops_and_tens['action']
 
+        #em = self.sess.graph.get_tensor_by_name("Target/Dense_Layers/FC1/act1/Maximum:0")
         #Need dummy value for placeholders not in use
         zeros = np.zeros(shape=frames.shape).astype(np.uint8)
 
         #Inference
         a = self.sess.run([action],{s1: [frames],s2: [zeros],r: [[0]]})
-        return a[0]
+        #self.write_label_to_tsv(a)
+        #self.em_vec.append(em)
+        return a
 
     def perform_action(self,a):
         """
@@ -341,6 +348,7 @@ class Trainer:
             print("##########\tACTION RANDOM\t########## greed: {}".format(greed))
         else:
             a = self.infer_action(phi1)
+            self.write_label_to_tsv(a)
             print("##########\tACTION INFERED\t##########")
         return a
 
@@ -386,6 +394,7 @@ class Trainer:
 
                 #Declare params for one iteration of the game
                 iter_reward = 0
+                reward_list = []    #populate with reward for each iteration
                 seq = []
 
                 #Get the first frame of the game and append to seq
@@ -417,6 +426,9 @@ class Trainer:
                             frame,r,iter_reward = rtn_val
                             break
                     
+                    #Increment reward for the game iteration
+                    iter_reward +=r
+                    
                     #Add the action, reward and new frame to the game play sequence
                     seq.extend((a,r,frame))
 
@@ -445,6 +457,8 @@ class Trainer:
                 #Wait for a few milliseconds
                 wait_for(.3)
 
+                reward_list.append(iter_reward)
+                self.create_reward_plot(reward_list)
                 #Reset the internal game reward to zero
                 self.game.reward = 0
                 
@@ -456,6 +470,36 @@ class Trainer:
                 self.game.stop_play = False
                 self.game_play_iteration = self.game_play_iteration+1
                 self.print_progress(greed)
+
+    def create_reward_plot(self,r_iter):
+        """
+        Funciton creates a plot of the reward vs game iteration.
+
+        args:
+            g_iter: int. NNumber of total games played
+            r_iter: List of ints. List containing reward for each game iterstion
+        """
+
+        len_re = len(r_iter)
+        if len_re == 0 or len_re == 1:
+            return
+
+        #Games vec
+        g_vec = np.arange(0,len(r_iter))
+
+        plt.plot(g_vec,r_iter)
+        plt.title("Reward for game iteration")
+        plt.savefig(r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2\rewardplt.png")
+
+    def write_label_to_tsv(self,label):
+        """
+        Function constructs a tsv of labels
+        args:
+            label: Int. The label to write to file
+        """
+        with open(self.tsv_file,'w') as tsvf:
+                tsvf.write(str(label)+'\n')
+
 
     def stop_training(self,key):
         """
@@ -488,7 +532,6 @@ class Trainer:
 
 
         return
-
 
 
 

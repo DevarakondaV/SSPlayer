@@ -17,10 +17,10 @@ x = (x*250).astype(np.uint8)
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
-conv_k_size = [8,4]
-conv_stride = [4,2]
-conv = [0,16,32]
-fclyr = [0,256,128,64] #5
+conv_k_size = [8,4,3]
+conv_stride = [4,2,1]
+conv = [0,32,64,64]
+fclyr = [0,512] #5
 conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 0.00025
@@ -78,5 +78,33 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
             num_times = int(input("Number of times? : "))
             greed = float(input("Greed: "))
             greed_frames = int(input("Greed Frames Limit: "))
+    
+# ## Get working directory
+# PATH = os.getcwd()
 
+# ## Path to save the embedding and checkpoints generated
+# LOGDIR = PATH + '/project-tensorboard/log-1/'
+# tf.reset_default_graph()
+# vec = []
+# for i in game_trainer.em_vec:
+#     print("img: ",np.shape(i))
+#     i = np.expand_dims(i,0)
+#     vec.append(i)
 
+# vec = np.concatenate(vec)
+# images = tf.Variable(vec)
+# metadata = os.path.join(LOGDIR, 'labels.tsv')
+# with tf.Session() as sess:
+#     saver = tf.train.Saver([images])
+
+#     sess.run(images.initializer)
+#     saver.save(sess, os.path.join(LOGDIR, 'images.ckpt'))
+
+#     config = projector.ProjectorConfig()
+#     # One can add multiple embeddings.
+#     embedding = config.embeddings.add()
+#     embedding.tensor_name = images.name
+#     # Link this tensor to its metadata file (e.g. labels).
+#     embedding.metadata_path = metadata
+#     # Saves a config file that TensorBoard will read during startup.
+#     projector.visualize_embeddings(tf.summary.FileWriter(LOGDIR), config) 
