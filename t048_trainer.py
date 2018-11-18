@@ -81,7 +81,7 @@ class Trainer:
         a = self.sess.run([action],{s1: [frames],s2: [zeros],r: [[0]]})
         #self.write_label_to_tsv(a)
         #self.em_vec.append(em)
-        return a
+        return a[0]
 
     def perform_action(self,a):
         """
@@ -132,8 +132,10 @@ class Trainer:
             r = -1
             play_again_elem.click()
         else:
-            r = game.get_reward2()
-        
+            #r = game.get_reward2()
+            r = game.get_reward3()
+            if r == -1:
+                game.stop_play = True
         return r
 
 
@@ -407,7 +409,7 @@ class Trainer:
                 
                 #Now play the game!
                 while not self.game.stop_play:   #While still playing the game
-                    
+
                     #Get the greed
                     greed = self.get_greed()
                     
@@ -425,7 +427,9 @@ class Trainer:
                         if rtn_val != 0:
                             frame,r,iter_reward = rtn_val
                             break
-                    
+                        self.process_frames -= 1
+                    print("Processed Frames: ",self.process_frames)
+
                     #Increment reward for the game iteration
                     iter_reward +=r
                     
@@ -468,6 +472,10 @@ class Trainer:
 
                 #If game ended naturally...    
                 self.game.stop_play = False
+
+                new_game_element = self.game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
+                new_game_element.click()
+
                 self.game_play_iteration = self.game_play_iteration+1
                 self.print_progress(greed)
 
@@ -514,26 +522,141 @@ class Trainer:
             self.force_kill = True
             return
 
-    def train(self):
+    def esc_wrap(self,function):
         """
-            Function starts training
+            Function wraps function in escape key to end training
 
             args:
+                function: Function to wrap with keyboard listener
 
             returns:
-
+                rtn_val: Return value of function
         """
         
         #Wrapping trainer inside a listener to stop training if esc key is pressed
         with keyboard.Listener(on_press=self.stop_training) as listener:
             #perform the Q algorithm with experience replay
-            self.Q_Algorithm()
+            rtn_val = function()
             listener.stop()
 
 
-        return
+        return rtn_val
+
+    def play_train(self,x,n):
+        """
+        Function runs n play operations every x process frames
+        
+        args:
+            x: int. Number of process frames to run before running play operations
+            n: Number of times to play the game
+        """
+
+        #Function to wrap in esc_key
+        def fun():        
+            #Total iterations of play train
+            total_run_times =  int(self.frame_limit/x)
+
+            #avg reward for n play. Length is total run times
+            reward_list = []
+
+            for i in range(0,total_run_times):  
+                #reassign process frames
+                self.frame_limit = x
+                
+                #Run training operation for x frames
+                self.Q_Algorithm()
+
+                #Play game
+                avg_reward = self.play(n)
+                reward_list.append(avg_reward)
+
+                #reset process_frames to 0
+                self.process_frames = 0
+
+            self.create_reward_plot(reward_list)
+
+        self.esc_wrap(fun)
+
+    def play(self,n):
+        """
+        Fucntion plays the game
+
+        args:
+            n: int. Number of times to play the game
+
+        returns:
+            rtn_val: double. Average reward for n iterations
+        """
+        
+        
+        #Declare return value
+        rtn_val = 0
+
+        #Game game session
+        game = self.game
+        
+        #Start a new game
+        new_game_element = game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
+        new_game_element.click()
+
+        #reward list
+        reward_list = []
+        #Play n times
+        for i in range(0,n):
+            wait_for(1)
+
+            #single game iteration variable
+            reward = 0
+            seq = []
+
+            #Get the first frame of the game and append to seq
+            frame = self.get_frame()
+            seq.append(frame)
+
+            #Process the first frame of game for inference                
+            phi1 = self.process_seq(seq)  
+
+            #While game oes not need to stop
+            while not game.stop_play:
+                a = self.infer_action(phi1)
+                f_rtn_val = self.send_action_to_game_controller(phi1,a,0)
+                if f_rtn_val != 0:
+                    frame,r,d_reward = f_rtn_val
+                else:
+                    print("Inf Loop")
+                    break
+
+                #Increment reward for the game iteration
+                reward +=r
+                
+                #Add the action, reward and new frame to the game play sequence
+                seq.extend((a,r,frame))
+
+                #Process the new frames for storing!
+                phi2 = self.process_seq(seq)
+                phi1 = phi2
+
+                #If esc key is pressed stop the game play!
+                if self.force_kill:
+                    self.game.stop_play = True
+
+            reward_list.append(reward)
+
+            if self.force_kill:
+                break
+
+            #If game ended naturally...    
+            self.game.stop_play = False
+
+            new_game_element = self.game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
+            new_game_element.click()
 
 
+            
+        
+        #Calc avg
+        rtn_val = np.mean(reward_list)
+        return rtn_val
 
 
     #METHODS FOR DEBUGGING AND PROGRESS
@@ -557,28 +680,6 @@ class Trainer:
             Image.fromarray(np.squeeze(seq[i])).save("imgs/test"+str(i)+".png")
 
     #FUNCTIONS BELOW NEED TO BE FIXED
-    #TODO: This function needs to be fixed. Does not work propperly 
-    def play(self,M,):
-
-        game = self.game
-        sess = self.sess
-        for i in range(0,M):
-            reward = 0
-            wait_for(1)
-            game.click_play()
-            while not game.stop_play:
-                frames1,test = get_4_frames(game)
-                if  test:
-                    break
-                a = infer_action(sess,frames1,ops_and_tens)
-                print(a)
-                frames2,test,r,reward = send_action_to_game_controller(game,frames1,a,reward)
-                if test:
-                    break
-            wait_for(.3)
-            game.reward = 0
-            game.stop_play = False
-            print("Play Iteration: ",i)
 
     #TODO: Function needs to be modifed to train for game iterations
     def iter_train_reward(self,sess,game,frame_limit,greed_frames,batch_size,ops_and_tens,gsheets):
