@@ -182,6 +182,7 @@ def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,
                 fcs.append(fc_layer(fcs[i],
                                     fc_feats[i],fc_feats[i+1],
                                     trainable_vars,fcs_name,str(i+1)))
+
             output_layer = fcs[len(fcs)-1]
             output_layer = final_linear_layer(output_layer,fc_feats[fc_count-1],4,trainable_vars,name=fcs_name,num=str(fc_count))
     return output_layer
@@ -441,6 +442,10 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         rtn_vals: Dictionary of required returns. Operations and tensors!
     """
 
+    #Global step for training purposes
+    global_step = tf.train.create_global_step()
+    writer = tf.summary.FileWriter(LOGDIR)
+    
     #Safety Conditional check
     if (len(conv_feats) != conv_count):
         return
@@ -458,6 +463,7 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
     # with tf.name_scope("variables"):
     #     emb_var = tf.zeros(shape=[1,100,100,4],dtype=tf.uint8)
 
+
     # #Embeddings
     # with tf.name_scope("embeddings_ops"):
     #     config = projector.ProjectorConfig()
@@ -474,15 +480,6 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
     #     # Say that you want to visualise the embeddings
     #     projector.visualize_embeddings(summary_writer, config)
 
-    # #Conditionaly stack images based on the input size
-    # def fn_true():
-    #     # Stack the image
-    #     emb_var = tf.stack([emb_var,s1],axis=0,name='stack_tsors'):
-    #     shp_op = tf.shape(op)
-    #     return op[shp_op[0]-1]
-
-
-    # std_s1_input = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: s1)
 
     #Standardizing images
     with tf.name_scope("image_pre_proc"):
@@ -491,16 +488,30 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         #tf.summary.image("std_img_1",std_img_s1)
         #tf.summary.image("std_img_2",std_img_s2)
 
+    #Embeddings
+    # with tf.name_scope("embeddings"):
+    #     emb_var = tf.Variable(std_img_s1)
+    #     config = projector.ProjectorConfig()
+    #     embedding = config.embeddings.add()
+    #     embedding.tensor_name = emb_var.name
+    #     embedding.metadata_path = metadata
+    #     embedding.sprite.image_path = os.path.join(LOGDIR,'sprite.png')
+    #     embedding.sprite.single_image_dim.extend([100,100])
+    #     projector.visualize_embeddings(writer,config)
+
     #pad tensor if its inference [Because inference is only single image]
     paddings = tf.constant([[0,batch_size-1],[0,0],[0,0],[0,0]])
     def fn_true():
         #If it is inference pad the image
         padded_img = tf.pad(std_img_s1,paddings,mode='CONSTANT')
-        return padded_img
+        sum_img = padded_img[0][:,:,batch_size-1]
+        sum_img = tf.expand_dims(sum_img,0)
+        sum_img = tf.expand_dims(sum_img,3)
+        return [padded_img,sum_img]
     
 
-    input_img = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: std_img_s2)
-
+    input_img,sum_img = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: [std_img_s2,tf.zeros(shape=[1,100,100,1],dtype=tf.float16)])
+    tf.summary.image("Image",sum_img)
 
     #Building graph for inference
     inference_out = build_graph("Target",input_img,
@@ -518,8 +529,6 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         with tf.name_scope("Target_weight_update_op"):
             target_ops = target_weight_update_ops("conv","FC",conv_count,fc_count)
 
-    #Global step for training purposes
-    global_step = tf.train.create_global_step()
 
 
     #implementing Q algorithm
@@ -547,15 +556,16 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         #for index, grad in enumerate(grads):
          #   tf.summary.histogram("{}-grad".format(grads[index][1].name), grads[index])
         #p_delta = tf.Print([grads[1]],[grads[1]],message="grads: ")
+        prt = tf.Print(loss,[loss],"Loss ",name="prt")  
+
 
 
     with tf.name_scope("action"):
         action = tf.argmax(inference_out[0],axis=0,name="action")
         tf.summary.scalar("Action: ",action)
-        prt = tf.Print(tf.shape(s1),[tf.shape(s1)],"a: ",name="q_vals_pr")  
+        #prt = tf.Print(tf.shape(s1),[tf.shape(s1)],"a: ",name="q_vals_pr")  
 
     summ = tf.summary.merge_all()
-    writer = tf.summary.FileWriter(LOGDIR)
 
 
     rtn_vals['s1'] = s1

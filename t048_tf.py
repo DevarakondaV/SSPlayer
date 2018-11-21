@@ -17,10 +17,10 @@ x = (x*250).astype(np.uint8)
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
-conv_k_size = [8,4]
-conv_stride = [4,2]
-conv = [0,16,32]
-fclyr = [0,256,128,64] #5
+conv_k_size = [8,4,3]
+conv_stride = [4,2,1]
+conv = [0,32,64,64]
+fclyr = [0,512] #5
 conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 0.00025
@@ -56,6 +56,7 @@ g_sheets = 0
 game = t048(1)
 wait_for(1)
 with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, summary_hook]) as sess:
+<<<<<<< HEAD
     #train_or_play = input("T for train,P for play,E for end: T/P/E: ")
     #frames_or_iter = input("Frames or Iter: F/I: ")
     #num_times = int(input("Number of times? : "))
@@ -66,19 +67,53 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
     num_times = 10000000
     greed = 0
     greed_frames = 1000000
+=======
+    train_or_play = input("T for train,P for play,E for end: T/P/E: ")
+    num_times = int(input("Number frames to Process?: "))
+    greed_frames = int(input("Greed Frames Limit: "))
+
+    game_trainer = Trainer(sess,game,num_times,greed_frames,10,batch_size,ops_and_tens,g_sheets,1)
+
+>>>>>>> 2048_st
     while (train_or_play is not "E"):
         if (train_or_play == "T" or train_or_play == "t"):
-            if (frames_or_iter is "I"):
-                iter_train_reward(sess,game,num_times,greed_frames,batch_size,ops_and_tens,g_sheets)
-            elif frames_or_iter is "F":
-                frame_train_reward(sess,game,num_times,greed_frames,batch_size,ops_and_tens,g_sheets)
+            game_trainer.play_train(10,1)
         elif train_or_play is "P" or train_or_play is "p":
-            play(sess,game,num_times,ops_and_tens)
+            game_trainer.play(3)
+
+
+        #See if train again    
         train_or_play = input("T for train,P for play,E for end: T/P/E: ")
         if (train_or_play != "E"):
-            frames_or_iter = input("Frames or Iter: F/I: ")
             num_times = int(input("Number of times? : "))
-            greed = float(input("Greed: "))
             greed_frames = int(input("Greed Frames Limit: "))
+    
+# ## Get working directory
+# PATH = os.getcwd()
 
+# ## Path to save the embedding and checkpoints generated
+# LOGDIR = PATH + '/project-tensorboard/log-1/'
+# tf.reset_default_graph()
+# vec = []
+# for i in game_trainer.em_vec:
+#     print("img: ",np.shape(i))
+#     i = np.expand_dims(i,0)
+#     vec.append(i)
 
+# vec = np.concatenate(vec)
+# images = tf.Variable(vec)
+# metadata = os.path.join(LOGDIR, 'labels.tsv')
+# with tf.Session() as sess:
+#     saver = tf.train.Saver([images])
+
+#     sess.run(images.initializer)
+#     saver.save(sess, os.path.join(LOGDIR, 'images.ckpt'))
+
+#     config = projector.ProjectorConfig()
+#     # One can add multiple embeddings.
+#     embedding = config.embeddings.add()
+#     embedding.tensor_name = images.name
+#     # Link this tensor to its metadata file (e.g. labels).
+#     embedding.metadata_path = metadata
+#     # Saves a config file that TensorBoard will read during startup.
+#     projector.visualize_embeddings(tf.summary.FileWriter(LOGDIR), config) 

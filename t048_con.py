@@ -156,14 +156,15 @@ class t048:
             txt = i.text
             if txt.isdigit():
                 i_txt = int(txt)
-                if i_txt == 64:
+                if i_txt == 16:
                     count_64 += 1
+                    self.stop_play = True
                 elif i_txt == 128:
                     count_128 += 1
                 elif i_txt == 256:
                     count_256 += 1
                 elif i_txt == 512:
-                    count_521 += 1
+                    count_512 += 1
                 elif i_txt == 1024:
                     count_1024 += 1
                 elif i_txt == 2048:
@@ -188,6 +189,35 @@ class t048:
         if (count_2048 > self.count_2048):
             r += 6*(count_2048-self.count_2048)
         self.count_2048 = count_2048
+        return r
+
+
+    def get_reward3(self):
+        """
+        Function assigns reward for getting to 64. The goal is to keep only 64 tiles!
+        Any tiles above 64 cause the game to end.
+        """
+        tile_inner_elems = self.chrome.find_elements_by_class_name("tile-inner")
+        
+        count_64 = 0
+        count_128 = 0
+
+
+        for i in tile_inner_elems:
+            txt = i.text
+            if txt.isdigit():
+                i_txt = int(txt)
+                if i_txt == 16:
+                    count_64 += 1
+                elif i_txt == 32:
+                    count_128 += 1
+        
+        r = 0
+        if (count_64 > self.count_64):
+            r += count_64-self.count_64
+        self.count_64 = count_64
+        if (count_128 != 0):
+            r = -1
         return r
 
 
