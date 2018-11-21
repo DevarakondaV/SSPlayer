@@ -504,11 +504,14 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
     def fn_true():
         #If it is inference pad the image
         padded_img = tf.pad(std_img_s1,paddings,mode='CONSTANT')
-        return padded_img
+        sum_img = padded_img[0][:,:,batch_size-1]
+        sum_img = tf.expand_dims(sum_img,0)
+        sum_img = tf.expand_dims(sum_img,3)
+        return [padded_img,sum_img]
     
 
-    input_img = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: std_img_s2)
-
+    input_img,sum_img = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: [std_img_s2,tf.zeros(shape=[1,100,100,1],dtype=tf.float16)])
+    tf.summary.image("Image",sum_img)
 
     #Building graph for inference
     inference_out = build_graph("Target",input_img,
@@ -553,12 +556,14 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         #for index, grad in enumerate(grads):
          #   tf.summary.histogram("{}-grad".format(grads[index][1].name), grads[index])
         #p_delta = tf.Print([grads[1]],[grads[1]],message="grads: ")
+        prt = tf.Print(loss,[loss],"Loss ",name="prt")  
+
 
 
     with tf.name_scope("action"):
         action = tf.argmax(inference_out[0],axis=0,name="action")
         tf.summary.scalar("Action: ",action)
-        prt = tf.Print(tf.shape(s1),[tf.shape(s1)],"a: ",name="q_vals_pr")  
+        #prt = tf.Print(tf.shape(s1),[tf.shape(s1)],"a: ",name="q_vals_pr")  
 
     summ = tf.summary.merge_all()
 

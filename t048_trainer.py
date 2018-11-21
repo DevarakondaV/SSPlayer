@@ -19,7 +19,7 @@ class Trainer:
     """
 
     #Main Methods
-    def __init__(self,sess,game,frame_limit,greed_frames,seq_len,batch_size,ops_and_tens,gsheets):
+    def __init__(self,sess,game,frame_limit,greed_frames,seq_len,batch_size,ops_and_tens,gsheets,log = 0):
         """
         Constructor
         args:
@@ -31,6 +31,7 @@ class Trainer:
             batch_size:     int. Determines batchsize of training operation
             ops_and_tens:   Dictionary. Contains the relevent tensorflow operations and tensors
             gsheets:        gsheets object. Used to post results to google sheets.
+            log:    Bool. True to activate console log.
         returns:
             Null
         """
@@ -54,7 +55,7 @@ class Trainer:
         
         self.tsv_file = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2\labels.tsv"
         self.em_vec = []
-
+        self.log = log
 
     #Helper Methods
     def infer_action(self,frames):
@@ -164,9 +165,10 @@ class Trainer:
         reward = 0 
         
 
-        print("Action = {}\nMove dir = {}\nReward = {}".format(str(a),m_dir,r))
+        self.con_log("Action = {}\nMove dir = {}\nReward = {}".format(str(a),m_dir,r),"")
         #if frames are equal then invalid move..reinfer action
-        chk_frm = phi1[:,:,0]
+        #chk_frm = phi1[:,:,0]
+        chk_frm = phi1[:,:,self.seq_len-1]
         if np.array_equal(chk_frm,np.squeeze(frame)):
             return 0
         else:
@@ -240,7 +242,7 @@ class Trainer:
         sess = self.sess
         ops_and_tens = self.ops_and_tens
 
-        print("TRAINING OPERATION: {}".format(self.num_train_ops))
+        self.con_log("TRAINING OPERATION: {}".format(self.num_train_ops),"")
         train = ops_and_tens['train']
         s1 = ops_and_tens['s1']
         s2 = ops_and_tens['s2']
@@ -250,7 +252,11 @@ class Trainer:
         #Grab training batch
         seq_n = self.random_minibatch_sample(batch_size)
         #Add to training queue
-        sess.run([train],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
+        sess.run([train,prt],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
+        
+        #rr = np.zeros((10,100,100,10)).astype(np.uint8)
+        #re = np.asarray([0]).reshape((1,1))
+        #sess.run([train,prt],{s1: rr,r: re,s2: rr})
 
         #Add to number of training operations
         self.num_train_ops +=1
@@ -276,7 +282,7 @@ class Trainer:
 
         zeros = np.zeros(shape=(100,100,batch_size)).astype(np.uint8)
         
-        print("UPDATING TARGET PARAMS: {}".format(n))
+        self.con_log("UPDATING TARGET PARAMS: {}".format(n),"")
         sess.run([ops_and_tens['target_ops']],{s1: [zeros],s2: [zeros],r: [[0]]})
         return
 
@@ -315,9 +321,9 @@ class Trainer:
 
         #idx contains the index of the last four frames in seq
         idx = [i  for i in range(seq_len-1,seq_len-1-lower_lim,-3) if i >= 0]
-        
+
         #grab the frames into list
-        frames = [seq[i] for i in idx]
+        frames = [seq[i] for i in reversed(idx)]
         
         #If lenght of frame is less than seq_len. -> Game just started. Add black images
         #This shouldn't effect the training(Everything is zero :))
@@ -347,11 +353,11 @@ class Trainer:
         r_a = np.random.random_sample(1)
         if (r_a <= greed):
             a = np.asarray(np.random.randint(0,4))
-            print("##########\tACTION RANDOM\t########## greed: {}".format(greed))
+            self.con_log("##########\tACTION RANDOM\t########## greed: {}".format(greed),"")
         else:
             a = self.infer_action(phi1)
-            self.write_label_to_tsv(a)
-            print("##########\tACTION INFERED\t##########")
+            #self.write_label_to_tsv(a)
+            self.con_log("##########\tACTION INFERED\t##########","")
         return a
 
 
@@ -386,14 +392,13 @@ class Trainer:
 
 
         #Grabbing variables used for training
-        process_frames = self.process_frames
-        frame_limit = self.frame_limit
+        #process_frames = self.process_frames
+        #frame_limit = self.frame_limit
         greed_frames = self.greed_frames
         batch_size = self.batch_size
 
-        while (process_frames < frame_limit):       #While the number of processed frames is less than total training frame limit
+        while (self.process_frames < self.frame_limit):       #While the number of processed frames is less than total training frame limit
                 wait_for(1)
-
                 #Declare params for one iteration of the game
                 iter_reward = 0
                 reward_list = []    #populate with reward for each iteration
@@ -406,9 +411,17 @@ class Trainer:
                 #Process the first frame of game for inference                
                 phi1 = self.process_seq(seq)        
             
-                
                 #Now play the game!
                 while not self.game.stop_play:   #While still playing the game
+                    
+                    if (self.process_frames >= self.frame_limit):
+                        self.game.stop_play = True
+                        break
+
+                    #If esc key is pressed stop the game play!
+                    if self.force_kill:
+                        self.game.stop_play = True
+                        break
 
                     #Get the greed
                     greed = self.get_greed()
@@ -428,7 +441,7 @@ class Trainer:
                             frame,r,iter_reward = rtn_val
                             break
                         self.process_frames -= 1
-                    print("Processed Frames: ",self.process_frames)
+                    self.con_log("Processed Frames: ",self.process_frames)
 
                     #Increment reward for the game iteration
                     iter_reward +=r
@@ -446,14 +459,10 @@ class Trainer:
                     phi1 = phi2
 
                     #Print length of experience vector
-                    print("Len Exp Vector: {}".format(len(self.exp)))
+                    self.con_log("Len Exp Vector: {}".format(len(self.exp)),"")
 
                     #Run a training and update target params operation
                     self.train_target_update(len(self.exp),batch_size)
-
-                    #If esc key is pressed stop the game play!
-                    if self.force_kill:
-                        self.game.stop_play = True
                 
                 
                 #OUTSIDE WHILE LOOP
@@ -516,9 +525,9 @@ class Trainer:
         args:
             key:    Key Object.
         """
-        print(key)
+        self.con_log("",key)
         if key == keyboard.Key.esc:
-            print("Kill loop")
+            self.con_log("Kill loop","")
             self.force_kill = True
             return
 
@@ -562,7 +571,6 @@ class Trainer:
             for i in range(0,total_run_times):  
                 #reassign process frames
                 self.frame_limit = x
-                
                 #Run training operation for x frames
                 self.Q_Algorithm()
 
@@ -573,6 +581,9 @@ class Trainer:
                 #reset process_frames to 0
                 self.process_frames = 0
 
+                if self.force_kill:
+                    break
+            self.con_log("Reward List: ",reward_list)
             self.create_reward_plot(reward_list)
 
         self.esc_wrap(fun)
@@ -587,14 +598,12 @@ class Trainer:
         returns:
             rtn_val: double. Average reward for n iterations
         """
-        
-        
         #Declare return value
         rtn_val = 0
 
         #Game game session
         game = self.game
-        
+        game.stop_play = False
         #Start a new game
         new_game_element = game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
         new_game_element.click()
@@ -604,7 +613,8 @@ class Trainer:
         #Play n times
         for i in range(0,n):
             wait_for(1)
-
+            self.con_log('Play iteration: ',i+1)
+            
             #single game iteration variable
             reward = 0
             seq = []
@@ -618,13 +628,31 @@ class Trainer:
 
             #While game oes not need to stop
             while not game.stop_play:
+
+                #If esc key is pressed stop the game play!
+                if self.force_kill:
+                    self.game.stop_play = True
+                    break
+                
                 a = self.infer_action(phi1)
                 f_rtn_val = self.send_action_to_game_controller(phi1,a,0)
                 if f_rtn_val != 0:
                     frame,r,d_reward = f_rtn_val
                 else:
-                    print("Inf Loop")
+                    self.con_log("INFINITE LOOP: BREAKING PLAY ITERATION {}".format(i),"")
                     break
+
+                # while True:
+                #     f_rtn_val = self.send_action_to_game_controller(phi1,a,0)
+                    
+                #     if f_rtn_val != 0:
+                #         frame,r,d_reward = f_rtn_val
+                #         break
+                #     else:
+                #         #perform a random action to break the infinite loop for now
+                #         a = np.random.randint(0,4)
+                #         self.con_log("INFINITE LOOP: ","PERFORMING RANDOM ACTION: {}".format(a))
+                        
 
                 #Increment reward for the game iteration
                 reward +=r
@@ -636,9 +664,6 @@ class Trainer:
                 phi2 = self.process_seq(seq)
                 phi1 = phi2
 
-                #If esc key is pressed stop the game play!
-                if self.force_kill:
-                    self.game.stop_play = True
 
             reward_list.append(reward)
 
@@ -658,6 +683,20 @@ class Trainer:
         rtn_val = np.mean(reward_list)
         return rtn_val
 
+    def con_log(self,msg_n,msg):
+        """
+        Functions console logs messages based on log_or_no
+
+        args:
+            msg_n: String. Title for the message
+            msg:    Object to log
+        returns:
+            null
+        """
+
+        if self.log:
+            print(msg_n,msg)
+        return
 
     #METHODS FOR DEBUGGING AND PROGRESS
     def print_progress(self,greed):
@@ -670,9 +709,9 @@ class Trainer:
         """
 
         if (self.game_play_iteration % 50 == 0):
-            print("Exp size: ", len(self.exp))
-            print("Number process Frames: ", self.process_frames)
-            print("greed: ",greed)
+            self.con_log("Exp size: ", len(self.exp))
+            self.con_log("Number process Frames: ", self.process_frames)
+            self.con_log("greed: ",greed)
 
 
     def save_seq_img(self,seq):
@@ -710,14 +749,6 @@ class Trainer:
 
         force_kill = False
 
-        def stop_training(key):
-            print(key)
-            if key == keyboard.Key.esc:
-                print("Kill loop")
-                nonlocal force_kill
-                force_kill = True
-                return
-
         with keyboard.Listener(on_press=stop_training) as listener:
             while (process_frames < frame_limit):
                 reward = 0
@@ -734,11 +765,11 @@ class Trainer:
                     #cv2.waitKey(1)
                     r_a = np.random.random_sample(1)
                     if (r_a <= greed):
-                        #print(greed,"greedy: ")
+                        #self.con_log(greed,"greedy: ")
                         a = np.asarray(np.random.randint(0,4))
                     else:
                         a = infer_action(sess,phi1,ops_and_tens)
-                        #print(a,q)
+                        #self.con_log(a,q)
                     frame,stop_play,r,reward = send_action_to_game_controller(game,phi1,a,reward)
                     seq.append(a)
                     seq.append(r)
@@ -762,9 +793,9 @@ class Trainer:
                 game.stop_play = False
                 gp = gp+1
                 if (gp % 50 == 0):
-                    print("Exp size: ", len(exp))
-                    print("Number process Frames: ",process_frames)
-                    print("greed: ",greed)
+                    self.con_log("Exp size: ", len(exp))
+                    self.con_log("Number process Frames: ",process_frames)
+                    self.con_log("greed: ",greed)
                 save_seq_img(fff)
             listener.stop()
         return

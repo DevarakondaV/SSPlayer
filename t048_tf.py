@@ -60,21 +60,19 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
     num_times = int(input("Number frames to Process?: "))
     greed_frames = int(input("Greed Frames Limit: "))
 
-    game_trainer = Trainer(sess,game,num_times,greed_frames,10,batch_size,ops_and_tens,g_sheets)
+    game_trainer = Trainer(sess,game,num_times,greed_frames,10,batch_size,ops_and_tens,g_sheets,1)
 
     while (train_or_play is not "E"):
         if (train_or_play == "T" or train_or_play == "t"):
-            game_trainer.play_train(100,1)
+            game_trainer.play_train(10,1)
         elif train_or_play is "P" or train_or_play is "p":
-            game_trainer.play(1)
+            game_trainer.play(3)
 
 
         #See if train again    
         train_or_play = input("T for train,P for play,E for end: T/P/E: ")
         if (train_or_play != "E"):
-            frames_or_iter = input("Frames or Iter: F/I: ")
             num_times = int(input("Number of times? : "))
-            greed = float(input("Greed: "))
             greed_frames = int(input("Greed Frames Limit: "))
     
 # ## Get working directory
