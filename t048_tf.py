@@ -56,25 +56,12 @@ g_sheets = 0
 game = t048(1)
 wait_for(1)
 with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, summary_hook]) as sess:
-<<<<<<< HEAD
-    #train_or_play = input("T for train,P for play,E for end: T/P/E: ")
-    #frames_or_iter = input("Frames or Iter: F/I: ")
-    #num_times = int(input("Number of times? : "))
-    #greed = float(input("Greed: "))
-    #greed_frames = int(input("Greed Frames Limit: "))
-    train_or_play = "T"
-    frames_or_iter = "F"
-    num_times = 10000000
-    greed = 0
-    greed_frames = 1000000
-=======
     train_or_play = input("T for train,P for play,E for end: T/P/E: ")
     num_times = int(input("Number frames to Process?: "))
     greed_frames = int(input("Greed Frames Limit: "))
 
     game_trainer = Trainer(sess,game,num_times,greed_frames,10,batch_size,ops_and_tens,g_sheets,1)
 
->>>>>>> 2048_st
     while (train_or_play is not "E"):
         if (train_or_play == "T" or train_or_play == "t"):
             game_trainer.play_train(10,1)
