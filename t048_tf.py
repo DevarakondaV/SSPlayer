@@ -56,51 +56,10 @@ g_sheets = 0
 game = t048(1)
 wait_for(1)
 with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, summary_hook]) as sess:
-    train_or_play = input("T for train,P for play,E for end: T/P/E: ")
-    num_times = int(input("Number frames to Process?: "))
-    greed_frames = int(input("Greed Frames Limit: "))
+    train_or_play = "E"
+    num_times = 100000
+    greed_frames = 10000
 
     game_trainer = Trainer(sess,game,num_times,greed_frames,10,batch_size,ops_and_tens,g_sheets,1)
-
-    while (train_or_play is not "E"):
-        if (train_or_play == "T" or train_or_play == "t"):
-            game_trainer.play_train(10,1)
-        elif train_or_play is "P" or train_or_play is "p":
-            game_trainer.play(3)
-
-
-        #See if train again    
-        train_or_play = input("T for train,P for play,E for end: T/P/E: ")
-        if (train_or_play != "E"):
-            num_times = int(input("Number of times? : "))
-            greed_frames = int(input("Greed Frames Limit: "))
+    game_trainer.play_train(1000,100)
     
-# ## Get working directory
-# PATH = os.getcwd()
-
-# ## Path to save the embedding and checkpoints generated
-# LOGDIR = PATH + '/project-tensorboard/log-1/'
-# tf.reset_default_graph()
-# vec = []
-# for i in game_trainer.em_vec:
-#     print("img: ",np.shape(i))
-#     i = np.expand_dims(i,0)
-#     vec.append(i)
-
-# vec = np.concatenate(vec)
-# images = tf.Variable(vec)
-# metadata = os.path.join(LOGDIR, 'labels.tsv')
-# with tf.Session() as sess:
-#     saver = tf.train.Saver([images])
-
-#     sess.run(images.initializer)
-#     saver.save(sess, os.path.join(LOGDIR, 'images.ckpt'))
-
-#     config = projector.ProjectorConfig()
-#     # One can add multiple embeddings.
-#     embedding = config.embeddings.add()
-#     embedding.tensor_name = images.name
-#     # Link this tensor to its metadata file (e.g. labels).
-#     embedding.metadata_path = metadata
-#     # Saves a config file that TensorBoard will read during startup.
-#     projector.visualize_embeddings(tf.summary.FileWriter(LOGDIR), config) 

@@ -275,17 +275,10 @@ class Trainer:
         sess = self.sess
         ops_and_tens = self.ops_and_tens
 
-<<<<<<< HEAD
-    #Older experience is phased out by poping from exp buffer
-    if (process_frames > 1000000):
-        exp.pop(0)
-    #process_frames = process_frames+2
-=======
         s1 = ops_and_tens['s1']
         s2 = ops_and_tens['s2']
         r = ops_and_tens['r']
         action = ops_and_tens['action']
->>>>>>> 2048_st
 
         zeros = np.zeros(shape=(100,100,batch_size)).astype(np.uint8)
         
@@ -486,32 +479,8 @@ class Trainer:
                 #If game ended naturally...    
                 self.game.stop_play = False
 
-<<<<<<< HEAD
-def train_target_update(sess,ops_and_tens,len_exp,batch_size,num_train_ops):
-    """
-    Function performs training and target network updates
-
-    args:
-        sess:       Tensorflow session
-        len_exp:    Int. Lenght of the experience vector
-        batch_size: Int. Batch size
-        ops_and_tens: Tensorflow operations and tensors
-        num_trian_ops:   Int. Nth training operation
-    
-    returns:
-        num_train_ops
-    """
-    if (len_exp > 30000):
-        execute_train_operation(sess,batch_size,ops_and_tens,num_train_ops)
-        num_train_ops = num_train_ops+1
-        if (num_train_ops % 10) == 0:
-            update_target_params(sess,batch_size,ops_and_tens,num_train_ops/10)
-    
-    return num_train_ops
-=======
                 new_game_element = self.game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
                 new_game_element.click()
->>>>>>> 2048_st
 
                 self.game_play_iteration = self.game_play_iteration+1
                 self.print_progress(greed)
