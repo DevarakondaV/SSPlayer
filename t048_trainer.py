@@ -414,9 +414,6 @@ class Trainer:
                 #Now play the game!
                 while not self.game.stop_play:   #While still playing the game
                     
-                    if (self.process_frames >= self.frame_limit):
-                        self.game.stop_play = True
-                        break
 
                     #If esc key is pressed stop the game play!
                     if self.force_kill:
