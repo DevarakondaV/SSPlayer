@@ -36,7 +36,7 @@ print(ops_and_tens.keys())
 writer = ops_and_tens['writer']
 summ = ops_and_tens['summ']
 
-saver = tf.train.Saver()
+saver = tf.train.Saver(save_relative_paths=True)
 
 
 summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
@@ -61,5 +61,5 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
     greed_frames = 10000
 
     game_trainer = Trainer(sess,game,num_times,greed_frames,10,batch_size,ops_and_tens,g_sheets,1)
-    game_trainer.play_train(1000,100)
+    game_trainer.play_train(1000,25)
     

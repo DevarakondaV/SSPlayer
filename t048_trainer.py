@@ -205,7 +205,7 @@ class Trainer:
         """
 
         #Older experience is phased out by poping from exp buffer
-        if (self.process_frames > 10000):
+        if (len(self.exp) > 10000):
             self.exp.pop(0)
         #process_frames = process_frames+2
 
@@ -373,9 +373,9 @@ class Trainer:
             null:
         """
 
-        if (len_exp > batch_size):
+        if (len_exp > 10000):
             self.execute_train_operation(batch_size)
-            if (self.num_train_ops % 10) == 0:
+            if (self.num_train_ops % 100) == 0:
                 self.update_target_params(batch_size,self.num_train_ops/10)
     
 
