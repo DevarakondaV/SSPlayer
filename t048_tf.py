@@ -61,5 +61,6 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
     greed_frames = 10000
 
     game_trainer = Trainer(sess,game,num_times,greed_frames,10,batch_size,ops_and_tens,g_sheets,1)
-    game_trainer.play_train(1000,100)
+    #game_trainer.play_train(1000,100)
+    game_trainer.play(30)
     

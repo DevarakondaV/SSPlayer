@@ -83,8 +83,8 @@ else:
 
     
 
-    summary_dir = r'C:\Users\Vishnu\Documents\EngProj\SSPlayer\log\sum'
-    ckpt_dir = r'C:\Users\Vishnu\Documents\EngProj\SSPlayer\log\ckpt'
+    summary_dir = r'C:\Users\devar\Documents\EngProj\SSPlayer\log\sum'
+    ckpt_dir = r'C:\Users\devar\Documents\EngProj\SSPlayer\log\ckpt'
 
     lap_dir = r'C:\Users\Vishnu\Documents\EngProj\SSPlayer\log'
     dsk_chk_dir = r"E:\TFtmp\test\model"
@@ -109,7 +109,7 @@ else:
         # THis is master thread
 
         g_sheets = 0
-        game = t048(2)
+        game = t048(1)
         wait_for(1)
         print(server.target)
 
