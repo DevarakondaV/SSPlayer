@@ -26,17 +26,17 @@ fc_count = len(fclyr)
 learning_rate = 0.00025
 gamma = np.array([.9]).astype(np.float16)
 batch_size = 10
-LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log2"
+LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log3"
 
 summary_dir = LOGDIR
-chkpt_dir = LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log2"
+chkpt_dir = LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log3"
 
 ops_and_tens = construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv,fclyr,conv_k_size,conv_stride,LOGDIR)
 print(ops_and_tens.keys())
 writer = ops_and_tens['writer']
 summ = ops_and_tens['summ']
 
-saver = tf.train.Saver()
+saver = tf.train.Saver(save_relative_paths=True)
 
 
 summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
@@ -61,6 +61,5 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
     greed_frames = 10000
 
     game_trainer = Trainer(sess,game,num_times,greed_frames,10,batch_size,ops_and_tens,g_sheets,1)
-    #game_trainer.play_train(1000,100)
-    game_trainer.play(30)
+    game_trainer.play_train(1000,25)
     

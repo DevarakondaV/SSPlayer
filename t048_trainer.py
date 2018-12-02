@@ -169,10 +169,7 @@ class Trainer:
         #if frames are equal then invalid move..reinfer action
         #chk_frm = phi1[:,:,0]
         chk_frm = phi1[:,:,self.seq_len-1]
-        if np.array_equal(chk_frm,np.squeeze(frame)):
-            return 0
-        else:
-            return frame,r,reward
+        return frame,r,reward,not np.array_equal(chk_frm,np.squeeze(frame))
 
 
 
@@ -373,7 +370,7 @@ class Trainer:
             null:
         """
 
-        if (len_exp > 1000):
+        if (len_exp > 10000):
             self.execute_train_operation(batch_size)
             if (self.num_train_ops % 100) == 0:
                 self.update_target_params(batch_size,self.num_train_ops/10)
@@ -423,40 +420,35 @@ class Trainer:
                     #Get the greed
                     greed = self.get_greed()
                     
-                    #Retry actions until no longer an invalid action. Sometimes the board state does not allow for 
-                    #certain actions to be taken despite not having lost the game. Do not consider these as relevant in
-                    #determining the policy function. Therefore, we loop until we take an action that is not invalid.
-                    while True:
-                        #Determine the action to take
-                        a = self.get_action(greed,phi1)
+                    #Determine the action to take
+                    a = self.get_action(greed,phi1)
 
-                        #send the action to the game controller to perform it
-                        rtn_val = self.send_action_to_game_controller(phi1,a,iter_reward)
+                    #send the action to the game controller to perform it
+                    frame,r,iter_reward,unique = self.send_action_to_game_controller(phi1,a,iter_reward)
+
+                    if not unique:
+                        print("Not unqiue Frames. Don't add to experience")
+                    #
+                    if unique:
                         
-                        #if the rtn_val is not zero then the action is valid....proceed with computation!
-                        if rtn_val != 0:
-                            frame,r,iter_reward = rtn_val
-                            break
-                        self.process_frames -= 1
-                    self.con_log("Processed Frames: ",self.process_frames)
+                        #Increment reward for the game iteration
+                        iter_reward +=r
+                        
+                        #Add the action, reward and new frame to the game play sequence
+                        seq.extend((a,r,frame))
 
-                    #Increment reward for the game iteration
-                    iter_reward +=r
-                    
-                    #Add the action, reward and new frame to the game play sequence
-                    seq.extend((a,r,frame))
+                        #Process the new frames for storing!
+                        phi2 = self.process_seq(seq)
 
-                    #Process the new frames for storing!
-                    phi2 = self.process_seq(seq)
+                        #Store the previous experience
+                        self.store_exp((phi1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),phi2))
 
-                    #Store the previous experience
-                    self.store_exp((phi1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),phi2))
+                        #Now assign phi1 to be the new frame!....For inference!
+                        phi1 = phi2
 
-                    #Now assign phi1 to be the new frame!....For inference!
-                    phi1 = phi2
+                        #Print length of experience vector
+                        self.con_log("Len Exp Vector: {}".format(len(self.exp)),"")
 
-                    #Print length of experience vector
-                    self.con_log("Len Exp Vector: {}".format(len(self.exp)),"")
 
                     #Run a training and update target params operation
                     self.train_target_update(len(self.exp),batch_size)
@@ -632,23 +624,29 @@ class Trainer:
                     break
                 
                 a = self.infer_action(phi1)
-                f_rtn_val = self.send_action_to_game_controller(phi1,a,0)
-                if f_rtn_val != 0:
-                    frame,r,d_reward = f_rtn_val
-                else:
+                frame,r,d_reward,unique = self.send_action_to_game_controller(phi1,a,0)
+                
+                #If network continues to breadic unique 
+                not_uniq_count = 0
+                quit_game_play = False
+                while not unique :
+                    a = self.infer_action(phi1)
+                    frame,r,d_reward,unqiue = self.send_action_to_game_controller(phi1,a,0)
+                    not_uniq_count +=1
+                    if (not_uniq_count == 25):
+                        quit_game_play = True
+                        break
+
+                if quit_game_play:
                     self.con_log("INFINITE LOOP: BREAKING PLAY ITERATION {}".format(i),"")
                     break
-
-                # while True:
-                #     f_rtn_val = self.send_action_to_game_controller(phi1,a,0)
                     
-                #     if f_rtn_val != 0:
-                #         frame,r,d_reward = f_rtn_val
-                #         break
-                #     else:
-                #         #perform a random action to break the infinite loop for now
-                #         a = np.random.randint(0,4)
-                #         self.con_log("INFINITE LOOP: ","PERFORMING RANDOM ACTION: {}".format(a))
+                # if f_rtn_val != 0:
+                #     frame,r,d_reward = f_rtn_val
+                # else:
+                #     self.con_log("INFINITE LOOP: BREAKING PLAY ITERATION {}".format(i),"")
+                #     break
+
                         
 
                 #Increment reward for the game iteration
