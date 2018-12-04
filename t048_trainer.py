@@ -37,23 +37,24 @@ class Trainer:
         """
 
         #Declaring some variables
-        self.exp = []                       #experience vector
-        self.process_frames = process_frames                 #Number of frames to process
-        self.force_kill = False                                 #Bool param determines if training should be forced to stop
-        self.sess = sess                    #Tensorflow session
-        self.game = game                    #Game object
-        self.frame_limit = frame_limit      #Maximum number of frame sto play  
-        self.greed_frames = greed_frames    #Maximum number of frames when greed is calculated
-        self.seq_len = batch_size           #The number of frames which determines a state
-        self.ops_and_tens = ops_and_tens    #Tensorflow operations and tensors
-        self.gsheets = gsheets              #gsheets object ot post to sheets
-        self.batch_size = batch_size        #Determines batchsize of training operation
+        self.exp = []                               #experience vector
+        self.total_frames = 0                       #Number of frames to process
+        self.process_frames = 0                     #Number of frames to process
+        self.force_kill = False                     #Bool param determines if training should be forced to stop
+        self.sess = sess                            #Tensorflow session
+        self.game = game                            #Game object
+        self.frame_limit = frame_limit              #Maximum number of frame sto play  
+        self.greed_frames = greed_frames            #Maximum number of frames when greed is calculated
+        self.seq_len = batch_size                   #The number of frames which determines a state
+        self.ops_and_tens = ops_and_tens            #Tensorflow operations and tensors
+        self.gsheets = gsheets                      #gsheets object ot post to sheets
+        self.batch_size = batch_size                #Determines batchsize of training operation
 
         #Params used while trianing
         self.game_play_iteration = 0        #Number of iterations of game play
         self.num_train_ops = 0              #Number of trianing operations
         
-        self.tsv_file = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2\labels.tsv"
+        self.tsv_file = r"c:\Users\devar\Documents\EngProj\SSPlayer\log2\labels.tsv"
         self.em_vec = []
         self.log = log
 
@@ -219,7 +220,7 @@ class Trainer:
         """
 
         
-        frames = self.process_frames
+        frames = self.total_frames
         greed_frames = self.greed_frames
         if frames > greed_frames:
             return 0.1
@@ -298,7 +299,8 @@ class Trainer:
         game = self.game
         frame = take_shot(game)
         #append the number of processed frames
-        self.process_frames = self.process_frames+1
+        self.process_frames += 1
+        self.total_frames +=1
         return frame
 
     def process_seq(self,seq):
