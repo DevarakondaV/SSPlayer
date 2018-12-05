@@ -459,27 +459,6 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         s2 = tf.placeholder(tf.uint8,shape=[None,100,100,batch_size],name='s2')
         r = tf.placeholder(tf.float16,shape=[None,1],name="r")
 
-    # #Variables
-    # with tf.name_scope("variables"):
-    #     emb_var = tf.zeros(shape=[1,100,100,4],dtype=tf.uint8)
-
-
-    # #Embeddings
-    # with tf.name_scope("embeddings_ops"):
-    #     config = projector.ProjectorConfig()
-    #     embedding = config.embeddings.add()
-    #     embedding.tensor_name = emb_var.name
-
-    #     # Specify where you find the metadata
-    #     embedding.metadata_path = path_for_mnist_metadata #'metadata.tsv'
-
-    #     # Specify where you find the sprite (we will create this later)
-    #     embedding.sprite.image_path = path_for_mnist_sprites #'mnistdigits.png'
-    #     embedding.sprite.single_image_dim.extend([28,28])
-
-    #     # Say that you want to visualise the embeddings
-    #     projector.visualize_embeddings(summary_writer, config)
-
 
     #Standardizing images
     with tf.name_scope("image_pre_proc"):
@@ -488,16 +467,6 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         #tf.summary.image("std_img_1",std_img_s1)
         #tf.summary.image("std_img_2",std_img_s2)
 
-    #Embeddings
-    # with tf.name_scope("embeddings"):
-    #     emb_var = tf.Variable(std_img_s1)
-    #     config = projector.ProjectorConfig()
-    #     embedding = config.embeddings.add()
-    #     embedding.tensor_name = emb_var.name
-    #     embedding.metadata_path = metadata
-    #     embedding.sprite.image_path = os.path.join(LOGDIR,'sprite.png')
-    #     embedding.sprite.single_image_dim.extend([100,100])
-    #     projector.visualize_embeddings(writer,config)
 
     #pad tensor if its inference [Because inference is only single image]
     paddings = tf.constant([[0,batch_size-1],[0,0],[0,0],[0,0]])
@@ -529,10 +498,13 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         with tf.name_scope("Target_weight_update_op"):
             target_ops = target_weight_update_ops("conv","FC",conv_count,fc_count)
 
-
+    with tf.name_scope("action"):
+        action = tf.argmax(inference_out[0],axis=0,name="action")
+        tf.summary.scalar("Action: ",action)
 
     #implementing Q algorithm
     with tf.name_scope("Q_Algo"):
+<<<<<<< HEAD
         qmax_idx = tf.argmax(inference_out,axis=1,name="qmax_idx")
         gamma = tf.constant(0.99,tf.float16)
         idxs = tf.concat((tf.transpose([tf.range(0,batch_size,dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
@@ -544,29 +516,33 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         assign_y = tf.assign(y,inference_out)
         with tf.control_dependencies([assign_y]):
             tf.scatter_nd_update(y,tf.expand_dims(idxs,axis=1),target_q)
+=======
+        qmax_idx = tf.argmax(inference_out,axis=1,name="qmax_idx", output_type=tf.int64)
+        inf_shape = tf.shape(inference_out,out_type=tf.int64)
+        qm_shape = tf.shape(qmax_idx,out_type=tf.int64)
+        idxs = tf.concat((tf.transpose([tf.range(0,qm_shape[0],dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
+        gamma = tf.constant(0.99,shape=[batch_size],dtype=tf.float16)#([batch_size],0.99)
+        gamma_sparse = tf.SparseTensor(idxs,gamma,dense_shape=inf_shape)
+        reward_sparse = tf.SparseTensor(idxs,tf.squeeze(r,axis=1),dense_shape=inf_shape)
+        gamma_dense = tf.sparse_tensor_to_dense(gamma_sparse,1)
+        reward_dense = tf.sparse_tensor_to_dense(reward_sparse,0)
+        y = tf.add(reward_dense,tf.multiply(gamma_dense,inference_out))
+        ct = tf.concat([inference_out,y],axis=0)
+        
+>>>>>>> 2048_st
     
 
     with tf.name_scope("Trainer"):
-        #Creating global step
         loss = tf.losses.huber_loss(y,train_out,delta=1.0)
         tf.summary.scalar("loss",loss)
         opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01)
         grads = opt.compute_gradients(loss)
         train = opt.apply_gradients(grads,global_step=global_step,name='train')
-        #for index, grad in enumerate(grads):
-         #   tf.summary.histogram("{}-grad".format(grads[index][1].name), grads[index])
-        #p_delta = tf.Print([grads[1]],[grads[1]],message="grads: ")
-        prt = tf.Print(loss,[loss],"Loss ",name="prt")  
-
-
-
-    with tf.name_scope("action"):
-        action = tf.argmax(inference_out[0],axis=0,name="action")
-        tf.summary.scalar("Action: ",action)
-        #prt = tf.Print(tf.shape(s1),[tf.shape(s1)],"a: ",name="q_vals_pr")  
+        prt1 = tf.Print(loss,[loss],"loss ",name="prt1",summarize=100)  
+        prt2 = tf.Print(y,[y],"y: ",name="prt2",summarize=100)
 
     summ = tf.summary.merge_all()
-
+    #tf.summary.merge([summary_var1, summary_var2])
 
     rtn_vals['s1'] = s1
     rtn_vals['s2'] = s2
@@ -574,7 +550,9 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
     rtn_vals['target_ops'] = target_ops
     
     rtn_vals['train'] = train
-    rtn_vals['print'] = prt
+    rtn_vals['print1'] = prt1
+    rtn_vals['print2'] = prt2
+
     rtn_vals['action'] = action
     #rtn_vals['op'] = op[0]
     
@@ -613,8 +591,8 @@ def create_model2(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,
     with tf.name_scope("img_preproc"):
         std_img_s1 = standardize_img(s1)
         std_img_s2 = standardize_img(s2)
-        tf.summary.image("std_img_1",std_img_s1)
-        tf.summary.image("std_img_2",std_img_s2)
+        summ_img1 = tf.summary.image("std_img_1",std_img_s1)
+        summ_img2 = tf.summary.image("std_img_2",std_img_s2)
 
     #Building Training Model
     train_output = build_graph("Train",std_img_s2,
@@ -654,7 +632,7 @@ def create_model2(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,
 
     with tf.name_scope("trainer"):
         loss = tf.losses.huber_loss(y,train_output,delta=1.0)
-        tf.summary.scalar("loss",loss)
+        summ_loss = tf.summary.scalar("loss",loss)
         opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01)
         grads = opt.compute_gradients(loss)
         train = opt.apply_gradients(grads,global_step=global_step)

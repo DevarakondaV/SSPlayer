@@ -4,7 +4,7 @@ import numpy as np
 from cnn import *
 from t048_trainer import *
 #from gsheets import *
-
+import tensorflow.contrib.graph_editor as ge
 
 
 x = np.random.rand(1,100,100,4)
@@ -38,6 +38,16 @@ summ = ops_and_tens['summ']
 
 saver = tf.train.Saver(save_relative_paths=True)
 
+def find(start, target):
+    """Returns path to parent from given start node"""
+    if start == target:
+        return [target]
+    for parent in start.op.inputs:
+        found_path = find(parent, target)
+        if found_path:
+            return [start]+found_path
+    return []
+
 
 summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
                                                 output_dir=summary_dir,summary_writer=None,
@@ -50,6 +60,7 @@ saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=chkpt_dir,
 
 chief_session = tf.train.ChiefSessionCreator(scaffold=None,config=config, checkpoint_dir=chkpt_dir)
 
+#ops_between = ge.get_walks_intersection_ops(ops_and_tens['r'], ops_and_tens['train'])
 
 #Launch game
 g_sheets = 0
