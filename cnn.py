@@ -534,7 +534,7 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
     #implementing Q algorithm
     with tf.name_scope("Q_Algo"):
         qmax_idx = tf.argmax(inference_out,axis=1,name="qmax_idx")
-        gamma = tf.constant(0.1,tf.float16)
+        gamma = tf.constant(0.99,tf.float16)
         idxs = tf.concat((tf.transpose([tf.range(0,batch_size,dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
         Qnext = tf.reduce_max(inference_out,name="Qnext_target")
         target_q = tf.add(r,tf.multiply(gamma,Qnext),name="y")
