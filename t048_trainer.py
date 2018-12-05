@@ -38,7 +38,7 @@ class Trainer:
 
         #Declaring some variables
         self.exp = []                       #experience vector
-        self.process_frames = process_frames                 #Number of frames to process
+        self.process_frames = 0                 #Number of frames to process
         self.force_kill = False                                 #Bool param determines if training should be forced to stop
         self.sess = sess                    #Tensorflow session
         self.game = game                    #Game object
@@ -77,9 +77,9 @@ class Trainer:
         #em = self.sess.graph.get_tensor_by_name("Target/Dense_Layers/FC1/act1/Maximum:0")
         #Need dummy value for placeholders not in use
         zeros = np.zeros(shape=frames.shape).astype(np.uint8)
-
+        rv = np.zeros((10,1))
         #Inference
-        a = self.sess.run([action],{s1: [frames],s2: [zeros],r: [[0]]})
+        a = self.sess.run([action],{s1: [frames],s2: [zeros],r: rv})
         #self.write_label_to_tsv(a)
         #self.em_vec.append(em)
         return a[0]
@@ -244,12 +244,13 @@ class Trainer:
         s1 = ops_and_tens['s1']
         s2 = ops_and_tens['s2']
         r = ops_and_tens['r']
-        prt = ops_and_tens['print']
+        prt1 = ops_and_tens['print1']
+        prt2 = ops_and_tens['print2']
 
         #Grab training batch
         seq_n = self.random_minibatch_sample(batch_size)
         #Add to training queue
-        sess.run([train,prt],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
+        sess.run([train,prt1,prt2],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
         
         #rr = np.zeros((10,100,100,10)).astype(np.uint8)
         #re = np.asarray([0]).reshape((1,1))
@@ -425,7 +426,7 @@ class Trainer:
 
                     #send the action to the game controller to perform it
                     frame,r,iter_reward,unique = self.send_action_to_game_controller(phi1,a,iter_reward)
-
+                    r = 1 ####################testing
                     if not unique:
                         print("Not unqiue Frames. Don't add to experience")
                     #
@@ -794,6 +795,3 @@ class Trainer:
                 save_seq_img(fff)
             listener.stop()
         return
-
-exp = []
-process_frames = 0
