@@ -250,7 +250,7 @@ class Trainer:
         #Grab training batch
         seq_n = self.random_minibatch_sample(batch_size)
         #Add to training queue
-        sess.run([train,prt1,prt2],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
+        sess.run([train,prt1],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
         
         #rr = np.zeros((10,100,100,10)).astype(np.uint8)
         #re = np.asarray([0]).reshape((1,1))
@@ -279,9 +279,9 @@ class Trainer:
         action = ops_and_tens['action']
 
         zeros = np.zeros(shape=(100,100,batch_size)).astype(np.uint8)
-        
+        rv = np.zeros((10,1))
         self.con_log("UPDATING TARGET PARAMS: {}".format(n),"")
-        sess.run([ops_and_tens['target_ops']],{s1: [zeros],s2: [zeros],r: [[0]]})
+        sess.run([ops_and_tens['target_ops']],{s1: [zeros],s2: [zeros],r: rv})
         return
 
 
@@ -426,7 +426,6 @@ class Trainer:
 
                     #send the action to the game controller to perform it
                     frame,r,iter_reward,unique = self.send_action_to_game_controller(phi1,a,iter_reward)
-                    r = 1 ####################testing
                     if not unique:
                         print("Not unqiue Frames. Don't add to experience")
                     #

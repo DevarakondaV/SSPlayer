@@ -524,7 +524,7 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01)
         grads = opt.compute_gradients(loss)
         train = opt.apply_gradients(grads,global_step=global_step,name='train')
-        prt1 = tf.Print(inference_out,[inference_out],"inference ",name="prt1",summarize=100)  
+        prt1 = tf.Print(loss,[loss],"loss ",name="prt1",summarize=100)  
         prt2 = tf.Print(y,[y],"y: ",name="prt2",summarize=100)
 
     summ = tf.summary.merge_all()
