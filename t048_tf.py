@@ -40,10 +40,11 @@ ops_and_tens = construct_two_network_model(learning_rate,gamma,batch_size,conv_c
 print(ops_and_tens.keys())
 writer = ops_and_tens['writer']
 summ = ops_and_tens['summ']
-
 saver = tf.train.Saver()
 
+scaffold = tf.train.Scaffold(summary_op=summ,saver=saver,ready_for_local_init_op=None)
 
+chief_session = tf.train.ChiefSessionCreator(scaffold=scaffold,config=config, checkpoint_dir=chkpt_dir)
 
 #Hooks for session
 summary_hook = tf.train.SummarySaverHook(   save_steps=save_steps,save_secs=None,
@@ -56,7 +57,6 @@ saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=chkpt_dir,
                                                 scaffold=None)
 
 #Session param
-chief_session = tf.train.ChiefSessionCreator(scaffold=None,config=config, checkpoint_dir=chkpt_dir)
 
 
 
@@ -86,7 +86,7 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
             game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
             game_trainer.play_train(10,2)
 
-            
+
         elif Testing_Desktop == "0":
             train_or_play = input("T for train,P for play,E for end: T/P/E: ")
             num_times = int(input("Number frames to Process?: "))

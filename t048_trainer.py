@@ -265,10 +265,6 @@ class Trainer:
         seq_n = self.random_minibatch_sample(batch_size)
         #Add to training queue
         sess.run([train,prt1],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
-        
-        #rr = np.zeros((10,100,100,10)).astype(np.uint8)
-        #re = np.asarray([0]).reshape((1,1))
-        #sess.run([train,prt],{s1: rr,r: re,s2: rr})
 
         #Add to number of training operations
         self.num_train_ops +=1
@@ -386,7 +382,8 @@ class Trainer:
             null:
         """
 
-        if (len_exp > self.min_exp_len_train):
+
+        if (len_exp >= self.min_exp_len_train):
             self.execute_train_operation(batch_size)
             if (self.num_train_ops % 10) == 0:
                 self.update_target_params(batch_size,self.num_train_ops/10)
@@ -466,7 +463,7 @@ class Trainer:
 
 
                     #Run a training and update target params operation
-                    self.train_target_update(len(self.exp),batch_size)
+                    #self.train_target_update(len(self.exp),batch_size)
                 
                 
                 #OUTSIDE WHILE LOOP
@@ -640,13 +637,16 @@ class Trainer:
                 
                 a = self.infer_action(phi1)
                 frame,r,d_reward,unique = self.send_action_to_game_controller(phi1,a,0)
-                
+                self.total_frames -= 1  #Total frames get appended every time new frames are grabbed. These are only used for greed
+
                 #If network continues to breadic unique 
                 not_uniq_count = 0
                 quit_game_play = False
                 while not unique :
                     a = self.infer_action(phi1)
                     frame,r,d_reward,unqiue = self.send_action_to_game_controller(phi1,a,0)
+                    self.total_frames -= 1
+
                     not_uniq_count +=1
                     if (not_uniq_count == 25):
                         quit_game_play = True
@@ -656,14 +656,6 @@ class Trainer:
                     self.con_log("INFINITE LOOP: BREAKING PLAY ITERATION {}".format(i),"")
                     break
                     
-                # if f_rtn_val != 0:
-                #     frame,r,d_reward = f_rtn_val
-                # else:
-                #     self.con_log("INFINITE LOOP: BREAKING PLAY ITERATION {}".format(i),"")
-                #     break
-
-                        
-
                 #Increment reward for the game iteration
                 reward +=r
                 
