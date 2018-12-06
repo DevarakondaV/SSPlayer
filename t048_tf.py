@@ -31,12 +31,13 @@ conv_count = len(conv)
 fc_count = len(fclyr)
 learning_rate = 0.00025
 gamma = np.array([.9]).astype(np.float16)
-batch_size = 10
+batch_size = 2
+seq_len = 10
 
 summary_dir = LOGDIR
 chkpt_dir = LOGDIR 
 
-ops_and_tens = construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv,fclyr,conv_k_size,conv_stride,LOGDIR)
+ops_and_tens = construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_count,fc_count,conv,fclyr,conv_k_size,conv_stride,LOGDIR)
 print(ops_and_tens.keys())
 writer = ops_and_tens['writer']
 summ = ops_and_tens['summ']
@@ -73,7 +74,7 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
         max_exp_len = 10000
         min_exp_len_train = 5000
         game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
-        game_trainer.play_train(1000,25)
+        game_trainer.play_train(2000,15)
     else:
         Testing_Desktop = input("Testing Desktop?(1-yes):  ")
 
@@ -84,7 +85,7 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
             min_exp_len_train = 10
 
             game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
-            game_trainer.play_train(10,2)
+            game_trainer.play_train(10,5)
 
 
         elif Testing_Desktop == "0":
@@ -107,5 +108,13 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
                 if (train_or_play != "E"):
                     num_times = int(input("Number of times? : "))
                     greed_frames = int(input("Greed Frames Limit: "))
+        elif Testing_Desktop == "p":
+            num_times = int(input("How many times?: "))
+            greed_frames = 10
+            max_exp_len = 20
+            min_exp_len_train = 10
+            game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
+            game_trainer.play(num_times)
+
         else:
             exit()

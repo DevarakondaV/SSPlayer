@@ -60,7 +60,7 @@ class Trainer:
         
        
         self.batch_size = batch_size                #Determines batchsize of training operation
-        self.seq_len = batch_size                   #The number of frames which determines a state
+        self.seq_len = seq_len                      #The number of frames which determines a state
 
         #Params used while trianing
         self.game_play_iteration = 0                #Number of iterations of game play
@@ -91,7 +91,7 @@ class Trainer:
         #em = self.sess.graph.get_tensor_by_name("Target/Dense_Layers/FC1/act1/Maximum:0")
         #Need dummy value for placeholders not in use
         zeros = np.zeros(shape=frames.shape).astype(np.uint8)
-        rv = np.zeros((10,1))
+        rv = np.zeros((self.batch_size,1))
         #Inference
         a = self.sess.run([action],{s1: [frames],s2: [zeros],r: rv})
         #self.write_label_to_tsv(a)
@@ -180,7 +180,8 @@ class Trainer:
         
 
         self.con_log("Action = {}\nMove dir = {}\nReward = {}".format(str(a),m_dir,r),"")
-        #if frames are equal then invalid move..reinfer action
+        self.con_log("Process Frames = {}\nTotal Frames {}".format(self.process_frames,self.total_frames),"")
+        #if frames are equal then invalid move..reinfer Process Frames
         #chk_frm = phi1[:,:,0]
         chk_frm = phi1[:,:,self.seq_len-1]
         return frame,r,reward,not np.array_equal(chk_frm,np.squeeze(frame))
@@ -236,7 +237,7 @@ class Trainer:
         frames = self.total_frames
         greed_frames = self.greed_frames
         if frames > greed_frames:
-            return 0.1
+            return 0.9
         return (((.1-1)/greed_frames)*frames)+1
 
 
@@ -264,7 +265,7 @@ class Trainer:
         #Grab training batch
         seq_n = self.random_minibatch_sample(batch_size)
         #Add to training queue
-        sess.run([train,prt1],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
+        sess.run([train],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
 
         #Add to number of training operations
         self.num_train_ops +=1
@@ -289,7 +290,7 @@ class Trainer:
         action = ops_and_tens['action']
 
         zeros = np.zeros(shape=(100,100,batch_size)).astype(np.uint8)
-        rv = np.zeros((10,1))
+        rv = np.zeros((self.batch_size,1))
         self.con_log("UPDATING TARGET PARAMS: {}".format(n),"")
         sess.run([ops_and_tens['target_ops']],{s1: [zeros],s2: [zeros],r: rv})
         return
@@ -386,7 +387,7 @@ class Trainer:
         if (len_exp >= self.min_exp_len_train):
             self.execute_train_operation(batch_size)
             if (self.num_train_ops % 10) == 0:
-                self.update_target_params(batch_size,self.num_train_ops/10)
+                self.update_target_params(self.seq_len,self.num_train_ops/10)
     
 
     def Q_Algorithm(self):
@@ -628,6 +629,8 @@ class Trainer:
             phi1 = self.process_seq(seq)  
 
             #While game oes not need to stop
+            not_uniq_count = 0
+            quit_game_play = False
             while not game.stop_play:
 
                 #If esc key is pressed stop the game play!
@@ -640,21 +643,14 @@ class Trainer:
                 self.total_frames -= 1  #Total frames get appended every time new frames are grabbed. These are only used for greed
 
                 #If network continues to breadic unique 
-                not_uniq_count = 0
-                quit_game_play = False
-                while not unique :
-                    a = self.infer_action(phi1)
-                    frame,r,d_reward,unqiue = self.send_action_to_game_controller(phi1,a,0)
-                    self.total_frames -= 1
-
+                if not unique :
                     not_uniq_count +=1
                     if (not_uniq_count == 25):
-                        quit_game_play = True
+                        self.con_log("INFINITE LOOP: BREAKING PLAY ITERATION {}".format(i),"")
                         break
+                else:
+                    not_uniq_count = 0
 
-                if quit_game_play:
-                    self.con_log("INFINITE LOOP: BREAKING PLAY ITERATION {}".format(i),"")
-                    break
                     
                 #Increment reward for the game iteration
                 reward +=r
