@@ -8,7 +8,7 @@ import tensorflow.contrib.graph_editor as ge
 
 
 
-pc = 1  #1 for desktop, 2 for laptop
+pc = 2  #1 for desktop, 2 for laptop
 if pc == 1:
     LOGDIR = r"c:\Users\devar\Documents\EngProj\SSPlayer\log2"
     save_steps = 500
@@ -70,26 +70,27 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
     if pc == 1:
         num_times = 100000
         greed_frames = 10000
+        max_exp_len = 10000
 
-        game_trainer = Trainer(sess,game,num_times,greed_frames,10,batch_size,ops_and_tens,g_sheets,1)
+        game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,10,batch_size,ops_and_tens,g_sheets,1)
         game_trainer.play_train(1000,25)
     else:
         Testing_Desktop = input("Testing Desktop?(1-yes):  ")
-        while(Testing_Desktop != "1" or Testing_Desktop != "0"):
-            Testing_Desktop = input("Testing Desktop?(1-yes):  ")
 
         if (Testing_Desktop == "1"):
             num_times = 100
             greed_frames = 10
+            max_exp_len = 10
 
-            game_trainer = Trainer(sess,game,num_times,greed_frames,10,batch_size,ops_and_tens,g_sheets,1)
+            game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,10,batch_size,ops_and_tens,g_sheets,1)
             game_trainer.play_train(10,2)
-        else:
+        elif Testing_Desktop == "0":
             train_or_play = input("T for train,P for play,E for end: T/P/E: ")
             num_times = int(input("Number frames to Process?: "))
             greed_frames = int(input("Greed Frames Limit: "))
+            max_exp_len = 10
 
-            game_trainer = Trainer(sess,game,num_times,greed_frames,10,batch_size,ops_and_tens,g_sheets,1)
+            game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,10,batch_size,ops_and_tens,g_sheets,1)
 
             while (train_or_play is not "E"):
                 if (train_or_play == "T" or train_or_play == "t"):
@@ -103,3 +104,5 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
                 if (train_or_play != "E"):
                     num_times = int(input("Number of times? : "))
                     greed_frames = int(input("Greed Frames Limit: "))
+        else:
+            exit()

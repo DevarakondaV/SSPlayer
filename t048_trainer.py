@@ -19,7 +19,7 @@ class Trainer:
     """
 
     #Main Methods
-    def __init__(self,sess,game,frame_limit,greed_frames,seq_len,batch_size,ops_and_tens,gsheets,log = 0):
+    def __init__(self,sess,game,frame_limit,greed_frames,max_exp_len,seq_len,batch_size,ops_and_tens,gsheets,log = 0):
         """
         Constructor
         args:
@@ -27,6 +27,7 @@ class Trainer:
             game:   Game object
             frame_limit:    int. Number of frames to play
             greed_frames:    int. Number of frames when greed is active
+            max_exp_len:    int. Maximum lenght of experience vector
             seq_len:     int. Sequence size which determines state
             batch_size:     int. Determines batchsize of training operation
             ops_and_tens:   Dictionary. Contains the relevent tensorflow operations and tensors
@@ -37,23 +38,34 @@ class Trainer:
         """
 
         #Declaring some variables
-        self.exp = []                       #experience vector
-        self.process_frames = 0                 #Number of frames to process
-        self.force_kill = False                                 #Bool param determines if training should be forced to stop
+        
+        #Tensorflow variables
         self.sess = sess                    #Tensorflow session
+        self.ops_and_tens = ops_and_tens    #Tensorflow operations and tensors
+
+        #Game controller variables
         self.game = game                    #Game object
+        self.force_kill = False             #Bool param determines if training should be forced to stop
+        
+
+        #variables required for training
+        self.exp = []                       #experience vector  
+        self.total_frames = 0               #Total frames runduring entire training session
+        self.process_frames = 0             #Number of frames to process
+        self.max_exp_len = max_exp_len      #The maximum length of the experience vector before removing experience      
         self.frame_limit = frame_limit      #Maximum number of frame sto play  
         self.greed_frames = greed_frames    #Maximum number of frames when greed is calculated
-        self.seq_len = batch_size           #The number of frames which determines a state
-        self.ops_and_tens = ops_and_tens    #Tensorflow operations and tensors
-        self.gsheets = gsheets              #gsheets object ot post to sheets
+        
+       
         self.batch_size = batch_size        #Determines batchsize of training operation
+        self.seq_len = batch_size           #The number of frames which determines a state
 
         #Params used while trianing
         self.game_play_iteration = 0        #Number of iterations of game play
         self.num_train_ops = 0              #Number of trianing operations
+        self.gsheets = gsheets              #gsheets object ot post to sheets
         
-        self.tsv_file = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2\labels.tsv"
+        #self.tsv_file = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2\labels.tsv"
         self.em_vec = []
         self.log = log
 
@@ -202,7 +214,7 @@ class Trainer:
         """
 
         #Older experience is phased out by poping from exp buffer
-        if (self.process_frames > 10000):
+        if (len(self.exp) > self.max_exp_len):
             self.exp.pop(0)
         #process_frames = process_frames+2
 
@@ -299,7 +311,8 @@ class Trainer:
         game = self.game
         frame = take_shot(game)
         #append the number of processed frames
-        self.process_frames = self.process_frames+1
+        self.process_frames +=  1 
+        self.total_frames += 1
         return frame
 
     def process_seq(self,seq):
