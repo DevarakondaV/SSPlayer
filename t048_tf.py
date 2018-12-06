@@ -71,8 +71,8 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
         num_times = 100000
         greed_frames = 10000
         max_exp_len = 10000
-
-        game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,10,batch_size,ops_and_tens,g_sheets,1)
+        min_exp_len_train = 5000
+        game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
         game_trainer.play_train(1000,25)
     else:
         Testing_Desktop = input("Testing Desktop?(1-yes):  ")
@@ -81,16 +81,19 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
             num_times = 100
             greed_frames = 10
             max_exp_len = 10
+            min_exp_len_train = 10
 
-            game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,10,batch_size,ops_and_tens,g_sheets,1)
+            game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
             game_trainer.play_train(10,2)
+
+            
         elif Testing_Desktop == "0":
             train_or_play = input("T for train,P for play,E for end: T/P/E: ")
             num_times = int(input("Number frames to Process?: "))
             greed_frames = int(input("Greed Frames Limit: "))
             max_exp_len = 10
-
-            game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,10,batch_size,ops_and_tens,g_sheets,1)
+            min_exp_len_train = 10
+            game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
 
             while (train_or_play is not "E"):
                 if (train_or_play == "T" or train_or_play == "t"):

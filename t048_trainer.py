@@ -8,7 +8,7 @@ import os
 import matplotlib.pyplot as plt
 import tensorflow as tf
 #import cv2
-
+from collections import deque
 
 from pynput import keyboard
 
@@ -19,20 +19,21 @@ class Trainer:
     """
 
     #Main Methods
-    def __init__(self,sess,game,frame_limit,greed_frames,max_exp_len,seq_len,batch_size,ops_and_tens,gsheets,log = 0):
+    def __init__(self,sess,game,frame_limit,greed_frames,max_exp_len,min_exp_len_train,seq_len,batch_size,ops_and_tens,gsheets,log = 0):
         """
         Constructor
         args:
-            sess:   Tensorflow session object
-            game:   Game object
-            frame_limit:    int. Number of frames to play
-            greed_frames:    int. Number of frames when greed is active
-            max_exp_len:    int. Maximum lenght of experience vector
-            seq_len:     int. Sequence size which determines state
-            batch_size:     int. Determines batchsize of training operation
-            ops_and_tens:   Dictionary. Contains the relevent tensorflow operations and tensors
-            gsheets:        gsheets object. Used to post results to google sheets.
-            log:    Bool. True to activate console log.
+            sess:               Tensorflow session object
+            game:               Game object
+            frame_limit:        int. Number of frames to play
+            greed_frames:       int. Number of frames when greed is active
+            max_exp_len:        int. Maximum lenght of experience vector
+            min_exp_len_train:  int. Minimum lenght of exp before training
+            seq_len:            int. Sequence size which determines state
+            batch_size:         int. Determines batchsize of training operation
+            ops_and_tens:       Dictionary. Contains the relevent tensorflow operations and tensors
+            gsheets:            gsheets object. Used to post results to google sheets.
+            log:                Bool. True to activate console log.
         returns:
             Null
         """
@@ -40,30 +41,31 @@ class Trainer:
         #Declaring some variables
         
         #Tensorflow variables
-        self.sess = sess                    #Tensorflow session
-        self.ops_and_tens = ops_and_tens    #Tensorflow operations and tensors
+        self.sess = sess                            #Tensorflow session
+        self.ops_and_tens = ops_and_tens            #Tensorflow operations and tensors
 
         #Game controller variables
-        self.game = game                    #Game object
-        self.force_kill = False             #Bool param determines if training should be forced to stop
+        self.game = game                            #Game object
+        self.force_kill = False                     #Bool param determines if training should be forced to stop
         
 
         #variables required for training
-        self.exp = []                       #experience vector  
-        self.total_frames = 0               #Total frames runduring entire training session
-        self.process_frames = 0             #Number of frames to process
-        self.max_exp_len = max_exp_len      #The maximum length of the experience vector before removing experience      
-        self.frame_limit = frame_limit      #Maximum number of frame sto play  
-        self.greed_frames = greed_frames    #Maximum number of frames when greed is calculated
+        self.exp = deque(maxlen = max_exp_len)      #experience vector  
+        self.total_frames = 0                       #Total frames runduring entire training session
+        self.process_frames = 0                     #Number of frames to process
+        self.max_exp_len = max_exp_len              #The maximum length of the experience vector before removing experience      
+        self.min_exp_len_train = min_exp_len_train  #Minimum lenght of exp required for training operations    
+        self.frame_limit = frame_limit              #Maximum number of frame sto play  
+        self.greed_frames = greed_frames            #Maximum number of frames when greed is calculated
         
        
-        self.batch_size = batch_size        #Determines batchsize of training operation
-        self.seq_len = batch_size           #The number of frames which determines a state
+        self.batch_size = batch_size                #Determines batchsize of training operation
+        self.seq_len = batch_size                   #The number of frames which determines a state
 
         #Params used while trianing
-        self.game_play_iteration = 0        #Number of iterations of game play
-        self.num_train_ops = 0              #Number of trianing operations
-        self.gsheets = gsheets              #gsheets object ot post to sheets
+        self.game_play_iteration = 0                #Number of iterations of game play
+        self.num_train_ops = 0                      #Number of trianing operations
+        self.gsheets = gsheets                      #gsheets object ot post to sheets
         
         #self.tsv_file = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2\labels.tsv"
         self.em_vec = []
@@ -215,11 +217,11 @@ class Trainer:
 
         #Older experience is phased out by poping from exp buffer
         if (len(self.exp) > self.max_exp_len):
-            self.exp.pop(0)
+            self.exp.pop()
         #process_frames = process_frames+2
 
         #add new experience
-        self.exp.append(seq)    
+        self.exp.appendleft(seq)    
         return
 
     def get_greed(self):
@@ -231,7 +233,7 @@ class Trainer:
         """
 
         
-        frames = self.process_frames
+        frames = self.total_frames
         greed_frames = self.greed_frames
         if frames > greed_frames:
             return 0.1
@@ -384,7 +386,7 @@ class Trainer:
             null:
         """
 
-        if (len_exp > batch_size):
+        if (len_exp > self.min_exp_len_train):
             self.execute_train_operation(batch_size)
             if (self.num_train_ops % 10) == 0:
                 self.update_target_params(batch_size,self.num_train_ops/10)
