@@ -463,7 +463,7 @@ class Trainer:
 
 
                     #Run a training and update target params operation
-                    #self.train_target_update(len(self.exp),batch_size)
+                    self.train_target_update(len(self.exp),batch_size)
                 
                 
                 #OUTSIDE WHILE LOOP

@@ -80,7 +80,7 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
         if (Testing_Desktop == "1"):
             num_times = 100
             greed_frames = 10
-            max_exp_len = 10
+            max_exp_len = 20
             min_exp_len_train = 10
 
             game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
