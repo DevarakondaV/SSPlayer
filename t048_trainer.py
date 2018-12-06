@@ -8,7 +8,7 @@ import os
 import matplotlib.pyplot as plt
 import tensorflow as tf
 #import cv2
-
+from collections import deque
 
 from pynput import keyboard
 
@@ -19,42 +19,55 @@ class Trainer:
     """
 
     #Main Methods
-    def __init__(self,sess,game,frame_limit,greed_frames,seq_len,batch_size,ops_and_tens,gsheets,log = 0):
+    def __init__(self,sess,game,frame_limit,greed_frames,max_exp_len,min_exp_len_train,seq_len,batch_size,ops_and_tens,gsheets,log = 0):
         """
         Constructor
         args:
-            sess:   Tensorflow session object
-            game:   Game object
-            frame_limit:    int. Number of frames to play
-            greed_frames:    int. Number of frames when greed is active
-            seq_len:     int. Sequence size which determines state
-            batch_size:     int. Determines batchsize of training operation
-            ops_and_tens:   Dictionary. Contains the relevent tensorflow operations and tensors
-            gsheets:        gsheets object. Used to post results to google sheets.
-            log:    Bool. True to activate console log.
+            sess:               Tensorflow session object
+            game:               Game object
+            frame_limit:        int. Number of frames to play
+            greed_frames:       int. Number of frames when greed is active
+            max_exp_len:        int. Maximum lenght of experience vector
+            min_exp_len_train:  int. Minimum lenght of exp before training
+            seq_len:            int. Sequence size which determines state
+            batch_size:         int. Determines batchsize of training operation
+            ops_and_tens:       Dictionary. Contains the relevent tensorflow operations and tensors
+            gsheets:            gsheets object. Used to post results to google sheets.
+            log:                Bool. True to activate console log.
         returns:
             Null
         """
 
         #Declaring some variables
-        self.exp = []                               #experience vector
-        self.total_frames = 0                       #Number of frames to process
-        self.process_frames = 0                     #Number of frames to process
-        self.force_kill = False                     #Bool param determines if training should be forced to stop
+        
+        #Tensorflow variables
         self.sess = sess                            #Tensorflow session
+        self.ops_and_tens = ops_and_tens            #Tensorflow operations and tensors
+
+        #Game controller variables
         self.game = game                            #Game object
+        self.force_kill = False                     #Bool param determines if training should be forced to stop
+        
+
+        #variables required for training
+        self.exp = deque(maxlen = max_exp_len)      #experience vector  
+        self.total_frames = 0                       #Total frames runduring entire training session
+        self.process_frames = 0                     #Number of frames to process
+        self.max_exp_len = max_exp_len              #The maximum length of the experience vector before removing experience      
+        self.min_exp_len_train = min_exp_len_train  #Minimum lenght of exp required for training operations    
         self.frame_limit = frame_limit              #Maximum number of frame sto play  
         self.greed_frames = greed_frames            #Maximum number of frames when greed is calculated
-        self.seq_len = batch_size                   #The number of frames which determines a state
-        self.ops_and_tens = ops_and_tens            #Tensorflow operations and tensors
-        self.gsheets = gsheets                      #gsheets object ot post to sheets
+        
+       
         self.batch_size = batch_size                #Determines batchsize of training operation
+        self.seq_len = seq_len                      #The number of frames which determines a state
 
         #Params used while trianing
-        self.game_play_iteration = 0        #Number of iterations of game play
-        self.num_train_ops = 0              #Number of trianing operations
+        self.game_play_iteration = 0                #Number of iterations of game play
+        self.num_train_ops = 0                      #Number of trianing operations
+        self.gsheets = gsheets                      #gsheets object ot post to sheets
         
-        self.tsv_file = r"c:\Users\devar\Documents\EngProj\SSPlayer\log2\labels.tsv"
+        #self.tsv_file = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2\labels.tsv"
         self.em_vec = []
         self.log = log
 
@@ -78,7 +91,7 @@ class Trainer:
         #em = self.sess.graph.get_tensor_by_name("Target/Dense_Layers/FC1/act1/Maximum:0")
         #Need dummy value for placeholders not in use
         zeros = np.zeros(shape=frames.shape).astype(np.uint8)
-        rv = np.zeros((10,1))
+        rv = np.zeros((self.batch_size,1))
         #Inference
         a = self.sess.run([action],{s1: [frames],s2: [zeros],r: rv})
         #self.write_label_to_tsv(a)
@@ -167,7 +180,8 @@ class Trainer:
         
 
         self.con_log("Action = {}\nMove dir = {}\nReward = {}".format(str(a),m_dir,r),"")
-        #if frames are equal then invalid move..reinfer action
+        self.con_log("Process Frames = {}\nTotal Frames {}".format(self.process_frames,self.total_frames),"")
+        #if frames are equal then invalid move..reinfer Process Frames
         #chk_frm = phi1[:,:,0]
         chk_frm = phi1[:,:,self.seq_len-1]
         return frame,r,reward,not np.array_equal(chk_frm,np.squeeze(frame))
@@ -203,12 +217,12 @@ class Trainer:
         """
 
         #Older experience is phased out by poping from exp buffer
-        if (len(self.exp) > 10000):
-            self.exp.pop(0)
+        if (len(self.exp) > self.max_exp_len):
+            self.exp.pop()
         #process_frames = process_frames+2
 
         #add new experience
-        self.exp.append(seq)    
+        self.exp.appendleft(seq)    
         return
 
     def get_greed(self):
@@ -223,7 +237,7 @@ class Trainer:
         frames = self.total_frames
         greed_frames = self.greed_frames
         if frames > greed_frames:
-            return 0.1
+            return 0.9
         return (((.1-1)/greed_frames)*frames)+1
 
 
@@ -251,11 +265,7 @@ class Trainer:
         #Grab training batch
         seq_n = self.random_minibatch_sample(batch_size)
         #Add to training queue
-        sess.run([train,prt1],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
-        
-        #rr = np.zeros((10,100,100,10)).astype(np.uint8)
-        #re = np.asarray([0]).reshape((1,1))
-        #sess.run([train,prt],{s1: rr,r: re,s2: rr})
+        sess.run([train],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
 
         #Add to number of training operations
         self.num_train_ops +=1
@@ -280,7 +290,7 @@ class Trainer:
         action = ops_and_tens['action']
 
         zeros = np.zeros(shape=(100,100,batch_size)).astype(np.uint8)
-        rv = np.zeros((10,1))
+        rv = np.zeros((self.batch_size,1))
         self.con_log("UPDATING TARGET PARAMS: {}".format(n),"")
         sess.run([ops_and_tens['target_ops']],{s1: [zeros],s2: [zeros],r: rv})
         return
@@ -300,8 +310,8 @@ class Trainer:
         game = self.game
         frame = take_shot(game)
         #append the number of processed frames
-        self.process_frames += 1
-        self.total_frames +=1
+        self.process_frames +=  1 
+        self.total_frames += 1
         return frame
 
     def process_seq(self,seq):
@@ -373,10 +383,11 @@ class Trainer:
             null:
         """
 
-        if (len_exp > 10000):
+
+        if (len_exp >= self.min_exp_len_train):
             self.execute_train_operation(batch_size)
-            if (self.num_train_ops % 100) == 0:
-                self.update_target_params(batch_size,self.num_train_ops/10)
+            if (self.num_train_ops % 10) == 0:
+                self.update_target_params(self.seq_len,self.num_train_ops/10)
     
 
     def Q_Algorithm(self):
@@ -618,6 +629,8 @@ class Trainer:
             phi1 = self.process_seq(seq)  
 
             #While game oes not need to stop
+            not_uniq_count = 0
+            quit_game_play = False
             while not game.stop_play:
 
                 #If esc key is pressed stop the game play!
@@ -627,30 +640,18 @@ class Trainer:
                 
                 a = self.infer_action(phi1)
                 frame,r,d_reward,unique = self.send_action_to_game_controller(phi1,a,0)
-                
+                self.total_frames -= 1  #Total frames get appended every time new frames are grabbed. These are only used for greed
+
                 #If network continues to breadic unique 
-                not_uniq_count = 0
-                quit_game_play = False
-                while not unique :
-                    a = self.infer_action(phi1)
-                    frame,r,d_reward,unqiue = self.send_action_to_game_controller(phi1,a,0)
+                if not unique :
                     not_uniq_count +=1
                     if (not_uniq_count == 25):
-                        quit_game_play = True
+                        self.con_log("INFINITE LOOP: BREAKING PLAY ITERATION {}".format(i),"")
                         break
+                else:
+                    not_uniq_count = 0
 
-                if quit_game_play:
-                    self.con_log("INFINITE LOOP: BREAKING PLAY ITERATION {}".format(i),"")
-                    break
                     
-                # if f_rtn_val != 0:
-                #     frame,r,d_reward = f_rtn_val
-                # else:
-                #     self.con_log("INFINITE LOOP: BREAKING PLAY ITERATION {}".format(i),"")
-                #     break
-
-                        
-
                 #Increment reward for the game iteration
                 reward +=r
                 

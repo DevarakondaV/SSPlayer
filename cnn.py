@@ -427,14 +427,15 @@ def create_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,f
     return writer,summ,train,action,x1,train_q,p_op,q_s1
 
 
-def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
+def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
     """
     This functions creates a non-distributed tensorflow model for inference and training with only two networks
 
     args:
         learning_rate: float. Learning rate for the tensorflow model
         gamma: float. Gamma in q learning
-        batch_size: int. Batch size for training
+        batch_size: Size of batch
+        seq_len: int. Batch size for training
         conv_count: int. number of convolution layers
         fc_count: int. number of dense layers
 
@@ -455,8 +456,8 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
 
     #Creating placeholders
     with tf.name_scope("place_holders"):
-        s1 = tf.placeholder(tf.uint8,shape=[None,100,100,batch_size],name='s1')
-        s2 = tf.placeholder(tf.uint8,shape=[None,100,100,batch_size],name='s2')
+        s1 = tf.placeholder(tf.uint8,shape=[None,100,100,seq_len],name='s1')
+        s2 = tf.placeholder(tf.uint8,shape=[None,100,100,seq_len],name='s2')
         r = tf.placeholder(tf.float16,shape=[None,1],name="r")
 
 
@@ -521,7 +522,7 @@ def construct_two_network_model(learning_rate,gamma,batch_size,conv_count,fc_cou
         inf_shape = tf.shape(inference_out,out_type=tf.int64)
         qm_shape = tf.shape(qmax_idx,out_type=tf.int64)
         idxs = tf.concat((tf.transpose([tf.range(0,qm_shape[0],dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
-        gamma = tf.constant(0.99,shape=[batch_size],dtype=tf.float16)#([batch_size],0.99)
+        gamma = tf.constant(0.99,shape=[batch_size],dtype=tf.float16)#([seq_len],0.99)
         gamma_sparse = tf.SparseTensor(idxs,gamma,dense_shape=inf_shape)
         reward_sparse = tf.SparseTensor(idxs,tf.squeeze(r,axis=1),dense_shape=inf_shape)
         gamma_dense = tf.sparse_tensor_to_dense(gamma_sparse,1)
