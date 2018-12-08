@@ -69,12 +69,16 @@ wait_for(1)
 with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, summary_hook]) as sess:
     
     if pc == 1:
-        num_times = 100000
-        greed_frames = 10000
-        max_exp_len = 10000
-        min_exp_len_train = 5000
-        game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
-        game_trainer.play_train(2000,15)
+        run_play = input("Run Training or play:(r/p) ")
+            num_times = 100000
+            greed_frames = 10000
+            max_exp_len = 10000
+            min_exp_len_train = 5000
+            game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
+        if (run_play == "r"):
+            game_trainer.play_train(2000,15)
+        else:
+            game_trainer.play(15)
     else:
         Testing_Desktop = input("Testing Desktop?(1-yes):  ")
 
