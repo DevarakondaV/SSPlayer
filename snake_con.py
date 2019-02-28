@@ -25,6 +25,8 @@ from base64 import b64decode,decodestring
 import numpy as np
 from io import StringIO,BytesIO
 
+import uuid
+
 def wait_for(sec):
 	t = time.time()+sec
 	while(True):
@@ -35,16 +37,23 @@ class snake:
 
     def __init__(self,id):
         #self.chrome_path = r'open -a /Applications/Google\ Chrome.app %s'
-        self.url = "chrome-extension://kcnffeedfpaijglkkpplkbdpchgjbako/snake.html"
+        self.url = "chrome-extension://gllcngkdngnfgilfmcbaanknakfgfepb/index.html"
         self.chrome_path = r'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
         if id==1:
-            self.ext_path = r"C:\Users\devar\AppData\Local\Google\Chrome\User Data\Default\Extensions\kcnffeedfpaijglkkpplkbdpchgjbako\1.2_0"
+            self.ext_path = r"C:\Users\devar\AppData\Local\Google\Chrome\User Data\Default\Extensions\gllcngkdngnfgilfmcbaanknakfgfepb\4.0_0"
         elif id==2:
             self.ext_path = r"C:\Users\Vishnu\AppData\Local\Google\Chrome\User Data\Default\Extensions\kcnffeedfpaijglkkpplkbdpchgjbako\1.2_0"
         self._launch_game()
         self.sct = mss.mss()
         self.stop_play = False
         self.reward = 0
+        self.prv_score = 0
+        
+        # 3 right
+        # 2 left
+        # 1 down
+        # 0 up
+        self.move_dir = 3
 
     def _launch_game(self):
         """
@@ -57,81 +66,77 @@ class snake:
 
         #Calling url, resizing, position
         chrome = self.chrome
+        chrome.close()
+        chrome.switch_to.window(chrome.window_handles[-1])
         chrome.get(self.url)
-        chrome.set_window_size(1250,500)
+        # chrome.set_window_size(550,725)
+        chrome.set_window_size(300,575)
         chrome.set_window_position(50,50)
-
+        #chrome.execute_script("window.scrollTo(0, 50)")
 
         #Key elements of game
-        self.start_button = chrome.find_element_by_id("iniciar")
-        self.score = chrome.find_element_by_id("placar")
-        self.layout = chrome.find_element_by_id("layout")
-        self.play_grid = chrome.find_element_by_id('jogo')
+        self.start_button = chrome.find_element_by_xpath("/html/body/div/div")
+        self.score = chrome.find_element_by_xpath("/html/body/div/header/div/div[1]")
 
-        #crop screen
-        self.processing_crop = {'left':133,
-                                'top': 432,
-                                'width': 728,
-                                'height': 447}
+        self.canvas = chrome.find_element_by_id("snake-game")
+        self.game_container = chrome.find_element_by_class_name("container")
+        self.chrome.execute_script("arguments[0].setAttribute('width','300')", self.canvas)
+        self.chrome.execute_script("arguments[0].setAttribute('height','300')", self.canvas)
+        self.chrome.execute_script("arguments[0].setAttribute('style','width: 300px;')", self.game_container)
+        self.chrome.execute_script("arguments[0].setAttribute('class','')", self.game_container)
+        
+
+
+        # #crop screen
+        # self.processing_crop = {'left':127,
+        #                         'top': 465,
+        #                         'width': 1025,
+        #                         'height': 915}
+
+        self.processing_crop = {'left':128,
+                                'top': 475,
+                                'width': 610,
+                                'height': 610}
+        
+        self.up = Keys.ARROW_UP
+        self.down = Keys.ARROW_DOWN
+        self.left = Keys.ARROW_LEFT
+        self.right = Keys.ARROW_RIGHT
     
-    def move_up(self):
+    def move(self,ks):
+        self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False            
+        if ks == -1:
+            self.reward = 0
+            return        
+        
         try:
-            ActionChains(self.chrome).send_keys(Keys.ARROW_UP).perform()
-            self.reward = self.get_score()
+            if not self.stop_play :
+                ActionChains(self.chrome).send_keys(ks).perform()
+                time.sleep(.1)
+                self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False                    
+                self.reward = -1 if self.stop_play == True else self.get_score()
+            else :
+                self.prv_score = 0
         except:
+            print("pass")
             pass
 
-
-    def move_down(self):
-        try:
-            ActionChains(self.chrome).send_keys(Keys.ARROW_DOWN).perform()
-            self.reward = self.get_score()
-        except:
-            pass
-
-    def move_left(self):
-        try:
-            ActionChains(self.chrome).send_keys(Keys.ARROW_LEFT).perform()
-            self.reward = self.get_score()
-        except:
-            pass
-
-    def move_right(self):
-        try:
-            ActionChains(self.chrome).send_keys(Keys.ARROW_RIGHT).perform()
-            self.reward = self.get_score()
-        except:
-            pass
+    def get_reward(self):
+        return self.reward
     
     def get_score(self):
-        if (self.score.text is ''):
+        score = int(self.score.text)
+        if (self.prv_score < score):
+            self.prv_score = score
+            return 1
+        else :
             return 0
-        else:
-            return int(self.score.text)
 
     def click_play(self):
-        self.start_button.click()
-
-    def kill_alert(self):
         try:
-            WebDriverWait(self.chrome,15).until(EC.alert_is_present(),
-                                                'Timed out waiting for PA creation ' +
-                                                'confirmation popup to appear.')
-            alert = self.chrome.switch_to.alert
-            alert.accept()
-            print("alert accepted")
-        finally:
-            print("no alert")
-
-    def kill_highscore_alert(self,main_thread):
-        while main_thread.is_alive(): #not self.stop_play:
-            try:
-                alert = self.chrome.switch_to.alert
-                alert.accept()
-                self.stop_play = True
-            except:
-                continue
-        #self.reward = 0
+            ActionChains(self.chrome).send_keys(Keys.SPACE).perform()
+        except:
+            print("Cannot start game")
 
 
 def take_shot(game):
@@ -139,10 +144,22 @@ def take_shot(game):
         Takes single shot of play grid
     """
     img = game.sct.grab(game.processing_crop)
-    img = Image.fromarray(np.array(img)[:,:,1]).resize((142,110))#.resize((84,110))
+    img = Image.fromarray(np.array(img)[:,:,1]).resize((100,100),resample=Image.LANCZOS)#.resize((84,110))
+    #Thread(target=save_img,args=(img,0)).start()
     img = np.expand_dims(np.array(img),axis=2)
     return img
 
+def save_img(img,a):
+    img = Image.fromarray(img[:,:,0])
+    if a == 2:
+        adir = "str"
+    elif a == 0:
+        adir = "left"
+    else:
+        adir = "right"
+    fname = str(uuid.uuid4())+"__"+adir
+    path = r"E:\vishnu\SSPlayer\imgs\\"+fname+".jpg"
+    img.save(path,"JPEG")
 
 
 

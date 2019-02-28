@@ -2,7 +2,7 @@ import time
 from timeit import timeit,Timer
 import numpy as np
 from PIL import Image
-from t048_con import *
+from snake_con import *
 import sys
 import os
 import matplotlib.pyplot as plt
@@ -11,7 +11,7 @@ import tensorflow as tf
 from collections import deque
 
 from pynput import keyboard
-
+from threading import Thread
 
 class Trainer:
     """
@@ -109,24 +109,33 @@ class Trainer:
 
         game = self.game
         #Telling game to perform an action based on the value of a
-        if (a == 0):
-            m_dir = "up"
-            game.move(game.up)
-        elif (a == 1):
-            m_dir = "down"
-            game.move(game.down)
-        elif (a == 2):
-            m_dir = "left"
-            game.move(game.left)
-        elif (a == 3):
-            m_dir = "right"
-            game.move(game.right)
-        else:
-            m_dir = "unknown"
-
+        # 0 left
+        # 1 right
+        # 2 do nothing
+        move_dir = game.move_dir
         
-        #Waiting for the graphics to catch up
-        wait_for(.5)
+        if a == 2:
+            game.move(-1)
+            m_dir = "stright"
+            return m_dir
+        
+        if (move_dir == 0):
+            key = game.left if a == 0 else game.right
+            m_dir = "left" if a == 0 else "right"            
+            game.move_dir = 2 if a == 0 else 3 
+        elif (move_dir == 1):
+            key = game.right if a == 0 else game.left
+            m_dir = "right" if a == 0 else "left"
+            game.move_dir = 3 if a == 0 else 2
+        elif (move_dir == 2):
+            key = game.down if a == 0 else game.up
+            m_dir = "down" if a == 0 else "up"
+            game.move_dir = 1 if a == 0 else 0 
+        else:
+            key = game.up if a == 0 else game.down 
+            m_dir = "up" if a == 0 else "down" 
+            game.move_dir =  0 if a == 0 else 1 
+        game.move(key)
 
         return m_dir
 
@@ -139,19 +148,20 @@ class Trainer:
         game = self.game
         
         #Grab play again div using xpath
-        play_again_elem = game.chrome.find_element_by_xpath("/html/body/div[2]/div[3]/div[1]/div/a[2]")
+        # play_again_elem = game.chrome.find_element_by_xpath("/html/body/div[2]/div[3]/div[1]/div/a[2]")
         
-        #If play again div is displayed stop play!
-        if (play_again_elem.is_displayed()):
-            game.stop_play = True
-            r = -1
-            play_again_elem.click()
-        else:
-            #r = game.get_reward2()
-            r = game.get_reward3()
-            if r == -1:
-                game.stop_play = True
-        return r
+        # #If play again div is displayed stop play!
+        # if (play_again_elem.is_displayed()):
+        #     game.stop_play = True
+        #     r = -1
+        #     play_again_elem.click()
+        # else:
+        #     #r = game.get_reward2()
+        #     r = game.get_reward3()
+        #     if r == -1:
+        #         game.stop_play = True
+        
+        return game.get_reward()
 
 
     def send_action_to_game_controller(self,phi1,a,reward):
@@ -167,24 +177,34 @@ class Trainer:
                 r: int.Reward associated with the taken action.
                 reward: float. Updated total reward for the current game iteration
         """ 
+        global t1
 
         #Perform the action in the game
         m_dir = self.perform_action(a)
+        #Get the reward for the action!
+       
+        chk_frm = phi1[:,:,self.seq_len-1]        
+        # frame = self.get_frame()
+        # while (np.array_equal(chk_frm,np.squeeze(frame))):
+        #     print("IN WHILE")
+        #     frame = self.get_frame()
+        r = self.get_reward_for_action()
         #Determine the new state of the game
         frame = self.get_frame()
-        #Get the reward for the action!
-        r = self.get_reward_for_action()
+        
         
         #
         reward = 0 
         
 
-        self.con_log("Action = {}\nMove dir = {}\nReward = {}".format(str(a),m_dir,r),"")
-        self.con_log("Process Frames = {}\nTotal Frames {}".format(self.process_frames,self.total_frames),"")
+        self.con_log("Action = {}\nMove dir = {}\nReward = {}".format(str(a),m_dir,r))
+        self.con_log("Process Frames = {}\nTotal Frames {}".format(self.process_frames,self.total_frames))
+        self.con_log("Avaiable Memory = {}".format(psutil.virtual_memory().available))
         #if frames are equal then invalid move..reinfer Process Frames
         #chk_frm = phi1[:,:,0]
         chk_frm = phi1[:,:,self.seq_len-1]
         return frame,r,reward,not np.array_equal(chk_frm,np.squeeze(frame))
+        #return frame,r,reward,1
 
 
 
@@ -237,7 +257,7 @@ class Trainer:
         frames = self.total_frames
         greed_frames = self.greed_frames
         if frames > greed_frames:
-            return 0.9
+            return 0.1
         return (((.1-1)/greed_frames)*frames)+1
 
 
@@ -289,7 +309,7 @@ class Trainer:
         r = ops_and_tens['r']
         action = ops_and_tens['action']
 
-        zeros = np.zeros(shape=(100,100,batch_size)).astype(np.uint8)
+        zeros = np.zeros(shape=(100,100,self.seq_len)).astype(np.uint8)
         rv = np.zeros((self.batch_size,1))
         self.con_log("UPDATING TARGET PARAMS: {}".format(n),"")
         sess.run([ops_and_tens['target_ops']],{s1: [zeros],s2: [zeros],r: rv})
@@ -306,7 +326,6 @@ class Trainer:
                 frame: numpy array. Screenshot of current state.
         """
 
-
         game = self.game
         frame = take_shot(game)
         #append the number of processed frames
@@ -316,7 +335,7 @@ class Trainer:
 
     def process_seq(self,seq):
         """
-            Function process the last batchsize frames and stacks them for the network
+            Function process the last seq frames and stacks them for the network
 
             args:
                 seq: List. Containg SARSA for game iteration
@@ -335,7 +354,7 @@ class Trainer:
         #grab the frames into list
         frames = [seq[i] for i in reversed(idx)]
         
-        #If lenght of frame is less than seq_len. -> Game just started. Add black images
+        #If length of frame is less than seq_len. -> Game just started. Add black images
         #This shouldn't effect the training(Everything is zero :))
         len_frames = len(frames)
         add_num = self.seq_len-len_frames
@@ -362,7 +381,7 @@ class Trainer:
 
         r_a = np.random.random_sample(1)
         if (r_a <= greed):
-            a = np.asarray(np.random.randint(0,4))
+            a = np.asarray(np.random.randint(0,3))
             self.con_log("##########\tACTION RANDOM\t########## greed: {}".format(greed),"")
         else:
             a = self.infer_action(phi1)
@@ -401,15 +420,18 @@ class Trainer:
             null
         """
 
-
+        global t1
+        # t1 = time.perf_counter()
+    
         #Grabbing variables used for training
         #process_frames = self.process_frames
         #frame_limit = self.frame_limit
         greed_frames = self.greed_frames
         batch_size = self.batch_size
-
+        self.infer_action(np.zeros((100,100,self.seq_len)))
+        self.game.click_play()        
         while (self.process_frames < self.frame_limit):       #While the number of processed frames is less than total training frame limit
-                wait_for(1)
+                #wait_for(1)
                 #Declare params for one iteration of the game
                 iter_reward = 0
                 reward_list = []    #populate with reward for each iteration
@@ -417,15 +439,16 @@ class Trainer:
 
                 #Get the first frame of the game and append to seq
                 frame = self.get_frame()
+                #Thread(target=save_img,args=(frame,0)).start()
+                
                 seq.append(frame)
 
                 #Process the first frame of game for inference                
-                phi1 = self.process_seq(seq)        
-            
+                phi1 = self.process_seq(seq)               
                 #Now play the game!
                 while not self.game.stop_play:   #While still playing the game
                     
-
+                    # t1 = time.perf_counter()
                     #If esc key is pressed stop the game play!
                     if self.force_kill:
                         self.game.stop_play = True
@@ -440,10 +463,12 @@ class Trainer:
                     #send the action to the game controller to perform it
                     frame,r,iter_reward,unique = self.send_action_to_game_controller(phi1,a,iter_reward)
                     if not unique:
+                        self.total_frames-=1
+                        self.process_frames-=1
                         print("Not unqiue Frames. Don't add to experience")
                     #
                     if unique:
-                        
+                        #Thread(target=save_img,args=(frame,a)).start()
                         #Increment reward for the game iteration
                         iter_reward +=r
                         
@@ -484,8 +509,9 @@ class Trainer:
                 #If game ended naturally...    
                 self.game.stop_play = False
 
-                new_game_element = self.game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
-                new_game_element.click()
+                #new_game_element = self.game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
+                #new_game_element.click()
+                self.game.click_play()
 
                 self.game_play_iteration = self.game_play_iteration+1
                 self.print_progress(greed)
@@ -508,7 +534,7 @@ class Trainer:
 
         plt.plot(g_vec,r_iter)
         plt.title("Reward for game iteration")
-        plt.savefig(r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2\rewardplt.png")
+        plt.savefig(r"E:\vishnu\SSPlayer\log2\rewardplt.png")
 
     def write_label_to_tsv(self,label):
         """
@@ -607,14 +633,16 @@ class Trainer:
         game = self.game
         game.stop_play = False
         #Start a new game
-        new_game_element = game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
-        new_game_element.click()
+        #new_game_element = game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
+        #new_game_element.click()
+        self.infer_action(np.zeros((100,100,self.seq_len)))
+        game.click_play()
 
         #reward list
         reward_list = []
         #Play n times
         for i in range(0,n):
-            wait_for(1)
+            #wait_for(1)
             self.con_log('Play iteration: ',i+1)
             
             #single game iteration variable
@@ -627,12 +655,10 @@ class Trainer:
 
             #Process the first frame of game for inference                
             phi1 = self.process_seq(seq)  
-
             #While game oes not need to stop
             not_uniq_count = 0
             quit_game_play = False
             while not game.stop_play:
-
                 #If esc key is pressed stop the game play!
                 if self.force_kill:
                     self.game.stop_play = True
@@ -671,9 +697,9 @@ class Trainer:
             #If game ended naturally...    
             self.game.stop_play = False
 
-            new_game_element = self.game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
-            new_game_element.click()
-
+            #new_game_element = self.game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
+            #new_game_element.click()
+            game.click_play()
 
             
         
@@ -681,7 +707,7 @@ class Trainer:
         rtn_val = np.mean(reward_list)
         return rtn_val
 
-    def con_log(self,msg_n,msg):
+    def con_log(self,msg_n,msg = ""):
         """
         Functions console logs messages based on log_or_no
 

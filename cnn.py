@@ -147,7 +147,7 @@ def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,
         fcs_name="FC"
         
         #Number of kernels/neurons in the first layer
-        conv_feats[0] = 10
+        #conv_feats[0] = 10
 
         
         #Building Convolution Layers
@@ -184,7 +184,7 @@ def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,
                                     trainable_vars,fcs_name,str(i+1)))
 
             output_layer = fcs[len(fcs)-1]
-            output_layer = final_linear_layer(output_layer,fc_feats[fc_count-1],4,trainable_vars,name=fcs_name,num=str(fc_count))
+            output_layer = final_linear_layer(output_layer,fc_feats[fc_count-1],3,trainable_vars,name=fcs_name,num=str(fc_count))
     return output_layer
 
         
@@ -469,18 +469,19 @@ def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_coun
         #tf.summary.image("std_img_2",std_img_s2)
 
 
-    #pad tensor if its inference [Because inference is only single image]
+    #pad tensor with fake batches if it's inference [Because inference is only single image]
     paddings = tf.constant([[0,batch_size-1],[0,0],[0,0],[0,0]])
     def fn_true():
         #If it is inference pad the image
-        padded_img = tf.pad(std_img_s1,paddings,mode='CONSTANT')
-        sum_img = padded_img[0][:,:,batch_size-1]
+        padded_img = tf.pad(std_img_s1,paddings,mode='CONSTANT',constant_values=0)
+        sum_img = padded_img[0][:,:,seq_len-1]
         sum_img = tf.expand_dims(sum_img,0)
         sum_img = tf.expand_dims(sum_img,3)
         return [padded_img,sum_img]
     
 
-    input_img,sum_img = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: [std_img_s2,tf.zeros(shape=[1,100,100,1],dtype=tf.float16)])
+    #input_img,sum_img = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: [std_img_s2,tf.zeros(shape=[1,100,100,1],dtype=tf.float16)])
+    input_img,sum_img = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: [std_img_s2,tf.expand_dims(tf.expand_dims(std_img_s2[0][:,:,seq_len-1],2),0)])
     tf.summary.image("Image",sum_img)
 
     #Building graph for inference
