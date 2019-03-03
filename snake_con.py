@@ -66,8 +66,6 @@ class snake:
 
         #Calling url, resizing, position
         chrome = self.chrome
-        chrome.close()
-        chrome.switch_to.window(chrome.window_handles[-1])
         chrome.get(self.url)
         # chrome.set_window_size(550,725)
         chrome.set_window_size(300,575)
@@ -78,6 +76,12 @@ class snake:
         self.start_button = chrome.find_element_by_xpath("/html/body/div/div")
         self.score = chrome.find_element_by_xpath("/html/body/div/header/div/div[1]")
 
+        #Snake and food position
+        self.spx = chrome.find_element_by_id("spx")
+        self.spy = chrome.find_element_by_id("spx")
+        self.fx = chrome.find_element_by_id("fx")
+        self.fy = chrome.find_element_by_id("fy")
+
         self.canvas = chrome.find_element_by_id("snake-game")
         self.game_container = chrome.find_element_by_class_name("container")
         self.chrome.execute_script("arguments[0].setAttribute('width','300')", self.canvas)
@@ -85,7 +89,6 @@ class snake:
         self.chrome.execute_script("arguments[0].setAttribute('style','width: 300px;')", self.game_container)
         self.chrome.execute_script("arguments[0].setAttribute('class','')", self.game_container)
         
-
 
         # #crop screen
         # self.processing_crop = {'left':127,
@@ -106,7 +109,7 @@ class snake:
     def move(self,ks):
         self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False            
         if ks == -1:
-            self.reward = 0
+            self.reward = self.get_score2()
             return        
         
         try:
@@ -114,7 +117,7 @@ class snake:
                 ActionChains(self.chrome).send_keys(ks).perform()
                 time.sleep(.1)
                 self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False                    
-                self.reward = -1 if self.stop_play == True else self.get_score()
+                self.reward = -1 if self.stop_play == True else self.get_score2()
             else :
                 self.prv_score = 0
         except:
@@ -132,11 +135,30 @@ class snake:
         else :
             return 0
 
+    def get_current_dist(self):
+        dist = ((int(self.spx.text)-int(self.fx.text))**2+(int(self.spy.text)-int(self.fy.text))**2)**0.5
+        self.prv_dist = dist
+        return dist
+
+    def get_score2(self):
+        rtn_val = 0
+        prv_dist = self.prv_dist
+        score = int(self.score.text)
+        if (self.prv_score < score):
+            self.prv_score = score
+            rtn_val = 1
+        elif (prv_dist >= self.get_current_dist()) :
+            rtn_val = .5
+        else: 
+            rtn_val = -.5
+        return rtn_val   
+
     def click_play(self):
         try:
             ActionChains(self.chrome).send_keys(Keys.SPACE).perform()
         except:
             print("Cannot start game")
+        self.get_current_dist()
 
 
 def take_shot(game):
@@ -160,8 +182,5 @@ def save_img(img,a):
     fname = str(uuid.uuid4())+"__"+adir
     path = r"E:\vishnu\SSPlayer\imgs\\"+fname+".jpg"
     img.save(path,"JPEG")
-
-
-
 
 

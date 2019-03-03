@@ -10,7 +10,7 @@ from trainer import *
 
 pc = 1  #1 for desktop, 2 for laptop
 if pc == 1:
-    LOGDIR = r"E:\vishnu\SSPlayer\log2"
+    LOGDIR = r"E:\vishnu\SSPlayer\one"
     save_steps = 5000
 else:
     LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2"
@@ -44,8 +44,8 @@ gamma = np.array([.9]).astype(np.float16)
 
 
 
-summary_dir = LOGDIR
-chkpt_dir = LOGDIR 
+summary_dir = LOGDIR+r"\log"
+chkpt_dir = LOGDIR+"\ckp" 
 
 ops_and_tens = construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_count,fc_count,conv,fclyr,conv_k_size,conv_stride,LOGDIR)
 print(ops_and_tens.keys())
