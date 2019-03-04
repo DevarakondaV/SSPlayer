@@ -48,13 +48,13 @@ def conv_layer(m_input,size_in,size_out,k_size_w,k_size_h,conv_stride,pool_k_siz
         act = tf.nn.leaky_relu((conv+b),alpha=0.3)
         #act = tf.sigmoid((conv+b),name="sigmoid")
         #act = tf.tanh((conv+b),name="tanh")
-        intermediate_summary_img(act,num,trainable_vars)
+        #intermediate_summary_img(act,num,trainable_vars)
         
         #summaries
-        tf.summary.histogram("weights",w)
-        flatten_weights_summarize(w,num,trainable_vars)
-        tf.summary.histogram("biases",b)
-        tf.summary.histogram("act",act)
+        #tf.summary.histogram("weights",w)
+        #flatten_weights_summarize(w,num,trainable_vars)
+        #tf.summary.histogram("biases",b)
+        #tf.summary.histogram("act",act)
         return tf.nn.max_pool(act,ksize=[1,pool_k_size,pool_k_size,1],strides=[1,pool_stride_size,pool_stride_size,1],padding='SAME')
 
 
@@ -95,9 +95,9 @@ def fc_layer(m_input,size_in,size_out,trainable_vars,name,num):
         #act = tf.sigmoid(z+b,name="sigmoid")
         #act = tf.tanh((z+b),name="tanh")
         #Summaries
-        tf.summary.histogram("weights",w)
-        tf.summary.histogram("biases",b)
-        tf.summary.histogram("act",act)
+        #tf.summary.histogram("weights",w)
+        #tf.summary.histogram("biases",b)
+        #tf.summary.histogram("act",act)
         return act
 
 def final_linear_layer(m_input,size_in,size_out,trainable_vars,name="final",num="1"):
@@ -114,9 +114,9 @@ def final_linear_layer(m_input,size_in,size_out,trainable_vars,name="final",num=
 
         act = tf.matmul(m_input,w)+b
         #act = tf.nn.softmax(act)
-        tf.summary.histogram("weights",w)
-        tf.summary.histogram("biases",b)
-        tf.summary.histogram("act",act)
+        #tf.summary.histogram("weights",w)
+        #tf.summary.histogram("biases",b)
+        #tf.summary.histogram("act",act)
         return act
         
 
@@ -460,6 +460,7 @@ def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_coun
         s2 = tf.placeholder(tf.uint8,shape=[None,100,100,seq_len],name='s2')
         r = tf.placeholder(tf.float16,shape=[None,1],name="r")
 
+    tf.summary.histogram("rewards",r)
 
     #Standardizing images
     with tf.name_scope("image_pre_proc"):
@@ -482,7 +483,7 @@ def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_coun
 
     #input_img,sum_img = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: [std_img_s2,tf.zeros(shape=[1,100,100,1],dtype=tf.float16)])
     input_img,sum_img = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: [std_img_s2,tf.expand_dims(tf.expand_dims(std_img_s2[0][:,:,seq_len-1],2),0)])
-    tf.summary.image("Image",sum_img)
+    #tf.summary.image("Image",sum_img)
 
     #Building graph for inference
     inference_out = build_graph("Target",input_img,

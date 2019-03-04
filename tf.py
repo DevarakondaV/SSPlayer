@@ -11,7 +11,8 @@ from trainer import *
 pc = 1  #1 for desktop, 2 for laptop
 if pc == 1:
     LOGDIR = r"E:\vishnu\SSPlayer\one"
-    save_steps = 5000
+    # save_steps = 5000
+    save_steps = 15
 else:
     LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2"
     save_steps = 1
@@ -19,19 +20,17 @@ else:
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
-
-# game = snake(pc)
-# take_shot(game)
-# game.click_play()
-# take_shot(game)
-# exit()
-
 #Network params
-batch_size = 10
-seq_len = 4
+# batch_size = 10
+# seq_len = 4
 
-conv_k_size = [8,4,3]
-conv_stride = [4,2,1]
+# conv_k_size = [8,4,3]
+# conv_stride = [4,2,1]
+batch_size = 10
+seq_len = 5
+
+conv_k_size = [4,4,3]
+conv_stride = [2,2,1]
 
 
 
@@ -79,15 +78,23 @@ wait_for(1)
 with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, summary_hook]) as sess:
     
     if pc == 1:
+        test_run = input("Test run or pure trainig:(t/p)")
+        if (test_run == "p"):
+            num_times = 1000000
+            greed_frames = 100000
+            max_exp_len = 100000
+            min_exp_len_train = 25000 #30000
+            n = 10000
+        else :
+            num_times = 1000
+            greed_frames = 100
+            max_exp_len = 100
+            min_exp_len_train = 10
+            n = 100
         run_play = input("Run Training or play:(r/p) ")
-        num_times = 1000000
-        greed_frames = 100000
-        max_exp_len = 100000
-        min_exp_len_train = 25000 #30000
         game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,seq_len,batch_size,ops_and_tens,g_sheets,1)
         if (run_play == "r"):
-            #game_trainer.play_train(100,1)
-            game_trainer.play_train(10000,15)
+            game_trainer.play_train(n,15)
             
         else:
             game_trainer.play(15)
