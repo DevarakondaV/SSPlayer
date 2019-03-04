@@ -343,6 +343,16 @@ class Trainer:
                 np_f: numpy array: Stacked Last four frames of the sequence
         """
 
+        if (len(seq) < self.seq_len):
+            frames = [np.zeros(shape=[100,100,1]) for i in range(0,self.seq_len-len(seq))]+ [i for i in seq]
+        else:
+            frames = seq
+        
+        np_f = frames[0]
+        for i in range(1,len(frames)):
+            np_f = np.concatenate((np_f,frames[i]),axis=2)
+        return np_f
+
         #We need to grab every 3rd element in seq. These are the actual frames
         seq_len  = len(seq)     #Determine lenght of seq (it is always changing)
         lower_lim = self.seq_len*3    #We want a input frames of seq_len size. Therefore, we need the lower limit to be 3 times seq_len
@@ -473,8 +483,10 @@ class Trainer:
                         iter_reward +=r
                         
                         #Add the action, reward and new frame to the game play sequence
-                        seq.extend((a,r,frame))
-
+                        if (len(seq) >= self.seq_len):
+                            seq.pop(0)
+                        seq.append(frame)
+                        self.con_log("SEQUENCE LENGTH = {}".format(len(seq)),"")
                         #Process the new frames for storing!
                         phi2 = self.process_seq(seq)
 
@@ -682,7 +694,9 @@ class Trainer:
                 reward +=r
                 
                 #Add the action, reward and new frame to the game play sequence
-                seq.extend((a,r,frame))
+                if (len(seq) >= self.seq_len):
+                    seq.pop(0)
+                seq.append(frame)
 
                 #Process the new frames for storing!
                 phi2 = self.process_seq(seq)

@@ -456,8 +456,8 @@ def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_coun
 
     #Creating placeholders
     with tf.name_scope("place_holders"):
-        s1 = tf.placeholder(tf.uint8,shape=[None,100,100,seq_len],name='s1')
-        s2 = tf.placeholder(tf.uint8,shape=[None,100,100,seq_len],name='s2')
+        s1 = tf.placeholder(tf.uint8,shape=[None,100,100,None],name='s1')
+        s2 = tf.placeholder(tf.uint8,shape=[None,100,100,None],name='s2')
         r = tf.placeholder(tf.float16,shape=[None,1],name="r")
 
     tf.summary.histogram("rewards",r)

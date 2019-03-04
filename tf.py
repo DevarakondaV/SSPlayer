@@ -10,7 +10,7 @@ from trainer import *
 
 pc = 1  #1 for desktop, 2 for laptop
 if pc == 1:
-    LOGDIR = r"E:\vishnu\SSPlayer\one"
+    LOGDIR = r"E:\vishnu\SSPlayer\two"
     # save_steps = 5000
     save_steps = 15
 else:
