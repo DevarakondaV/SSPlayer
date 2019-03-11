@@ -13,6 +13,8 @@ from collections import deque
 from pynput import keyboard
 from threading import Thread
 
+from exp import experience
+
 class Trainer:
     """
     Class is responsible for training
@@ -50,7 +52,8 @@ class Trainer:
         
 
         #variables required for training
-        self.exp = deque(maxlen = max_exp_len)      #experience vector  
+        #self.exp = deque(maxlen = max_exp_len)      #experience vector  
+        self.exp = experience(100000) #100000
         self.total_frames = 0                       #Total frames runduring entire training session
         self.process_frames = 0                     #Number of frames to process
         self.max_exp_len = max_exp_len              #The maximum length of the experience vector before removing experience      
@@ -71,6 +74,9 @@ class Trainer:
         self.em_vec = []
         self.log = log
 
+        
+
+
     #Helper Methods
     def infer_action(self,frames):
         """
@@ -86,6 +92,8 @@ class Trainer:
         s1 = self.ops_and_tens['s1']
         s2 = self.ops_and_tens['s2']
         r = self.ops_and_tens['r']
+        weights = self.ops_and_tens['IS_weights']
+        weights_tmp = np.zeros(shape=[self.batch_size,1])
         action = self.ops_and_tens['action']
 
         #em = self.sess.graph.get_tensor_by_name("Target/Dense_Layers/FC1/act1/Maximum:0")
@@ -93,7 +101,7 @@ class Trainer:
         zeros = np.zeros(shape=frames.shape).astype(np.uint8)
         rv = np.zeros((self.batch_size,1))
         #Inference
-        a = self.sess.run([action],{s1: [frames],s2: [zeros],r: rv})
+        a = self.sess.run([action],{s1: [frames],s2: [zeros],r: rv,weights: weights_tmp})
         #self.write_label_to_tsv(a)
         #self.em_vec.append(em)
         return a[0]
@@ -236,6 +244,10 @@ class Trainer:
             returns:
         """
 
+        self.exp.store(seq)
+
+        return
+
         #Older experience is phased out by poping from exp buffer
         if (len(self.exp) > self.max_exp_len):
             self.exp.pop()
@@ -281,14 +293,28 @@ class Trainer:
         r = ops_and_tens['r']
         prt1 = ops_and_tens['print1']
         prt2 = ops_and_tens['print2']
-
+        TD_error = ops_and_tens['TD_error']
+        weights = ops_and_tens['IS_weights']
+        
         #Grab training batch
-        seq_n = self.random_minibatch_sample(batch_size)
+        #seq_n = self.random_minibatch_sample(batch_size)
         #Add to training queue
-        sess.run([train],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3]})
+        
+        leaf_idx,IS_weights,seq_n = self.exp.sample(batch_size)
+        IS_weights = np.reshape(IS_weights,(batch_size,1))
+        t,td = sess.run([train,TD_error],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3],weights: IS_weights})
 
+        self.update_exp(leaf_idx,td)
+        
         #Add to number of training operations
         self.num_train_ops +=1
+
+    def update_exp(self,leaf_idx,td):
+        """
+            Function updates the experience tree priorities
+
+        """
+        self.exp.update(leaf_idx,td)
 
     def update_target_params(self,batch_size,n):
         """
@@ -308,11 +334,13 @@ class Trainer:
         s2 = ops_and_tens['s2']
         r = ops_and_tens['r']
         action = ops_and_tens['action']
+        weights = self.ops_and_tens['IS_weights']
+        weights_tmp = np.zeros(shape=[self.batch_size,1])
 
         zeros = np.zeros(shape=(100,100,self.seq_len)).astype(np.uint8)
         rv = np.zeros((self.batch_size,1))
         self.con_log("UPDATING TARGET PARAMS: {}".format(n),"")
-        sess.run([ops_and_tens['target_ops']],{s1: [zeros],s2: [zeros],r: rv})
+        sess.run([ops_and_tens['target_ops']],{s1: [zeros],s2: [zeros],r: rv,weights: weights_tmp})
         return
 
 
@@ -412,7 +440,17 @@ class Trainer:
             null:
         """
 
+        if (len(self.exp) < batch_size):
+            return
+        else:     
+            self.execute_train_operation(batch_size)
 
+            if (self.num_train_ops % 10) == 0:
+                self.update_target_params(self.seq_len,self.num_train_ops/10)
+       
+            return
+        
+        
         if (len_exp >= self.min_exp_len_train):
             self.execute_train_operation(batch_size)
             if (self.num_train_ops % 10) == 0:

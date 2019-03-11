@@ -459,6 +459,7 @@ def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_coun
         s1 = tf.placeholder(tf.uint8,shape=[None,100,100,None],name='s1')
         s2 = tf.placeholder(tf.uint8,shape=[None,100,100,None],name='s2')
         r = tf.placeholder(tf.float16,shape=[None,1],name="r")
+        IS_weights = tf.placeholder(tf.float16,shape=[None,1],name="IS_weights")
 
     tf.summary.histogram("rewards",r)
 
@@ -483,7 +484,7 @@ def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_coun
 
     #input_img,sum_img = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: [std_img_s2,tf.zeros(shape=[1,100,100,1],dtype=tf.float16)])
     input_img,sum_img = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: [std_img_s2,tf.expand_dims(tf.expand_dims(std_img_s2[0][:,:,seq_len-1],2),0)])
-    #tf.summary.image("Image",sum_img)
+    tf.summary.image("Image",sum_img)
 
     #Building graph for inference
     inference_out = build_graph("Target",input_img,
@@ -522,7 +523,8 @@ def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_coun
     
 
     with tf.name_scope("Trainer"):
-        loss = tf.losses.huber_loss(y,train_out,delta=1.0)
+        TD_error = tf.reduce_max(inference_out,axis=1)-tf.reduce_max(y,axis=1)
+        loss = tf.losses.huber_loss(y,train_out,delta=1.0,weights=IS_weights)
         tf.summary.scalar("loss",loss)
         opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01)
         grads = opt.compute_gradients(loss)
@@ -536,7 +538,10 @@ def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_coun
     rtn_vals['s1'] = s1
     rtn_vals['s2'] = s2
     rtn_vals['r'] = r
+    rtn_vals['IS_weights'] = IS_weights
     rtn_vals['target_ops'] = target_ops
+    rtn_vals['loss'] = loss
+    rtn_vals['TD_error'] = TD_error
     
     rtn_vals['train'] = train
     rtn_vals['print1'] = prt1

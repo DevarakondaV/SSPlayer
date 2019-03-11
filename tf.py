@@ -7,41 +7,32 @@ import tensorflow.contrib.graph_editor as ge
 from snake_trainer import *
 from trainer import *
 
+import json
 
-pc = 1  #1 for desktop, 2 for laptop
-if pc == 1:
-    LOGDIR = r"E:\vishnu\SSPlayer\two"
-    # save_steps = 5000
-    save_steps = 15
-else:
-    LOGDIR = r"c:\Users\Vishnu\Documents\EngProj\SSPlayer\log2"
-    save_steps = 1
+with open("meta.json","r") as params_file:
+    data = json.load(params_file)
+    print(data)
+
+LOGDIR = data["logdir"]
+save_steps = data["save_steps"]
+
+#network params
+batch_size = data["batchsize"]
+seq_len = data["seq_len"]
+conv_k_size = [i["l"+str(idx+1)] for i,idx in zip(data["conv_k_size"],range(0,len(data["conv_k_size"])))]
+conv_stride = [i["l"+str(idx+1)] for i,idx in zip(data["conv_stride"],range(0,len(data["conv_stride"])))]
+conv = [data["conv"][0]["in"]] + [data["conv"][i]["l"+str(i)] for i in range(1,len(data["conv"]))]
+fclyr = [i["l"+str(idx+1)] for i,idx in zip(data["fclyr"],range(0,len(data["fclyr"])))]
+learing_rate = data["learing_rate"]
+gamme = np.array([data["gamma"]]).astype(np.float16)
+
+
 #Session configuration parameters
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
-#Network params
-# batch_size = 10
-# seq_len = 4
-
-# conv_k_size = [8,4,3]
-# conv_stride = [4,2,1]
-batch_size = 10
-seq_len = 5
-
-conv_k_size = [4,4,3]
-conv_stride = [2,2,1]
-
-
-
-conv = [seq_len,32,64,64]
-fclyr = [0,512] #5
 conv_count = len(conv)
 fc_count = len(fclyr)
-learning_rate = 0.00025
-gamma = np.array([.9]).astype(np.float16)
-
-
 
 summary_dir = LOGDIR+r"\log"
 chkpt_dir = LOGDIR+"\ckp" 
@@ -73,7 +64,7 @@ saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=chkpt_dir,
 g_sheets = 0
 
 
-game = snake(pc)
+game = snake(1)
 wait_for(1)
 with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, summary_hook]) as sess:
     

@@ -109,7 +109,7 @@ class snake:
     def move(self,ks):
         self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False            
         if ks == -1:
-            self.reward = self.get_score2()
+            self.reward = self.get_score()
             return        
         
         try:
@@ -117,7 +117,7 @@ class snake:
                 ActionChains(self.chrome).send_keys(ks).perform()
                 time.sleep(.1)
                 self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False                    
-                self.reward = -1 if self.stop_play == True else self.get_score2()
+                self.reward = -1 if self.stop_play == True else self.get_score()
             else :
                 self.prv_score = 0
         except:
