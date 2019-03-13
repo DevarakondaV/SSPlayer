@@ -6,13 +6,16 @@ class experience:
     def __init__(self,capacity):
         
         self.beta = 0.4
-        self.epsilon = 0.01
+        self.alpha = 0.6
+        self.epsilon = 0.001
+        self.max =  1
+        self.total_exp = 0
         self.tree = sumTree(capacity)
     
     def __len__(self):
         return self.tree.data_i
     
-    def store(self,experience):
+    def store(self,error,experience):
         """
             Adds new experience to the tree
             
@@ -21,14 +24,13 @@ class experience:
         """
         #New experience needs maximum priority
 
-        priority_max = np.max(self.tree.tree[-self.tree.capacity:])
-
-        #When tree is completely empty
-        if (priority_max == 0):
-            priority_max = 1
-
-        self.tree.add(priority_max,experience)
-
+        # priority_max = np.minimum(np.max(self.tree.tree[-self.tree.capacity:]),1)
+        error = np.abs(error)
+        self.total_exp +=1
+        error += self.epsilon
+        clipped_e = np.clip(error,0,self.max)
+        p_val = np.power(clipped_e,self.alpha)
+        self.tree.add(p_val,experience)
         return
 
     def sample(self,batch_size):
@@ -49,13 +51,16 @@ class experience:
         reward = []
 
         tree_idx = []
-        
+
+        if (self.total_exp > self.tree.capacity):
+            min_prob = np.min(self.tree.tree[-self.tree.capacity:])
+        else:
+            min_prob = np.min(self.tree.tree[-self.tree.capacity:self.tree.capacity-1+self.tree.data_i])
+        maxwi = np.power(self.tree.capacity*min_prob,-self.beta)
+
         for i in range(0,batch_size):
-            #print(p_seg*i,p_seg*(i+1))
-            rand_p = np.random.uniform(p_seg*i,p_seg*(i+1),1).astype(np.float32)[0]
+            rand_p = np.random.uniform(p_seg*i,p_seg*(i+1),1)#.astype(np.float16)[0]
             leaf_idx,priority_i,exp_i = self.tree.get_leaf(rand_p)
-            # print(self.tree.get_total_priority(),rand_p)
-            # print(leaf_idx,self.tree.data_i)
 
             try:
                 img_1.append(exp_i[0])
@@ -63,27 +68,31 @@ class experience:
                 reward.append(exp_i[2])
                 img_2.append(exp_i[3])
             except TypeError:
+                leaf_idx,priority_i,exp_i = self.tree.get_leaf(rand_p,p=True)
                 print(rand_p)
-                print(self.tree.tree)
+                #print(self.tree.tree)
 
             tree_idx.append(leaf_idx)
 
-            probability_i = (priority_i+self.epsilon)/self.tree.get_total_priority()
 
-            IS_weights.append(((1/self.tree.capacity)*(1/probability_i))**self.beta)
-        
-        IS_weights /= max(IS_weights)
+
+            probability_i = (priority_i/self.tree.get_total_priority())
+            IS_weights.append(self.tree.capacity*probability_i)
+
+        IS_weights = np.vstack(IS_weights)
+        IS_weights = np.power(IS_weights,-self.beta) / maxwi
 
         img_1 = np.asarray(img_1)
         img_2 = np.asarray(img_2)
         reward = np.reshape(np.asarray(reward),(batch_size,1))
         action = np.reshape(np.asarray(action),(batch_size,1))
+        return tree_idx,IS_weights,(img_1,action,reward,img_2)
 
-        return tree_idx,np.asarray(IS_weights),(img_1,action,reward,img_2)
-
-    def update(self,idx,priority):
-        priorities = np.abs(priority) #+self.epsilon
-
-        clipped_priorities = np.minimum(priorities,1)
-        for i,p_val in zip(idx,clipped_priorities):
+    def update(self,idx,error):
+        error = np.abs(error)
+        error += self.epsilon
+    
+        clipped_e = np.clip(error,0,self.max)
+        clipped_e = np.power(clipped_e,self.alpha)
+        for i,p_val in zip(idx,clipped_e):
             self.tree.set_priority(i,p_val)

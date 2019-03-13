@@ -23,8 +23,8 @@ conv_k_size = [i["l"+str(idx+1)] for i,idx in zip(data["conv_k_size"],range(0,le
 conv_stride = [i["l"+str(idx+1)] for i,idx in zip(data["conv_stride"],range(0,len(data["conv_stride"])))]
 conv = [data["conv"][0]["in"]] + [data["conv"][i]["l"+str(i)] for i in range(1,len(data["conv"]))]
 fclyr = [i["l"+str(idx+1)] for i,idx in zip(data["fclyr"],range(0,len(data["fclyr"])))]
-learing_rate = data["learing_rate"]
-gamme = np.array([data["gamma"]]).astype(np.float16)
+learning_rate = data["learing_rate"]
+gamma = np.array([data["gamma"]]).astype(np.float16)
 
 
 #Session configuration parameters
@@ -63,8 +63,11 @@ saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=chkpt_dir,
 
 g_sheets = 0
 
-
+pc = 1
 game = snake(1)
+
+
+
 wait_for(1)
 with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, summary_hook]) as sess:
     

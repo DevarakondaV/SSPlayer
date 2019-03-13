@@ -1,6 +1,7 @@
 import time
 from timeit import timeit,Timer
 import numpy as np
+np.set_printoptions(threshold=np.nan)
 from PIL import Image
 from snake_con import *
 import sys
@@ -95,16 +96,17 @@ class Trainer:
         weights = self.ops_and_tens['IS_weights']
         weights_tmp = np.zeros(shape=[self.batch_size,1])
         action = self.ops_and_tens['action']
+        TD_error = self.ops_and_tens['TD_error']
 
         #em = self.sess.graph.get_tensor_by_name("Target/Dense_Layers/FC1/act1/Maximum:0")
         #Need dummy value for placeholders not in use
         zeros = np.zeros(shape=frames.shape).astype(np.uint8)
         rv = np.zeros((self.batch_size,1))
         #Inference
-        a = self.sess.run([action],{s1: [frames],s2: [zeros],r: rv,weights: weights_tmp})
+        a,error = self.sess.run([action,TD_error],{s1: [frames],s2: [zeros],r: rv,weights: weights_tmp})
         #self.write_label_to_tsv(a)
         #self.em_vec.append(em)
-        return a[0]
+        return a,error[0]
 
     def perform_action(self,a):
         """
@@ -236,7 +238,7 @@ class Trainer:
         img2s = np.array([exp[i][3] for i in line_N])
         return (img1s,a,r,img2s)
 
-    def store_exp(self,seq):
+    def store_exp(self,error,seq):
         """
             Function stores new exp into experience buffer
             args:
@@ -244,7 +246,7 @@ class Trainer:
             returns:
         """
 
-        self.exp.store(seq)
+        self.exp.store(error,seq)
 
         return
 
@@ -288,6 +290,7 @@ class Trainer:
 
         self.con_log("TRAINING OPERATION: {}".format(self.num_train_ops),"")
         train = ops_and_tens['train']
+        loss = ops_and_tens['loss']
         s1 = ops_and_tens['s1']
         s2 = ops_and_tens['s2']
         r = ops_and_tens['r']
@@ -302,8 +305,8 @@ class Trainer:
         
         leaf_idx,IS_weights,seq_n = self.exp.sample(batch_size)
         IS_weights = np.reshape(IS_weights,(batch_size,1))
-        t,td = sess.run([train,TD_error],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3],weights: IS_weights})
-
+        t,td,loss = sess.run([train,TD_error,loss],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3],weights: IS_weights})
+        print(loss)
         self.update_exp(leaf_idx,td)
         
         #Add to number of training operations
@@ -420,12 +423,13 @@ class Trainer:
         r_a = np.random.random_sample(1)
         if (r_a <= greed):
             a = np.asarray(np.random.randint(0,3))
+            error = 1.0
             self.con_log("##########\tACTION RANDOM\t########## greed: {}".format(greed),"")
         else:
-            a = self.infer_action(phi1)
+            a,error = self.infer_action(phi1)
             #self.write_label_to_tsv(a)
             self.con_log("##########\tACTION INFERED\t##########","")
-        return a
+        return a,error
 
 
     def train_target_update(self,len_exp,batch_size):
@@ -504,9 +508,9 @@ class Trainer:
 
                     #Get the greed
                     greed = self.get_greed()
-                    
+
                     #Determine the action to take
-                    a = self.get_action(greed,phi1)
+                    a,error = self.get_action(greed,phi1)
 
                     #send the action to the game controller to perform it
                     frame,r,iter_reward,unique = self.send_action_to_game_controller(phi1,a,iter_reward)
@@ -529,7 +533,7 @@ class Trainer:
                         phi2 = self.process_seq(seq)
 
                         #Store the previous experience
-                        self.store_exp((phi1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),phi2))
+                        self.store_exp(error,(phi1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),phi2))
 
                         #Now assign phi1 to be the new frame!....For inference!
                         phi1 = phi2
@@ -714,7 +718,7 @@ class Trainer:
                     self.game.stop_play = True
                     break
                 
-                a = self.infer_action(phi1)
+                a,error = self.infer_action(phi1)
                 frame,r,d_reward,unique = self.send_action_to_game_controller(phi1,a,0)
                 self.total_frames -= 1  #Total frames get appended every time new frames are grabbed. These are only used for greed
 

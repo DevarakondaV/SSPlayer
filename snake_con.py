@@ -84,22 +84,27 @@ class snake:
 
         self.canvas = chrome.find_element_by_id("snake-game")
         self.game_container = chrome.find_element_by_class_name("container")
-        self.chrome.execute_script("arguments[0].setAttribute('width','300')", self.canvas)
-        self.chrome.execute_script("arguments[0].setAttribute('height','300')", self.canvas)
-        self.chrome.execute_script("arguments[0].setAttribute('style','width: 300px;')", self.game_container)
+        # self.chrome.execute_script("arguments[0].setAttribute('width','300')", self.canvas)
+        # self.chrome.execute_script("arguments[0].setAttribute('height','300')", self.canvas)
+        # self.chrome.execute_script("arguments[0].setAttribute('style','width: 300px;')", self.game_container)
+        # self.chrome.execute_script("arguments[0].setAttribute('class','')", self.game_container)
+        self.chrome.execute_script("arguments[0].setAttribute('width','100')", self.canvas)
+        self.chrome.execute_script("arguments[0].setAttribute('height','100')", self.canvas)
+        self.chrome.execute_script("arguments[0].setAttribute('style','width: 100px;')", self.game_container)
         self.chrome.execute_script("arguments[0].setAttribute('class','')", self.game_container)
         
 
         # #crop screen
-        # self.processing_crop = {'left':127,
-        #                         'top': 465,
-        #                         'width': 1025,
-        #                         'height': 915}
-
+        # 300
+        # self.processing_crop = {'left':128,
+        #                         'top': 475,
+        #                         'width': 610,
+        #                         'height': 610}
+        # 100
         self.processing_crop = {'left':128,
-                                'top': 475,
-                                'width': 610,
-                                'height': 610}
+                                'top': 583,
+                                'width': 200,
+                                'height': 200}
         
         self.up = Keys.ARROW_UP
         self.down = Keys.ARROW_DOWN
@@ -168,6 +173,7 @@ def take_shot(game):
     img = game.sct.grab(game.processing_crop)
     img = Image.fromarray(np.array(img)[:,:,1]).resize((100,100),resample=Image.LANCZOS)#.resize((84,110))
     #Thread(target=save_img,args=(img,0)).start()
+    # img.save("E:\\vishnu\\SSPlayer\\test.jpg")
     img = np.expand_dims(np.array(img),axis=2)
     return img
 

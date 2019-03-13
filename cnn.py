@@ -426,7 +426,6 @@ def create_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,f
     #writer.add_summary(summ.eval(),g_step.eval())
     return writer,summ,train,action,x1,train_q,p_op,q_s1
 
-
 def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
     """
     This functions creates a non-distributed tensorflow model for inference and training with only two networks
@@ -504,7 +503,7 @@ def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_coun
 
     with tf.name_scope("action"):
         action = tf.argmax(inference_out[0],axis=0,name="action")
-        tf.summary.scalar("Action: ",action)
+        #tf.summary.scalar("Action: ",action)
 
     #implementing Q algorithm
     with tf.name_scope("Q_Algo"):
@@ -523,8 +522,9 @@ def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_coun
     
 
     with tf.name_scope("Trainer"):
-        TD_error = tf.reduce_max(inference_out,axis=1)-tf.reduce_max(y,axis=1)
+        TD_error = tf.reduce_max(y,axis=1)-tf.reduce_max(train_out,axis=1)
         loss = tf.losses.huber_loss(y,train_out,delta=1.0,weights=IS_weights)
+        # loss = tf.losses.huber_loss(y,train_out,delta=1.0,reduction=tf.losses.Reduction.MEAN)
         tf.summary.scalar("loss",loss)
         opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01)
         grads = opt.compute_gradients(loss)
