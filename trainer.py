@@ -13,7 +13,6 @@ from collections import deque
 
 from pynput import keyboard
 from threading import Thread
-
 from exp import experience
 
 class Trainer:
@@ -97,6 +96,9 @@ class Trainer:
         weights_tmp = np.zeros(shape=[self.batch_size,1])
         action = self.ops_and_tens['action']
         TD_error = self.ops_and_tens['TD_error']
+        prt2 = self.ops_and_tens['print2']
+        prt1 = self.ops_and_tens['print1']
+        
 
         #em = self.sess.graph.get_tensor_by_name("Target/Dense_Layers/FC1/act1/Maximum:0")
         #Need dummy value for placeholders not in use
@@ -106,6 +108,8 @@ class Trainer:
         a,error = self.sess.run([action,TD_error],{s1: [frames],s2: [zeros],r: rv,weights: weights_tmp})
         #self.write_label_to_tsv(a)
         #self.em_vec.append(em)
+        if (np.isnan(error[0])):
+            print("NETWORK PREDICTS NAN")
         return a,error[0]
 
     def perform_action(self,a):
@@ -298,6 +302,7 @@ class Trainer:
         prt2 = ops_and_tens['print2']
         TD_error = ops_and_tens['TD_error']
         weights = ops_and_tens['IS_weights']
+
         
         #Grab training batch
         #seq_n = self.random_minibatch_sample(batch_size)
@@ -306,9 +311,10 @@ class Trainer:
         leaf_idx,IS_weights,seq_n = self.exp.sample(batch_size)
         IS_weights = np.reshape(IS_weights,(batch_size,1))
         t,td,loss = sess.run([train,TD_error,loss],{s1: seq_n[0],r: seq_n[2],s2: seq_n[3],weights: IS_weights})
-        print(loss)
+        if (np.isnan(td).any()):
+            print("NETWORK EXECUTE NAN")
         self.update_exp(leaf_idx,td)
-        
+        print(loss)
         #Add to number of training operations
         self.num_train_ops +=1
 

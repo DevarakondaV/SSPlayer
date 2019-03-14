@@ -517,19 +517,20 @@ def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_coun
         gamma_dense = tf.sparse_tensor_to_dense(gamma_sparse,1)
         reward_dense = tf.sparse_tensor_to_dense(reward_sparse,0)
         y = tf.add(reward_dense,tf.multiply(gamma_dense,inference_out))
-        ct = tf.concat([inference_out,y],axis=0)
         
     
 
     with tf.name_scope("Trainer"):
         TD_error = tf.reduce_max(y,axis=1)-tf.reduce_max(train_out,axis=1)
-        loss = tf.losses.huber_loss(y,train_out,delta=1.0,weights=IS_weights)
-        # loss = tf.losses.huber_loss(y,train_out,delta=1.0,reduction=tf.losses.Reduction.MEAN)
+        ct = tf.concat([y,train_out],axis=0)
+        
+        #loss = tf.losses.huber_loss(y,train_out,delta=1.0,weights=IS_weights)
+        loss = tf.losses.huber_loss(y,train_out,delta=1.0)
         tf.summary.scalar("loss",loss)
         opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01)
         grads = opt.compute_gradients(loss)
         train = opt.apply_gradients(grads,global_step=global_step,name='train')
-        prt1 = tf.Print(loss,[loss],"loss ",name="prt1",summarize=100)  
+        prt1 = tf.Print(train_out,[train_out],"trainout: ",name="prt1",summarize=100)  
         prt2 = tf.Print(y,[y],"y: ",name="prt2",summarize=100)
 
     summ = tf.summary.merge_all()
