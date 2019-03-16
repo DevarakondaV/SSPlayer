@@ -364,11 +364,10 @@ class Trainer:
                 frame: numpy array. Screenshot of current state.
         """
 
-        game = self.game
-        frame = take_shot(game)
+        frame = take_shot(self.game)
         #append the number of processed frames
-        self.process_frames +=  1 
-        self.total_frames += 1
+        self.process_frames = self.process_frames +  1 
+        self.total_frames = self.total_frames + 1
         return frame
 
     def process_seq(self,seq):
@@ -386,34 +385,12 @@ class Trainer:
         else:
             frames = seq
         
-        np_f = frames[0]
-        for i in range(1,len(frames)):
-            np_f = np.concatenate((np_f,frames[i]),axis=2)
-        return np_f
-
-        #We need to grab every 3rd element in seq. These are the actual frames
-        seq_len  = len(seq)     #Determine lenght of seq (it is always changing)
-        lower_lim = self.seq_len*3    #We want a input frames of seq_len size. Therefore, we need the lower limit to be 3 times seq_len
+        return np.stack(frames,axis=2).squeeze()
         
-
-        #idx contains the index of the last four frames in seq
-        idx = [i  for i in range(seq_len-1,seq_len-1-lower_lim,-3) if i >= 0]
-
-        #grab the frames into list
-        frames = [seq[i] for i in reversed(idx)]
-        
-        #If length of frame is less than seq_len. -> Game just started. Add black images
-        #This shouldn't effect the training(Everything is zero :))
-        len_frames = len(frames)
-        add_num = self.seq_len-len_frames
-        for i in range(0,add_num):
-            frames.insert(0,np.zeros(shape=[100,100,1]))
-
-        #Concatenate the values in frames into a stack of seq_len frames
-        np_f = frames[0]
-        for i in range(1,len(frames)):
-            np_f = np.concatenate((np_f,frames[i]),axis=2)
-        return np_f
+        # np_f = frames[0]
+        # for i in range(1,len(frames)):
+        #     np_f = np.concatenate((np_f,frames[i]),axis=2)
+        # return np_f
 
 
     def get_action(self,greed,phi1):
@@ -460,13 +437,8 @@ class Trainer:
                 self.update_target_params(self.seq_len,self.num_train_ops/10)
        
             return
-        
-        
-        if (len_exp >= self.min_exp_len_train):
-            self.execute_train_operation(batch_size)
-            if (self.num_train_ops % 10) == 0:
-                self.update_target_params(self.seq_len,self.num_train_ops/10)
     
+    @profile
     def Q_Algorithm(self):
         """
         Function implements the Q algorithm with experience replay.
@@ -552,7 +524,7 @@ class Trainer:
                 #OUTSIDE WHILE LOOP
                 #We have lost the game
                 #Wait for a few milliseconds
-                wait_for(.3)
+                wait_for(.1)
 
                 reward_list.append(iter_reward)
                 self.create_reward_plot(reward_list)

@@ -163,7 +163,7 @@ class snake:
             ActionChains(self.chrome).send_keys(Keys.SPACE).perform()
         except:
             print("Cannot start game")
-        self.get_current_dist()
+        #self.get_current_dist()
 
 
 def take_shot(game):
