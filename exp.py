@@ -1,6 +1,6 @@
 from sumTree import sumTree
 import numpy as np
-
+import sys
 class experience:
 
     def __init__(self,capacity):
@@ -14,6 +14,7 @@ class experience:
     
     def __len__(self):
         return self.tree.data_i
+    
     
     def store(self,error,experience):
         """
@@ -31,6 +32,7 @@ class experience:
         clipped_e = np.clip(error,0,self.max)
         p_val = np.power(clipped_e,self.alpha)
         self.tree.add(p_val,experience)
+
         return
 
     def sample(self,batch_size):

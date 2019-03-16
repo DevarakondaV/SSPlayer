@@ -24,6 +24,7 @@ class sumTree:
         
         return
     
+    
     def add(self,p_val,data):
         """
             Adds priority for new transition
@@ -74,7 +75,7 @@ class sumTree:
         self.update(leaf_i,p_val)
 
         return
-
+    
     def get_leaf(self,p_val,p=False):
         """
 

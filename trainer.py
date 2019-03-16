@@ -1,5 +1,4 @@
 import time
-from timeit import timeit,Timer
 import numpy as np
 np.set_printoptions(threshold=np.nan)
 from PIL import Image
@@ -10,10 +9,12 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 #import cv2
 from collections import deque
+import objgraph
 
 from pynput import keyboard
 from threading import Thread
 from exp import experience
+import gc
 
 class Trainer:
     """
@@ -314,7 +315,7 @@ class Trainer:
         if (np.isnan(td).any()):
             print("NETWORK EXECUTE NAN")
         self.update_exp(leaf_idx,td)
-        print(loss)
+        #print(loss)
         #Add to number of training operations
         self.num_train_ops +=1
 
@@ -466,7 +467,6 @@ class Trainer:
             if (self.num_train_ops % 10) == 0:
                 self.update_target_params(self.seq_len,self.num_train_ops/10)
     
-
     def Q_Algorithm(self):
         """
         Function implements the Q algorithm with experience replay.
@@ -478,14 +478,11 @@ class Trainer:
             null
         """
 
-        global t1
-        # t1 = time.perf_counter()
-    
         #Grabbing variables used for training
         #process_frames = self.process_frames
         #frame_limit = self.frame_limit
-        greed_frames = self.greed_frames
-        batch_size = self.batch_size
+
+
         self.infer_action(np.zeros((100,100,self.seq_len)))
         self.game.click_play()        
         while (self.process_frames < self.frame_limit):       #While the number of processed frames is less than total training frame limit
@@ -511,6 +508,7 @@ class Trainer:
                     if self.force_kill:
                         self.game.stop_play = True
                         break
+
 
                     #Get the greed
                     greed = self.get_greed()
@@ -540,7 +538,6 @@ class Trainer:
 
                         #Store the previous experience
                         self.store_exp(error,(phi1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),phi2))
-
                         #Now assign phi1 to be the new frame!....For inference!
                         phi1 = phi2
 
@@ -549,7 +546,7 @@ class Trainer:
 
 
                     #Run a training and update target params operation
-                    self.train_target_update(len(self.exp),batch_size)
+                    self.train_target_update(len(self.exp),self.batch_size)
                 
                 
                 #OUTSIDE WHILE LOOP
@@ -568,13 +565,15 @@ class Trainer:
 
                 #If game ended naturally...    
                 self.game.stop_play = False
-
+                gc.collect()
                 #new_game_element = self.game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
                 #new_game_element.click()
                 self.game.click_play()
 
                 self.game_play_iteration = self.game_play_iteration+1
                 self.print_progress(greed)
+            
+                
 
     def create_reward_plot(self,r_iter):
         """

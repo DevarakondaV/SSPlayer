@@ -25,7 +25,7 @@
     ],
     "learing_rate": 0.0000025,
     "gamma": 0.99,
-    "logdir": "E:\\vishnu\\SSPlayer\\pr_three",
+    "logdir": "E:\\vishnu\\SSPlayer\\pr_three4",
     "tnum_times": 1000,
     "tgreed_frames": 100,
     "tmax_exp_len": 100,
