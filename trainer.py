@@ -347,7 +347,7 @@ class Trainer:
         weights = self.ops_and_tens['IS_weights']
         weights_tmp = np.zeros(shape=[self.batch_size,1])
 
-        zeros = np.zeros(shape=(100,100,self.seq_len)).astype(np.uint8)
+        zeros = np.zeros(shape=(84,84,self.seq_len)).astype(np.uint8)
         rv = np.zeros((self.batch_size,1))
         self.con_log("UPDATING TARGET PARAMS: {}".format(n),"")
         sess.run([ops_and_tens['target_ops']],{s1: [zeros],s2: [zeros],r: rv,weights: weights_tmp})
@@ -381,7 +381,7 @@ class Trainer:
         """
 
         if (len(seq) < self.seq_len):
-            frames = [np.zeros(shape=[100,100,1]) for i in range(0,self.seq_len-len(seq))]+ [i for i in seq]
+            frames = [np.zeros(shape=[84,84,1]) for i in range(0,self.seq_len-len(seq))]+ [i for i in seq]
         else:
             frames = seq
         
@@ -438,7 +438,7 @@ class Trainer:
        
             return
     
-    @profile
+    #@profile
     def Q_Algorithm(self):
         """
         Function implements the Q algorithm with experience replay.
@@ -455,7 +455,7 @@ class Trainer:
         #frame_limit = self.frame_limit
 
 
-        self.infer_action(np.zeros((100,100,self.seq_len)))
+        self.infer_action(np.zeros((84,84,self.seq_len)))
         self.game.click_play()        
         while (self.process_frames < self.frame_limit):       #While the number of processed frames is less than total training frame limit
                 #wait_for(1)
@@ -666,7 +666,7 @@ class Trainer:
         #Start a new game
         #new_game_element = game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
         #new_game_element.click()
-        self.infer_action(np.zeros((100,100,self.seq_len)))
+        self.infer_action(np.zeros((84,84,self.seq_len)))
         game.click_play()
 
         #reward list

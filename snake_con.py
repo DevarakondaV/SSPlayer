@@ -171,7 +171,7 @@ def take_shot(game):
         Takes single shot of play grid
     """
     img = game.sct.grab(game.processing_crop)
-    img = Image.fromarray(np.array(img)[:,:,1]).resize((100,100),resample=Image.LANCZOS)#.resize((84,110))
+    img = Image.fromarray(np.array(img)[:,:,1]).resize((84,84),resample=Image.LANCZOS)
     #Thread(target=save_img,args=(img,0)).start()
     # img.save("E:\\vishnu\\SSPlayer\\test.jpg")
     img = np.expand_dims(np.array(img),axis=2)
