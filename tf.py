@@ -13,7 +13,7 @@ with open("meta.json","r") as params_file:
     data = json.load(params_file)
     print(data)
 
-LOGDIR = data["logdir"]
+LOGDIR = data["logdir"] if data["pc"] == 1 else data["plogdir"]
 save_steps = data["save_steps"]
 
 #network params
@@ -63,15 +63,14 @@ saver_hook = tf.train.CheckpointSaverHook(  checkpoint_dir=chkpt_dir,
 
 g_sheets = 0
 
-pc = 1
-game = snake(1)
+game = snake(data["pc"])
 
 
 
 wait_for(1)
 with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, summary_hook]) as sess:
     
-    if pc == 1:
+    if data["pc"] == 1 or data["pc"] == 2:
         test_run = input("Test run or pure trainig:(t/p)")
         if (test_run == "p"):
             num_times = 1000000
@@ -86,7 +85,7 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
             min_exp_len_train = 10
             n = 100
         run_play = input("Run Training or play:(r/p) ")
-        game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,seq_len,batch_size,ops_and_tens,g_sheets,1)
+        game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,seq_len,batch_size,ops_and_tens,g_sheets,0)
         if (run_play == "r"):
             game_trainer.play_train(n,15)
             
