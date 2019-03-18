@@ -35,6 +35,10 @@ class sumTree:
         """
         
         self.data[self.data_i] = data
+
+        print("ImgBy: {}".format(data[0].nbytes))
+        print("IMG SHAPE: {}".format(data[0].shape))
+        
         tree_i = self.capacity-1+self.data_i
         print("single",np.zeros([1],dtype=np.object).nbytes)
         print("IMG1: {}\nre: {}\na: {} \nIMG2: {}".format(data[0].nbytes,data[1].nbytes,data[2].nbytes,data[3].nbytes))

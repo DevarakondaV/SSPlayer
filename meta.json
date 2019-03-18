@@ -1,7 +1,8 @@
 {
+    "pc": 2,
     "rtype": "t",
     "save_steps": 5,
-    "batchsize": 32,
+    "batchsize": 10,
     "seq_len": 5,
     "conv_k_size": [
         {"l1": 4},
@@ -26,6 +27,7 @@
     "learing_rate": 0.0000025,
     "gamma": 0.99,
     "logdir": "E:\\vishnu\\SSPlayer\\pr_three4",
+    "plogdir": "C:\\Users\\vishnu\\documents\\engproj\\tflog",
     "tnum_times": 1000,
     "tgreed_frames": 100,
     "tmax_exp_len": 100,

@@ -1,14 +1,14 @@
-from pywinauto import Application,Desktop
-import image
+#from pywinauto import Application,Desktop
+#import image
 import time
-from timeit import Timer,timeit
+#from timeit import Timer,timeit
 from PIL import Image
 import numpy as np
 import mss
 import mss.tools
-import math
-import win32api,win32con
-from scipy import stats
+#import math
+#import win32api,win32con
+#from scipy import stats
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -41,8 +41,16 @@ class snake:
         self.chrome_path = r'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
         if id==1:
             self.ext_path = r"C:\Users\devar\AppData\Local\Google\Chrome\User Data\Default\Extensions\gllcngkdngnfgilfmcbaanknakfgfepb\4.0_0"
+            self.processing_crop = {'left':128,
+                                    'top': 583,
+                                    'width': 200,
+                                    'height': 200}
         elif id==2:
-            self.ext_path = r"C:\Users\Vishnu\AppData\Local\Google\Chrome\User Data\Default\Extensions\kcnffeedfpaijglkkpplkbdpchgjbako\1.2_0"
+            self.ext_path = r"C:\Users\vishnu\AppData\Local\Google\Chrome\User Data\Default\Extensions\gllcngkdngnfgilfmcbaanknakfgfepb\4.0_0"
+            self.processing_crop = {'left': 80,
+                                    'top': 362,
+                                    'width': 127,
+                                    'height': 123}
         self._launch_game()
         self.sct = mss.mss()
         self.stop_play = False
@@ -101,11 +109,8 @@ class snake:
         #                         'width': 610,
         #                         'height': 610}
         # 100
-        self.processing_crop = {'left':128,
-                                'top': 583,
-                                'width': 200,
-                                'height': 200}
         
+                
         self.up = Keys.ARROW_UP
         self.down = Keys.ARROW_DOWN
         self.left = Keys.ARROW_LEFT
@@ -121,8 +126,8 @@ class snake:
             if not self.stop_play :
                 ActionChains(self.chrome).send_keys(ks).perform()
                 time.sleep(.1)
-                self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False                    
-                self.reward = -1 if self.stop_play == True else self.get_score()
+                self.stop_play = self.start_button.get_attribute("style") == "display: block;"                    
+                self.reward = -1 if self.stop_play else self.get_score()
             else :
                 self.prv_score = 0
         except:
@@ -154,9 +159,9 @@ class snake:
             rtn_val = 1
         elif (prv_dist >= self.get_current_dist()) :
             rtn_val = .5
-        else: 
+        else:
             rtn_val = -.5
-        return rtn_val   
+        return rtn_val
 
     def click_play(self):
         try:
@@ -166,19 +171,35 @@ class snake:
         #self.get_current_dist()
 
 
+        
+    def take_shot(self):
+        """
+        Function takes a shot of the game screen
+        args:
+        returns:
+        img: Numpy Image array
+        """
+
+
+        img = self.sct.grab(self.processing_crop)
+        img = Image.fromarray(np.array(img)[:, :, 1]).resize((84, 84), resample=Image.LANCZOS)     
+        img = np.expand_dims(np.array(img), axis=2)
+        return img
+
+
 def take_shot(game):
     """
         Takes single shot of play grid
     """
     img = game.sct.grab(game.processing_crop)
-    img = Image.fromarray(np.array(img)[:,:,1]).resize((84,84),resample=Image.LANCZOS)
-    #Thread(target=save_img,args=(img,0)).start()
+    img = Image.fromarray(np.array(img)[:, :, 1]).resize((84, 84), resample=Image.LANCZOS)#.resize((84, 110))
+    #Thread(target=save_img, args=(img, 0)).start()
     # img.save("E:\\vishnu\\SSPlayer\\test.jpg")
-    img = np.expand_dims(np.array(img),axis=2)
+    img = np.expand_dims(np.array(img), axis=2)
     return img
 
-def save_img(img,a):
-    img = Image.fromarray(img[:,:,0])
+def save_img(img, a):
+    img = Image.fromarray(img[:, :, 0])
     if a == 2:
         adir = "str"
     elif a == 0:
@@ -187,6 +208,6 @@ def save_img(img,a):
         adir = "right"
     fname = str(uuid.uuid4())+"__"+adir
     path = r"E:\vishnu\SSPlayer\imgs\\"+fname+".jpg"
-    img.save(path,"JPEG")
+    img.save(path, "JPEG")
 
 

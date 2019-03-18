@@ -1,6 +1,6 @@
 import time
 import numpy as np
-np.set_printoptions(threshold=np.nan)
+#np.set_printoptions(threshold=np.nan)
 from PIL import Image
 from snake_con import *
 import sys
@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 #import cv2
 from collections import deque
-import objgraph
+#import objgraph
 
 from pynput import keyboard
 from threading import Thread
@@ -364,7 +364,7 @@ class Trainer:
                 frame: numpy array. Screenshot of current state.
         """
 
-        frame = take_shot(self.game)
+        frame = self.game.take_shot()
         #append the number of processed frames
         self.process_frames = self.process_frames +  1 
         self.total_frames = self.total_frames + 1
@@ -381,7 +381,7 @@ class Trainer:
         """
 
         if (len(seq) < self.seq_len):
-            frames = [np.zeros(shape=[84,84,1]) for i in range(0,self.seq_len-len(seq))]+ [i for i in seq]
+            frames = [np.zeros(shape=[84,84,1]).astype(np.uint8) for i in range(0,self.seq_len-len(seq))]+ [i for i in seq]
         else:
             frames = seq
         
@@ -537,7 +537,7 @@ class Trainer:
 
                 #If game ended naturally...    
                 self.game.stop_play = False
-                gc.collect()
+                #gc.collect()
                 #new_game_element = self.game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
                 #new_game_element.click()
                 self.game.click_play()
