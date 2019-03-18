@@ -2,14 +2,12 @@ log/
 log1k2/
 Release.win32/
 seq/
-test/
 testimg/
 tmp/
 .ipynb_checkpoints/
 __pycache__/
 imgs1/
 .vscode/
-test.py
 cord.py
 debug.log
 log2/
