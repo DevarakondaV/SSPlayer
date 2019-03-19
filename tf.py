@@ -85,7 +85,7 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
             min_exp_len_train = 10
             n = 100
         run_play = input("Run Training or play:(r/p) ")
-        game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,seq_len,batch_size,ops_and_tens,g_sheets,0)
+        game_trainer = Trainer(sess,game,num_times,greed_frames,max_exp_len,min_exp_len_train,seq_len,batch_size,ops_and_tens,g_sheets,1)
         if (run_play == "r"):
             game_trainer.play_train(n,15)
             

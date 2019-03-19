@@ -1,5 +1,5 @@
 {
-    "pc": 2,
+    "pc": 1,
     "rtype": "t",
     "save_steps": 5,
     "batchsize": 10,
@@ -24,9 +24,9 @@
         {"l1": 0},
         {"l2": 512}
     ],
-    "learing_rate": 0.0000025,
+    "learing_rate": 0.00025,
     "gamma": 0.99,
-    "logdir": "E:\\vishnu\\SSPlayer\\pr_three4",
+    "logdir": "E:\\vishnu\\SSPlayer\\pr_g2_one",
     "plogdir": "C:\\Users\\vishnu\\documents\\engproj\\tflog",
     "tnum_times": 1000,
     "tgreed_frames": 100,

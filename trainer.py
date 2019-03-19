@@ -130,7 +130,7 @@ class Trainer:
         move_dir = game.move_dir
         
         if a == 2:
-            game.move(-1)
+            game.move(83)
             m_dir = "stright"
             return m_dir
         
@@ -211,7 +211,7 @@ class Trainer:
         #
         reward = 0 
         
-
+        os.system('cls')
         self.con_log("Action = {}\nMove dir = {}\nReward = {}".format(str(a),m_dir,r))
         self.con_log("Process Frames = {}\nTotal Frames {}".format(self.process_frames,self.total_frames))
         self.con_log("Avaiable Memory = {}".format(psutil.virtual_memory().available))

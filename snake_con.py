@@ -100,16 +100,6 @@ class snake:
         self.chrome.execute_script("arguments[0].setAttribute('height','100')", self.canvas)
         self.chrome.execute_script("arguments[0].setAttribute('style','width: 100px;')", self.game_container)
         self.chrome.execute_script("arguments[0].setAttribute('class','')", self.game_container)
-        
-
-        # #crop screen
-        # 300
-        # self.processing_crop = {'left':128,
-        #                         'top': 475,
-        #                         'width': 610,
-        #                         'height': 610}
-        # 100
-        
                 
         self.up = Keys.ARROW_UP
         self.down = Keys.ARROW_DOWN
@@ -117,17 +107,14 @@ class snake:
         self.right = Keys.ARROW_RIGHT
     
     def move(self,ks):
-        self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False            
-        if ks == -1:
-            self.reward = self.get_score()
-            return        
+        self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False      
         
         try:
             if not self.stop_play :
                 ActionChains(self.chrome).send_keys(ks).perform()
-                time.sleep(.1)
+                time.sleep(.05)
                 self.stop_play = self.start_button.get_attribute("style") == "display: block;"                    
-                self.reward = -1 if self.stop_play else self.get_score()
+                self.reward = -1 if self.stop_play else self.get_score2()
             else :
                 self.prv_score = 0
         except:
