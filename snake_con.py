@@ -56,6 +56,7 @@ class snake:
         self.stop_play = False
         self.reward = 0
         self.prv_score = 0
+        self.prv_dist = 0
         
         # 3 right
         # 2 left
@@ -113,8 +114,13 @@ class snake:
             if not self.stop_play :
                 ActionChains(self.chrome).send_keys(ks).perform()
                 time.sleep(.05)
-                self.stop_play = self.start_button.get_attribute("style") == "display: block;"                    
-                self.reward = -1 if self.stop_play else self.get_score2()
+                self.stop_play = self.start_button.get_attribute("style") == "display: block;"
+                if self.stop_play:
+                    self.reward = -1
+                    self.prv_score = 0
+                else:
+                    self.reward = self.get_score2()
+                #self.reward = -1 if self.stop_play else self.get_score2()
             else :
                 self.prv_score = 0
         except:

@@ -209,10 +209,10 @@ class Trainer:
         
         
         #
-        reward = 0 
+        reward += r
         
         os.system('cls')
-        self.con_log("Action = {}\nMove dir = {}\nReward = {}".format(str(a),m_dir,r))
+        self.con_log("Action = {}\nMove dir = {}\nReward = {}\n IterR: {}".format(str(a),m_dir,r,reward))
         self.con_log("Process Frames = {}\nTotal Frames {}".format(self.process_frames,self.total_frames))
         self.con_log("Avaiable Memory = {}".format(psutil.virtual_memory().available))
         #if frames are equal then invalid move..reinfer Process Frames
