@@ -87,16 +87,12 @@ class snake:
 
         #Snake and food position
         self.spx = chrome.find_element_by_id("spx")
-        self.spy = chrome.find_element_by_id("spx")
+        self.spy = chrome.find_element_by_id("spy")
         self.fx = chrome.find_element_by_id("fx")
         self.fy = chrome.find_element_by_id("fy")
 
         self.canvas = chrome.find_element_by_id("snake-game")
         self.game_container = chrome.find_element_by_class_name("container")
-        # self.chrome.execute_script("arguments[0].setAttribute('width','300')", self.canvas)
-        # self.chrome.execute_script("arguments[0].setAttribute('height','300')", self.canvas)
-        # self.chrome.execute_script("arguments[0].setAttribute('style','width: 300px;')", self.game_container)
-        # self.chrome.execute_script("arguments[0].setAttribute('class','')", self.game_container)
         self.chrome.execute_script("arguments[0].setAttribute('width','100')", self.canvas)
         self.chrome.execute_script("arguments[0].setAttribute('height','100')", self.canvas)
         self.chrome.execute_script("arguments[0].setAttribute('style','width: 100px;')", self.game_container)
@@ -119,13 +115,16 @@ class snake:
                     self.reward = -1
                     self.prv_score = 0
                 else:
-                    self.reward = self.get_score2()
+                    self.reward = self.get_score3()
                 #self.reward = -1 if self.stop_play else self.get_score2()
             else :
                 self.prv_score = 0
         except:
             print("pass")
             pass
+
+    def set_initial_dist(self):
+        self.init_distance = self.get_current_dist()
 
     def get_reward(self):
         return self.reward
@@ -134,6 +133,7 @@ class snake:
         score = int(self.score.text)
         if (self.prv_score < score):
             self.prv_score = score
+            self.set_initial_dist()
             return 1
         else :
             return 0
@@ -155,6 +155,34 @@ class snake:
         else:
             rtn_val = -.5
         return rtn_val
+    
+    def get_score3(self):
+
+        if (self.get_score()):
+            return 1
+        sx = int(self.spx.text)
+        sy = int(self.spy.text)
+        fx = int(self.fx.text)
+        fy = int(self.fy.text)
+        
+        R = np.exp(-.5*((.45**2*np.power((sx-fx),2))+(.45**2*np.power((sy-fy),2))))
+        #print("SX: {}\tSY: {}\tFX: {}\tFY: {}\tR: {}".format(sx,sy,fx,fy,R))
+        if R < .4:
+            return -1*R
+        else:
+            return R
+        
+    def get_score4(self):
+        score = self.get_score()
+        if score:
+            return score
+        
+        diff = (self.init_distance - self.get_current_dist())/self.init_distance
+        if (diff < 0 ):
+            diff = 0
+        return diff
+
+
 
     def click_play(self):
         try:

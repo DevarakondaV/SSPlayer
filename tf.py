@@ -77,7 +77,7 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
             greed_frames = 100000
             max_exp_len = 100000
             min_exp_len_train = 25000 #30000
-            n = 10000
+            n = 400000
         else :
             num_times = 1000
             greed_frames = 100

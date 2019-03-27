@@ -198,7 +198,7 @@ class Trainer:
         m_dir = self.perform_action(a)
         #Get the reward for the action!
        
-        chk_frm = phi1[:,:,self.seq_len-1]        
+        #chk_frm = phi1[:,:,self.seq_len-1]        
         # frame = self.get_frame()
         # while (np.array_equal(chk_frm,np.squeeze(frame))):
         #     print("IN WHILE")
@@ -217,8 +217,8 @@ class Trainer:
         self.con_log("Avaiable Memory = {}".format(psutil.virtual_memory().available))
         #if frames are equal then invalid move..reinfer Process Frames
         #chk_frm = phi1[:,:,0]
-        chk_frm = phi1[:,:,self.seq_len-1]
-        return frame,r,reward,not np.array_equal(chk_frm,np.squeeze(frame))
+       # chk_frm = phi1[:,:,self.seq_len-1]
+        return frame,r,reward,True
         #return frame,r,reward,1
 
 
@@ -456,8 +456,10 @@ class Trainer:
 
 
         self.infer_action(np.zeros((84,84,self.seq_len)))
-        self.game.click_play()        
+        self.game.click_play()
+              
         while (self.process_frames < self.frame_limit):       #While the number of processed frames is less than total training frame limit
+                self.game.set_initial_dist()  
                 #wait_for(1)
                 #Declare params for one iteration of the game
                 iter_reward = 0
