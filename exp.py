@@ -87,10 +87,10 @@ class experience:
 
         IS_weights = np.vstack(IS_weights)
         IS_weights = np.power(IS_weights,-self.beta) / maxwi
-        img_1 = np.asarray(img_1)
-        img_2 = np.asarray(img_2)
-        reward = np.reshape(np.asarray(reward),(batch_size,1))
-        action = np.reshape(np.asarray(action),(batch_size,1))
+        img_1 = np.asarray(img_1).squeeze().astype(np.float16)
+        img_2 = np.asarray(img_2).squeeze().astype(np.float16)
+        reward = np.reshape(np.asarray(reward),(batch_size,1)).astype(np.float16)
+        action = np.reshape(np.asarray(action),(batch_size,1)).astype(np.float16)
         return tree_idx,IS_weights,(img_1,action,reward,img_2)
 
     def update(self,idx,error):
