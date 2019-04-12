@@ -24,17 +24,80 @@ class pdqn(tf.keras.Model):
         """
         super(pdqn, self).__init__()
         self.layer_dict = {}
+        self.s_writer = tf.contrib.summary.create_file_writer(
+            logdir = LOGDIR
+        )
+        self.img_stdr = tf.keras.preprocessing.image.ImageDataGenerator(
+            featurewise_center=False,
+            samplewise_center=False,
+            featurewise_std_normalization=False,
+            samplewise_std_normalization=False,
+            zca_whitening=False,
+            rotation_range=0,
+            width_shift_range=0,
+            height_shift_range=0,
+            shear_range=0,
+            channel_shift_range=0,
+            horizontal_flip=False,
+            vertical_flip=False,
+            rescale=None,
 
 
+        )
 
+
+        #Building layers
         self.build_layers("Tar",seq_len,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR)
-
         for i in self.layer_dict.keys():
             self.layer_dict[i].trainable=False
-
         self.build_layers("Tra",seq_len,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR)
 
+        self.loss_fun = tf.keras.losses.MeanSquaredError()
+        self.optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate)
+
         return
+
+    def update_target_weights(self):
+        print("##### UPDATE PARAMS #####")
+        self.layer_dict["Tar_cnn_layer0"].set_weights(self.layer_dict["Tra_cnn_layer0"].get_weights())
+        self.layer_dict["Tar_cnn_layer1"].set_weights(self.layer_dict["Tra_cnn_layer1"].get_weights())
+        self.layer_dict["Tar_cnn_layer2"].set_weights(self.layer_dict["Tra_cnn_layer2"].get_weights())
+        self.layer_dict["Tar_dense0"].set_weights(self.layer_dict["Tra_dense0"].get_weights())
+        self.layer_dict["Tar_dense1"].set_weights(self.layer_dict["Tra_dense1"].get_weights())
+        self.layer_dict["Tar_fdense"].set_weights(self.layer_dict["Tra_fdense"].get_weights())
+
+
+    def infer(self,inputs):
+        print("##### INFERING #####")
+        inputs[0] = inputs[0].astype(np.float32)
+        inputs[0] = tf.image.per_image_standardization(inputs[0])
+        Tar_d3,a = self.__call__(inputs = inputs)
+        return Tar_d3,a
+
+    def train(self,inputs,IS_weights):
+        print("##### TRAINING #####")
+        stdzd = (
+            tf.map_fn(lambda frame: tf.image.per_image_standardization(frame),inputs[0].astype(np.float32)),
+            inputs[1].astype(np.float32),
+            inputs[2].astype(np.float32),
+            tf.map_fn(lambda frame: tf.image.per_image_standardization(frame),inputs[3].astype(np.float32))
+        )
+        
+        with self.s_writer.as_default():
+            with tf.contrib.eager.GradientTape() as tape:
+                y,Tra_d3 = self.__call__(inputs=stdzd,training=True)
+                loss = self.loss_fun(y,Tra_d3,IS_weights)
+            
+            grads = tape.gradient(loss,self.trainable_variables)
+            self.optimizer.apply_gradients(
+                zip(grads,self.trainable_variables),
+                global_step=tf.train.get_global_step()
+            )
+            
+            with tf.contrib.summary.record_summaries_every_n_global_steps(10):
+                tf.contrib.summary.scalar('Loss',loss)
+
+        return y,Tra_d3
 
     def build_layers(self,model_pre, seq_len, conv_feats, fc_feats, conv_k_size,
                 conv_stride, LOGDIR,gamma=0, batch_size=0, learning_rate = 0):
@@ -64,9 +127,13 @@ class pdqn(tf.keras.Model):
                                                         kernel_initializer=tf.keras.initializers.glorot_normal,
                                                         bias_initializer=tf.keras.initializers.Zeros)
 
+
+
     def call(self, inputs,training=False):
-        Tar_s1 = tf.convert_to_tensor(inputs[0],dtype=tf.float16)
-        norm_Tar_s1 = tf.keras.utils.normalize(Tar_s1)
+        print("Maximum",np.max(inputs[0].numpy()))
+
+        norm_Tar_s1 = tf.convert_to_tensor(inputs[0])
+
         Tar_cl1 = self.layer_dict["Tar_cnn_layer0"](norm_Tar_s1)
         Tar_cl2 = self.layer_dict["Tar_cnn_layer1"](Tar_cl1)
         Tar_cl3 = self.layer_dict["Tar_cnn_layer2"](Tar_cl2)
@@ -79,10 +146,10 @@ class pdqn(tf.keras.Model):
         if (not training):
             return Tar_d3,tf.keras.backend.argmax(Tar_d3)
 
-        Tra_s2 = tf.convert_to_tensor(inputs[3])
-        norm_Tra_s2 = tf.keras.utils.normalize(Tra_s2)
-
+        norm_Tra_s2 = tf.convert_to_tensor(inputs[3])
         r = tf.convert_to_tensor(inputs[2])
+
+
         
         Tra_cl1 = self.layer_dict["Tra_cnn_layer0"](norm_Tra_s2)
         Tra_cl2 = self.layer_dict["Tra_cnn_layer1"](Tra_cl1)
@@ -95,4 +162,11 @@ class pdqn(tf.keras.Model):
 
         Qmax = tf.keras.backend.max(Tar_d3,axis=0)
         y = r+0.99*Qmax
+
+        #with tf.contrib.summary.record_summaries_every_n_global_steps(1):
+            #tf.contrib.summary.image('s1',tf.expand_dims(norm_Tar_s1[:,:,:,0],-1))
+            #tf.contrib.summary.image('s1',tf.expand_dims(norm_Tar_s1[:,:,:,1],-1))
+            #tf.contrib.summary.image('s1',tf.expand_dims(norm_Tar_s1[:,:,:,2],-1))
+            #tf.contrib.summary.image('s1',tf.expand_dims(norm_Tar_s1[:,:,:,3],-1))
+
         return y,Tra_d3

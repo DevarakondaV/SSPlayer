@@ -18,6 +18,7 @@ from base64 import b64decode,decodestring
 import numpy as np
 from io import StringIO,BytesIO
 import uuid
+from math import log
 
 
 
@@ -43,12 +44,9 @@ class snake:
         self.stop_play = False
         self.reward = 0
         self.prv_score = 0
-        
-        # 3 right
-        # 2 left
-        # 1 down
-        # 0 up
         self.move_dir = 3
+        self.snake_length = 2
+        self.iter_frame = 0
 
     def _launch_game(self):
         """
@@ -90,15 +88,23 @@ class snake:
         self.left = Keys.ARROW_LEFT
         self.right = Keys.ARROW_RIGHT
     
+    def kill(self):
+        self.chrome.quit()
+    
     def move(self,ks):
         try:
             ActionChains(self.chrome).send_keys(ks).perform()
-            time.sleep(.05)
+            #time.sleep(.05)
         except:
             print("pass")
             pass
         
         self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False
+        self.iter_frame += 1
+        del_r = self.calc_delr()
+        self.reward = self.reward+del_r
+        print("REWARD BEFORE CLIP: {} + {}".format(self.reward,del_r))
+        self.reward = np.clip(self.reward,a_min=-1,a_max=1)
         return
 
     def perform_action(self,a):
@@ -159,23 +165,42 @@ class snake:
         self.prv_dist = dist
         return dist
 
-    def get_score2(self):
-        rtn_val = 0
-        prv_dist = self.prv_dist
-        score = int(self.score.text)
-        if (self.prv_score < score):
-            self.prv_score = score
-            rtn_val = 1
-        elif (prv_dist >= self.get_current_dist()) :
-            rtn_val = .5
+    def calc_delr(self):
+        #If scored reward is 1
+        if (self.get_score()):
+            return 1
+
+        #if hit wall reward is -1
+        if (self.stop_play):
+            return -1
+        
+        #Else use distance
+        if (self.iter_frame > self.calc_iter_timeout()):
+            print("ITER FRAME {}: val: {}".format(self.iter_frame,self.snake_length))
+            return -0.5/self.snake_length
         else:
-            rtn_val = -.5
-        return rtn_val
+            print("DISTANCE")
+            num = self.snake_length+self.prv_dist
+            den = self.snake_length+self.get_current_dist()
+            return log(num/den,self.snake_length)
+        
+    def calc_iter_timeout(self):
+        return (.7*self.snake_length)+10
+
 
     def click_play(self):
         try:
             ActionChains(self.chrome).send_keys(Keys.SPACE).perform()
+            
+            #Set Defaults
             self.stop_play = False
+            self.reward = 0
+            self.snake_length = 2
+            self.get_current_dist()
+            self.prv_score = 0
+            self.move_dir = 3
+            self.iter_frame = 0
+
         except:
             print("Cannot start game")
         #self.get_current_dist()
@@ -196,21 +221,16 @@ class snake:
 
 
         img = self.sct.grab(self.processing_crop)
-        img = Image.fromarray(np.array(img)[:, :, 1]).resize((84, 84), resample=Image.LANCZOS)     
+        img = Image.fromarray(np.array(img)[:, :, 1]).resize((84, 84))     
         img = np.expand_dims(np.array(img), axis=2)
         return img
 
 
-def save_img(img, a):
+def save_img(img):
     img = Image.fromarray(img[:, :, 0])
-    if a == 2:
-        adir = "str"
-    elif a == 0:
-        adir = "left"
-    else:
-        adir = "right"
-    fname = str(uuid.uuid4())+"__"+adir
-    path = r"E:\vishnu\SSPlayer\imgs\\"+fname+".jpg"
+    
+    #fname = str(uuid.uuid4())+"__"+adir
+    path = r"C:\Users\Vishnu\Documents\EngProj\tflog\test.jpeg"
     img.save(path, "JPEG")
 
 

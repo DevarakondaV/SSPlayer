@@ -5,11 +5,12 @@ from cnn import *
 #from gsheets import *
 tf.enable_eager_execution()
 tf.executing_eagerly() 
-#import tensorflow.contrib.graph_editor as ge
 from snake_trainer import *
 from trainer import *
-
 import json
+import os
+
+os.chdir(r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\\")
 
 with open("meta.json","r") as params_file:
     data = json.load(params_file)
@@ -33,15 +34,12 @@ net = pdqn(seq_len,conv,fclyr,conv_k_size,conv_stride,LOGDIR,gamma=gamma,batch_s
 game = snake(data["pc"])
 
 
-
 run_type = input("Run type?(r=run, t=testing,p=play): ")
 if (run_type == "p"):
     num_times = int(input("Play_times?: "))
     game_trainer = Trainer(1)
     game_trainer.play(net,game,seq_len,num_times)
-    exit()
-
-if (run_type == "r"):
+elif (run_type == "r"):
     num_times = 1000000
     greed_frames = 100000
     max_exp_len = 100000
@@ -50,9 +48,7 @@ if (run_type == "r"):
     # game_trainer = Trainer(net,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
     game_trainer = Trainer(1)
     game_trainer.play_train(net,game,learning_rate,seq_len,batch_size,num_times,greed_frames,max_exp_len,min_exp_len_train,1,n,15)
-    exit()
-
-if (run_type == "t"):
+elif (run_type == "t"):
     num_times = 1000
     greed_frames = 100
     max_exp_len = 100
@@ -60,8 +56,8 @@ if (run_type == "t"):
     n = 100
     game_trainer = Trainer(1)
     game_trainer.play_train(net,game,learning_rate,seq_len,batch_size,num_times,greed_frames,max_exp_len,min_exp_len_train,1,n,15)
-    exit()
+else :
+    print("INVALID PLAY OPTION")
 
-
-print("INVALID PLAY OPTION")
+game.kill()
 exit()

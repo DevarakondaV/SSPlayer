@@ -207,7 +207,7 @@ class Trainer:
         run_times = int(num_times/n)
         reward_list = []
         for i in range(0,run_times):
-            
+            print("Iteration {} of {}".format(i+1,run_times))
             if not self.force_kill:
                 self.train(net, game, n, seq_len, batch_size, greed_frames, max_exp_len_train,learning_rate,i)
 
@@ -236,15 +236,12 @@ class Trainer:
         """
 
 
-        mse_loss = tf.keras.losses.MeanSquaredError()
-        optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate)
 
 
         dummy_in = [np.zeros(shape=(10,84,84,5)).astype(np.float16),
                     np.zeros(shape=[1]).astype(np.float16),
                     np.zeros(shape=(10,1)).astype(np.float16),
                     np.zeros(shape=(10,84,84,5)).astype(np.float16)]
-        net(dummy_in,training = True)
 
         current_tran = 1
         def fun():
@@ -253,30 +250,30 @@ class Trainer:
                 
 
                 seq = []
-                
+                game.click_play()
                 frame = game.get_frame()
                 seq.append(frame)
                 phi1 = self.process_seq(seq, seq_len)
                 while not game.stop_play:
+                    os.system('cls')
+                    print("TRAINSITION",current_tran)
                     
                     current_tran+=1
-                    phi1 = phi1.astype(np.float16)
-                    
-                    
                     greed = self.get_greed(current_tran+(i*n),greed_frames)
-                    print(greed)
-                    if np.random.rand(1)[0] > greed:
+                    print("GREED",greed)
+                    if  greed > np.random.rand(1)[0]:
                         a = np.random.randint(0,2,size=[1])[0]
                         e = 1
                         kill_play = game.perform_action(a)
                     else:
-                        e,a = net([phi1])
+                        e,a = net.infer([phi1])
                         kill_play = game.perform_action(a.numpy()[0])
 
                     if (kill_play):
                         print("END Play")
                     
                     r = game.get_reward()
+                    print("REWARD FOR ACTION", r)
 
                     if (len(seq) >= seq_len):
                         seq.pop(0)
@@ -292,21 +289,11 @@ class Trainer:
                     
                     leaf_idx,IS_weights,seq_n = self.exp.sample(batch_size)
                     IS_weights = np.reshape(IS_weights,(batch_size,1))
-                    with tf.GradientTape() as tape:
-                        y,Tra_d3 = net(seq_n,training=True)
-                        loss = mse_loss(y,Tra_d3,IS_weights)
-                    gradients = tape.gradient(loss,net.trainable_variables)
-                    optimizer.apply_gradients(zip(gradients, net.trainable_variables))
+                    y,Tra_d3 = net.train(seq_n,IS_weights)
                     self.update_exp(leaf_idx,np.amax((y-Tra_d3).numpy(),axis=1))
 
                     if current_tran % 10 == 0:
-                        print("PARAM UPDATE")
-                        net.layer_dict["Tar_cnn_layer0"].set_weights(net.layer_dict["Tra_cnn_layer0"].get_weights())
-                        net.layer_dict["Tar_cnn_layer1"].set_weights(net.layer_dict["Tra_cnn_layer1"].get_weights())
-                        net.layer_dict["Tar_cnn_layer2"].set_weights(net.layer_dict["Tra_cnn_layer2"].get_weights())
-                        net.layer_dict["Tar_dense0"].set_weights(net.layer_dict["Tra_dense0"].get_weights())
-                        net.layer_dict["Tar_dense1"].set_weights(net.layer_dict["Tra_dense1"].get_weights())
-                        net.layer_dict["Tar_fdense"].set_weights(net.layer_dict["Tra_fdense"].get_weights())
+                        net.update_target_weights()
 
 
                     if self.force_kill:
@@ -335,8 +322,9 @@ class Trainer:
             rtn_val: double. Average reward for n iterations
         """
 
-        net([np.zeros(shape=(1,84,84,5)).astype(np.float16)])
-        
+        #net([np.zeros(shape=(1,84,84,5)).astype(np.float16)])
+        #net.infer([np.zeros(shape=(1,84,84,5)).astype(np.float16)])
+
         def fun():
             reward_list = []
             for i in range(0,num_times):
@@ -348,8 +336,9 @@ class Trainer:
                 seq.append(frame)
                 phi1 = self.process_seq(seq,seq_len)
                 while not game.stop_play:
+                    os.system('cls')
                     phi1 = phi1.astype(np.float16)
-                    Tar_d3,a = net([phi1])
+                    Tar_d3,a = net.infer([phi1])
                     kill_play = game.perform_action(a.numpy()[0])
                     if (kill_play):
                         print("END PLAY")
