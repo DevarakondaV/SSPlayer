@@ -73,11 +73,11 @@ with tf.train.MonitoredSession(session_creator=chief_session,hooks=[saver_hook, 
     if data["pc"] == 1 or data["pc"] == 2:
         test_run = input("Test run or pure trainig:(t/p)")
         if (test_run == "p"):
-            num_times = 1000000
-            greed_frames = 100000
+            num_times = 5000000
+            greed_frames = 1000000
             max_exp_len = 100000
             min_exp_len_train = 25000 #30000
-            n = 400000
+            n = 1000000
         else :
             num_times = 1000
             greed_frames = 100

@@ -6,7 +6,7 @@ from PIL import Image
 import numpy as np
 import mss
 import mss.tools
-#import math
+from math import log
 #import win32api,win32con
 #from scipy import stats
 
@@ -57,6 +57,8 @@ class snake:
         self.reward = 0
         self.prv_score = 0
         self.prv_dist = 0
+        self.s_len = 2
+        self.p_steps = 0
         
         # 3 right
         # 2 left
@@ -109,22 +111,28 @@ class snake:
         try:
             if not self.stop_play :
                 ActionChains(self.chrome).send_keys(ks).perform()
-                time.sleep(.05)
+                #time.sleep(.0)
                 self.stop_play = self.start_button.get_attribute("style") == "display: block;"
                 if self.stop_play:
                     self.reward = -1
                     self.prv_score = 0
+                    self.s_len = 2
+                    self.p_steps = 0
+                    self.prv_dist = 0
+                    self.move_dir = 3
                 else:
-                    self.reward = self.get_score3()
+                    self.reward = self.get_score5()
                 #self.reward = -1 if self.stop_play else self.get_score2()
             else :
                 self.prv_score = 0
+                self.s_len = 2
+                self.p_steps = 0
         except:
             print("pass")
             pass
 
     def set_initial_dist(self):
-        self.init_distance = self.get_current_dist()
+        self.init_distance = self.get_dist()
 
     def get_reward(self):
         return self.reward
@@ -138,7 +146,7 @@ class snake:
         else :
             return 0
 
-    def get_current_dist(self):
+    def get_dist(self):
         dist = ((int(self.spx.text)-int(self.fx.text))**2+(int(self.spy.text)-int(self.fy.text))**2)**0.5
         self.prv_dist = dist
         return dist
@@ -150,16 +158,16 @@ class snake:
         if (self.prv_score < score):
             self.prv_score = score
             rtn_val = 1
-        elif (prv_dist >= self.get_current_dist()) :
+        elif (prv_dist >= self.get_dist()) :
             rtn_val = .5
         else:
             rtn_val = -.5
         return rtn_val
     
     def get_score3(self):
-
+        #gaus
         if (self.get_score()):
-            return 1
+            return 10
         sx = int(self.spx.text)
         sy = int(self.spy.text)
         fx = int(self.fx.text)
@@ -177,20 +185,44 @@ class snake:
         if score:
             return score
         
-        diff = (self.init_distance - self.get_current_dist())/self.init_distance
+        diff = (self.init_distance - self.get_dist())/self.init_distance
         if (diff < 0 ):
             diff = 0
         return diff
 
+    def get_score5(self):
 
+            
+
+        
+        if (self.p_steps > self.get_steps()):
+            delr = -0.5/self.s_len
+            print(self.p_steps)
+        else:
+            num = self.s_len+self.prv_dist
+            den = self.s_len+self.get_dist()
+            delr = log(num/den)
+            print("DELR",delr)
+
+        if (self.get_score()):
+            self.s_len +=2
+            self.p_steps = 0
+            delr = 1
+
+        self.p_steps+=1
+        return delr
+        
 
     def click_play(self):
         try:
             ActionChains(self.chrome).send_keys(Keys.SPACE).perform()
+            self.get_dist()
         except:
             print("Cannot start game")
-        #self.get_current_dist()
+        #self.get_dist()
 
+    def get_steps(self):
+        return (.7*self.s_len)+10
 
         
     def take_shot(self):

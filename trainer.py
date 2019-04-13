@@ -252,7 +252,8 @@ class Trainer:
         """
 
         self.exp.store(error,seq)
-
+        self.process_frames = self.process_frames +  1 
+        self.total_frames = self.total_frames + 1
         return
 
         #Older experience is phased out by poping from exp buffer
@@ -366,8 +367,8 @@ class Trainer:
 
         frame = self.game.take_shot()
         #append the number of processed frames
-        self.process_frames = self.process_frames +  1 
-        self.total_frames = self.total_frames + 1
+        #self.process_frames = self.process_frames +  1 
+        #self.total_frames = self.total_frames + 1
         return frame
 
     def process_seq(self,seq):
