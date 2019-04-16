@@ -157,6 +157,7 @@ class snake:
         score = int(self.score.text)
         if (self.prv_score < score):
             self.prv_score = score
+            self.snake_length+=1
             return 1
         else :
             return 0
