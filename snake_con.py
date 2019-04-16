@@ -67,7 +67,7 @@ class snake:
         #chrome.execute_script("window.scrollTo(0, 50)")
 
         #Key elements of game
-        self.start_button = chrome.find_element_by_xpath("/html/body/div/div/h3")
+        self.start_button = chrome.find_element_by_xpath("/html/body/div/div[2]")
         self.score = chrome.find_element_by_xpath("/html/body/div/header/div/div[1]")
 
         #Snake and food position
@@ -197,7 +197,6 @@ class snake:
             print("Cannot start game")
         #self.get_dist()
 
-        
         #Set Defaults
         self.stop_play = False
         self.reward = 0

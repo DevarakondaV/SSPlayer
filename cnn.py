@@ -74,7 +74,7 @@ class pdqn(tf.keras.Model):
         Tar_d3,a = self.__call__(inputs = inputs)
         return Tar_d3,a
 
-    def train(self,inputs,IS_weights):
+    def train(self,inputs,IS_weights,r):
         print("##### TRAINING #####")
         stdzd = (
             tf.map_fn(lambda frame: tf.image.per_image_standardization(frame),inputs[0].astype(np.float32)),
@@ -162,6 +162,7 @@ class pdqn(tf.keras.Model):
 
         Qmax = tf.keras.backend.max(Tar_d3,axis=0)
         y = r+0.99*Qmax
+
 
         #with tf.contrib.summary.record_summaries_every_n_global_steps(1):
             #tf.contrib.summary.image('s1',tf.expand_dims(norm_Tar_s1[:,:,:,0],-1))
