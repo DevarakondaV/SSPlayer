@@ -1,5 +1,5 @@
-log/
-log1k2/
+*log*
+*test*
 Release.win32/
 seq/
 test/
@@ -12,16 +12,13 @@ imgs1/
 test.py
 cord.py
 debug.log
-log2/
 chkpt/
 img/
 project-tensorboard/
-log3/
 tsne/
 creds.data
 gsheets.py
 imgs/
-log2-1.zip
 restore.py
 reward.py
 *.py~

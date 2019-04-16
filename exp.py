@@ -87,8 +87,8 @@ class experience:
 
         IS_weights = np.vstack(IS_weights)
         IS_weights = np.power(IS_weights,-self.beta) / maxwi
-        img_1 = np.asarray(img_1)
-        img_2 = np.asarray(img_2)
+        img_1 = np.asarray(img_1).squeeze()
+        img_2 = np.asarray(img_2).squeeze()
         reward = np.reshape(np.asarray(reward),(batch_size,1))
         action = np.reshape(np.asarray(action),(batch_size,1))
         return tree_idx,IS_weights,(img_1,action,reward,img_2)
