@@ -158,6 +158,7 @@ class snake:
         if (self.prv_score < score):
             self.prv_score = score
             self.snake_length+=1
+            self.iter_frame = 0
             return 1
         else :
             return 0
