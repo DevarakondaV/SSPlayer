@@ -26,7 +26,7 @@
     ],
     "learing_rate": 0.00025,
     "gamma": 0.99,
-    "logdir": "E:\\vishnu\\SSPlayer\\rfour",
+    "logdir": "E:\\vishnu\\SSPlayer\\rfive",
     "plogdir": "C:\\Users\\vishnu\\documents\\engproj\\tflog",
     "tnum_times": 1000,
     "tgreed_frames": 100,

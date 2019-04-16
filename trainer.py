@@ -50,7 +50,7 @@ class Trainer:
         #Game controller variables
         self.game = game                            #Game object
         self.force_kill = False                     #Bool param determines if training should be forced to stop
-        
+        self.pause = False
 
         #variables required for training
         #self.exp = deque(maxlen = max_exp_len)      #experience vector  
@@ -460,8 +460,6 @@ class Trainer:
         self.game.click_play()
               
         while (self.process_frames < self.frame_limit):       #While the number of processed frames is less than total training frame limit
-                self.game.set_initial_dist()  
-                #wait_for(1)
                 #Declare params for one iteration of the game
                 iter_reward = 0
                 reward_list = []    #populate with reward for each iteration
@@ -477,13 +475,6 @@ class Trainer:
                 phi1 = self.process_seq(seq)               
                 #Now play the game!
                 while not self.game.stop_play:   #While still playing the game
-                    
-                    # t1 = time.perf_counter()
-                    #If esc key is pressed stop the game play!
-                    if self.force_kill:
-                        self.game.stop_play = True
-                        break
-
 
                     #Get the greed
                     greed = self.get_greed()
@@ -493,56 +484,39 @@ class Trainer:
 
                     #send the action to the game controller to perform it
                     frame,r,iter_reward,unique = self.send_action_to_game_controller(phi1,a,iter_reward)
-                    if not unique:
-                        self.total_frames-=1
-                        self.process_frames-=1
-                        print("Not unqiue Frames. Don't add to experience")
-                    #
-                    if unique:
-                        #Thread(target=save_img,args=(frame,a)).start()
-                        #Increment reward for the game iteration
-                        iter_reward +=r
-                        
-                        #Add the action, reward and new frame to the game play sequence
-                        if (len(seq) >= self.seq_len):
-                            seq.pop(0)
-                        seq.append(frame)
-                        self.con_log("SEQUENCE LENGTH = {}".format(len(seq)),"")
-                        #Process the new frames for storing!
-                        phi2 = self.process_seq(seq)
+                    #Increment reward for the game iteration
+                    iter_reward +=r
+                    
+                    #Add the action, reward and new frame to the game play sequence
+                    if (len(seq) >= self.seq_len):
+                        seq.pop(0)
+                    seq.append(frame)
+                    self.con_log("SEQUENCE LENGTH = {}".format(len(seq)),"")
+                    #Process the new frames for storing!
+                    phi2 = self.process_seq(seq)
 
-                        #Store the previous experience
-                        self.store_exp(error,(phi1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),phi2))
-                        #Now assign phi1 to be the new frame!....For inference!
-                        phi1 = phi2
+                    #Store the previous experience
+                    self.store_exp(error,(phi1,np.array(a).astype(np.uint8),np.array(r).astype(np.float16),phi2))
+                    #Now assign phi1 to be the new frame!....For inference!
+                    phi1 = phi2
 
-                        #Print length of experience vector
-                        self.con_log("Len Exp Vector: {}".format(len(self.exp)),"")
+                    #Print length of experience vector
+                    self.con_log("Len Exp Vector: {}".format(len(self.exp)),"")
 
 
                     #Run a training and update target params operation
                     self.train_target_update(len(self.exp),self.batch_size)
                 
-                
-                #OUTSIDE WHILE LOOP
-                #We have lost the game
-                #Wait for a few milliseconds
-                wait_for(.1)
+                    if self.force_kill:
+                        break
 
-                reward_list.append(iter_reward)
-                self.create_reward_plot(reward_list)
-                #Reset the internal game reward to zero
-                self.game.reward = 0
+                    while self.pause:
+                        pass
                 
-                #If escape key is pressed break this while loop too! -> We are passing new params for the trainer :)
+                
                 if self.force_kill:
                     break
 
-                #If game ended naturally...    
-                self.game.stop_play = False
-                #gc.collect()
-                #new_game_element = self.game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
-                #new_game_element.click()
                 self.game.click_play()
 
                 self.game_play_iteration = self.game_play_iteration+1
@@ -580,18 +554,16 @@ class Trainer:
                 tsvf.write(str(label)+'\n')
 
 
-    def stop_training(self,key):
+    def key_manager(self,key):
         """
-        Function is used by key listener to stop training
-        
-        args:
-            key:    Key Object.
+        Function manages pausing and killing game play
         """
-        self.con_log("",key)
+
         if key == keyboard.Key.esc:
-            self.con_log("Kill loop","")
+            self.pause = not self.pause
+        elif key == keyboard.Key.delete:
+            self.pause = False
             self.force_kill = True
-            return
 
     def esc_wrap(self,function):
         """
@@ -605,7 +577,7 @@ class Trainer:
         """
         
         #Wrapping trainer inside a listener to stop training if esc key is pressed
-        with keyboard.Listener(on_press=self.stop_training) as listener:
+        with keyboard.Listener(on_press=self.key_manager) as listener:
             #perform the Q algorithm with experience replay
             rtn_val = function()
             listener.stop()
@@ -665,18 +637,13 @@ class Trainer:
 
         #Game game session
         game = self.game
-        game.stop_play = False
-        #Start a new game
-        #new_game_element = game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
-        #new_game_element.click()
         self.infer_action(np.zeros((84,84,self.seq_len)))
-        game.click_play()
 
         #reward list
         reward_list = []
         #Play n times
         for i in range(0,n):
-            #wait_for(1)
+            game.click_play()
             self.con_log('Play iteration: ',i+1)
             
             #single game iteration variable
@@ -691,13 +658,7 @@ class Trainer:
             phi1 = self.process_seq(seq)  
             #While game oes not need to stop
             not_uniq_count = 0
-            quit_game_play = False
             while not game.stop_play:
-                #If esc key is pressed stop the game play!
-                if self.force_kill:
-                    self.game.stop_play = True
-                    break
-                
                 a,error = self.infer_action(phi1)
                 frame,r,d_reward,unique = self.send_action_to_game_controller(phi1,a,0)
                 self.total_frames -= 1  #Total frames get appended every time new frames are grabbed. These are only used for greed
@@ -724,18 +685,16 @@ class Trainer:
                 phi2 = self.process_seq(seq)
                 phi1 = phi2
 
+                if self.force_kill:
+                    break
 
-            reward_list.append(reward)
+                while self.pause:
+                    pass
 
             if self.force_kill:
                 break
 
-            #If game ended naturally...    
-            self.game.stop_play = False
-
-            #new_game_element = self.game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
-            #new_game_element.click()
-            game.click_play()
+            reward_list.append(reward)
 
             
         

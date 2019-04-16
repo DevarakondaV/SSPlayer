@@ -56,6 +56,7 @@ class snake:
         self.stop_play = False
         self.reward = 0
         self.prv_score = 0
+        self.move_dir = 3
         self.prv_dist = 0
         self.s_len = 2
         self.p_steps = 0
@@ -64,7 +65,7 @@ class snake:
         # 2 left
         # 1 down
         # 0 up
-        self.move_dir = 3
+        
 
     def _launch_game(self):
         """
@@ -105,31 +106,44 @@ class snake:
         self.left = Keys.ARROW_LEFT
         self.right = Keys.ARROW_RIGHT
     
-    def move(self,ks):
-        self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False      
+    # def move(self,ks):
+    #     self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False      
         
+    #     try:
+    #         if not self.stop_play :
+    #             ActionChains(self.chrome).send_keys(ks).perform()
+    #             #time.sleep(.0)
+    #             self.stop_play = self.start_button.get_attribute("style") == "display: block;"
+    #             if self.stop_play:
+    #                 self.reward = -1
+    #                 self.prv_score = 0
+    #                 self.s_len = 2
+    #                 self.p_steps = 0
+    #                 self.prv_dist = 0
+    #                 self.move_dir = 3
+    #             else:
+    #                 self.reward = self.get_score5()
+    #             #self.reward = -1 if self.stop_play else self.get_score2()
+    #         else :
+    #             self.prv_score = 0
+    #             self.s_len = 2
+    #             self.p_steps = 0
+    #     except:
+    #         print("pass")
+    #         pass
+
+    def move(self,ks):
         try:
-            if not self.stop_play :
-                ActionChains(self.chrome).send_keys(ks).perform()
-                #time.sleep(.0)
-                self.stop_play = self.start_button.get_attribute("style") == "display: block;"
-                if self.stop_play:
-                    self.reward = -1
-                    self.prv_score = 0
-                    self.s_len = 2
-                    self.p_steps = 0
-                    self.prv_dist = 0
-                    self.move_dir = 3
-                else:
-                    self.reward = self.get_score5()
-                #self.reward = -1 if self.stop_play else self.get_score2()
-            else :
-                self.prv_score = 0
-                self.s_len = 2
-                self.p_steps = 0
+            ActionChains(self.chrome).send_keys(ks).perform()
         except:
             print("pass")
             pass
+        
+        self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False
+        self.p_steps +=1 
+        self.reward = self.reward+self.calc_delr()
+        self.reward = np.clip(self.reward,a_min=-1,a_max=1)
+        return
 
     def set_initial_dist(self):
         self.init_distance = self.get_dist()
@@ -151,75 +165,37 @@ class snake:
         self.prv_dist = dist
         return dist
 
-    def get_score2(self):
-        rtn_val = 0
-        prv_dist = self.prv_dist
-        score = int(self.score.text)
-        if (self.prv_score < score):
-            self.prv_score = score
-            rtn_val = 1
-        elif (prv_dist >= self.get_dist()) :
-            rtn_val = .5
-        else:
-            rtn_val = -.5
-        return rtn_val
     
-    def get_score3(self):
-        #gaus
+    def calc_delr(self):
+
         if (self.get_score()):
-            return 10
-        sx = int(self.spx.text)
-        sy = int(self.spy.text)
-        fx = int(self.fx.text)
-        fy = int(self.fy.text)
+            return 1
         
-        R = np.exp(-.5*((.45**2*np.power((sx-fx),2))+(.45**2*np.power((sy-fy),2))))
-        #print("SX: {}\tSY: {}\tFX: {}\tFY: {}\tR: {}".format(sx,sy,fx,fy,R))
-        if R < .4:
-            return -1*R
-        else:
-            return R
-        
-    def get_score4(self):
-        score = self.get_score()
-        if score:
-            return score
-        
-        diff = (self.init_distance - self.get_dist())/self.init_distance
-        if (diff < 0 ):
-            diff = 0
-        return diff
+        if (self.stop_play):
+            return -1
 
-    def get_score5(self):
-
-            
-
-        
         if (self.p_steps > self.get_steps()):
-            delr = -0.5/self.s_len
-            print(self.p_steps)
+            return -0.5/self.s_len
         else:
             num = self.s_len+self.prv_dist
             den = self.s_len+self.get_dist()
-            delr = log(num/den)
-            print("DELR",delr)
-
-        if (self.get_score()):
-            self.s_len +=2
-            self.p_steps = 0
-            delr = 1
-
-        self.p_steps+=1
-        return delr
-        
+            return log(num/den,self.s_len)
 
     def click_play(self):
         try:
             ActionChains(self.chrome).send_keys(Keys.SPACE).perform()
-            self.get_dist()
         except:
             print("Cannot start game")
         #self.get_dist()
+
+        #Set Defaults
+        self.stop_play = False
+        self.reward = 0
+        self.s_len = 2
+        self.get_dist()
+        self.prv_score = 0
+        self.move_dir = 3
+        self.p_steps = 0
 
     def get_steps(self):
         return (.7*self.s_len)+10
@@ -239,17 +215,6 @@ class snake:
         img = np.expand_dims(np.array(img), axis=2)
         return img
 
-
-def take_shot(game):
-    """
-        Takes single shot of play grid
-    """
-    img = game.sct.grab(game.processing_crop)
-    img = Image.fromarray(np.array(img)[:, :, 1]).resize((84, 84), resample=Image.LANCZOS)#.resize((84, 110))
-    #Thread(target=save_img, args=(img, 0)).start()
-    # img.save("E:\\vishnu\\SSPlayer\\test.jpg")
-    img = np.expand_dims(np.array(img), axis=2)
-    return img
 
 def save_img(img, a):
     img = Image.fromarray(img[:, :, 0])
