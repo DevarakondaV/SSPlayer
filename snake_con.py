@@ -44,6 +44,7 @@ class snake:
         self.stop_play = False
         self.reward = 0
         self.prv_score = 0
+        self.prv_dist = 0
         self.move_dir = 3
         self.snake_length = 2
         self.iter_frame = 0
@@ -191,20 +192,20 @@ class snake:
     def click_play(self):
         try:
             ActionChains(self.chrome).send_keys(Keys.SPACE).perform()
-            
-            #Set Defaults
-            self.stop_play = False
-            self.reward = 0
-            self.snake_length = 2
-            self.get_current_dist()
-            self.prv_score = 0
-            self.move_dir = 3
-            self.iter_frame = 0
 
         except:
             print("Cannot start game")
         #self.get_current_dist()
 
+        
+        #Set Defaults
+        self.stop_play = False
+        self.reward = 0
+        self.snake_length = 2
+        self.get_current_dist()
+        self.prv_score = 0
+        self.move_dir = 3
+        self.iter_frame = 0
     
     #Must be implemented
     def get_frame(self):
