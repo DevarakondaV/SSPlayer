@@ -67,7 +67,7 @@ class snake:
         #chrome.execute_script("window.scrollTo(0, 50)")
 
         #Key elements of game
-        self.start_button = chrome.find_element_by_xpath("/html/body/div/div[2]")
+        self.start_button = chrome.find_element_by_xpath("/html/body/div/div/h3")
         self.score = chrome.find_element_by_xpath("/html/body/div/header/div/div[1]")
 
         #Snake and food position
@@ -157,12 +157,11 @@ class snake:
         score = int(self.score.text)
         if (self.prv_score < score):
             self.prv_score = score
-            self.set_initial_dist()
             return 1
         else :
             return 0
 
-    def get_dist(self):
+    def get_current_dist(self):
         dist = ((int(self.spx.text)-int(self.fx.text))**2+(int(self.spy.text)-int(self.fy.text))**2)**0.5
         self.prv_dist = dist
         return dist
