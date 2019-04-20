@@ -75,16 +75,8 @@ class Trainer:
         """
 
         self.exp.store(error,seq)
-
-        return
-
-        #Older experience is phased out by poping from exp buffer
-        if (len(self.exp) > self.max_exp_len):
-            self.exp.pop()
-        #process_frames = process_frames+2
-
-        #add new experience
-        self.exp.appendleft(seq)    
+        self.process_frames = self.process_frames +  1 
+        self.total_frames = self.total_frames + 1
         return
 
     def get_greed(self,processed_frames,greed_frames):
@@ -156,7 +148,6 @@ class Trainer:
     def key_manager(self,key):
         """
         Function manages pausing and killing game play
-
         """
 
         if key == keyboard.Key.esc:
@@ -210,7 +201,7 @@ class Trainer:
             print("Iteration {} of {}".format(i+1,run_times))
             if not self.force_kill:
                 self.train(net, game, n, seq_len, batch_size, greed_frames, max_exp_len_train,learning_rate,i)
-
+                net.save_weights("E:\\vishnu\\SSPlayer\\tf13\\one\\weights\\weights{}.h5".format(i),save_format='h5')
                 r = self.play(net, game, seq_len, x)
                 
                 reward_list.append(r)
@@ -290,7 +281,7 @@ class Trainer:
                     
                     leaf_idx,IS_weights,seq_n = self.exp.sample(batch_size)
                     IS_weights = np.reshape(IS_weights,(batch_size,1))
-                    y,Tra_d3 = net.train(seq_n,IS_weights)
+                    y,Tra_d3 = net.train(seq_n,IS_weights,r)
                     self.update_exp(leaf_idx,np.amax((y-Tra_d3).numpy(),axis=1))
 
                     if current_tran % 10 == 0:

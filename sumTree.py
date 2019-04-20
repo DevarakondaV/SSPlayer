@@ -36,11 +36,7 @@ class sumTree:
         
         self.data[self.data_i] = data
 
-        print("ImgBy: {}".format(data[0].nbytes))
-        print("IMG SHAPE: {}".format(data[0].shape))
-        
         tree_i = self.capacity-1+self.data_i
-        
         self.update(tree_i,p_val)
         if (self.data_i == self.capacity-1):
             self.data_i = 0

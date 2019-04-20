@@ -1,16 +1,23 @@
 import tensorflow as tf
+tf.enable_eager_execution()
+tf.executing_eagerly() 
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+sess = tf.Session(config=config)
+tf.keras.backend.set_session(sess)
+
+
+
 import sys
 import numpy as np
 from cnn import *
-#from gsheets import *
 tf.enable_eager_execution()
 tf.executing_eagerly() 
-from snake_trainer import *
 from trainer import *
 import json
 import os
 
-os.chdir(r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\\")
+os.chdir(r"C:\Users\devar\Documents\EngProj\SSPlayer\\")
 
 with open("meta.json","r") as params_file:
     data = json.load(params_file)
@@ -40,11 +47,11 @@ if (run_type == "p"):
     game_trainer = Trainer(1)
     game_trainer.play(net,game,seq_len,num_times)
 elif (run_type == "r"):
-    num_times = 1000000
-    greed_frames = 100000
+    num_times = 5000000
+    greed_frames = 1000000
     max_exp_len = 100000
     min_exp_len_train = 25000 #30000
-    n = 1000
+    n = 500000
     # game_trainer = Trainer(net,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
     game_trainer = Trainer(1)
     game_trainer.play_train(net,game,learning_rate,seq_len,batch_size,num_times,greed_frames,max_exp_len,min_exp_len_train,1,n,15)

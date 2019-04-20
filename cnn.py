@@ -74,7 +74,7 @@ class pdqn(tf.keras.Model):
         Tar_d3,a = self.__call__(inputs = inputs)
         return Tar_d3,a
 
-    def train(self,inputs,IS_weights):
+    def train(self,inputs,IS_weights,r):
         print("##### TRAINING #####")
         #Flip states before passing to network
         stdzd = (
@@ -110,8 +110,8 @@ class pdqn(tf.keras.Model):
                                         data_format="channels_last",
                                         activation=tf.nn.relu,
                                         use_bias=True,
-                                        kernel_initializer=tf.keras.initializers.glorot_normal,
-                                        bias_initializer=tf.keras.initializers.Zeros)
+                                        kernel_initializer='glorot_normal',
+                                        bias_initializer='zeros')
             self.layer_dict[model_pre+"_cnn_layer"+str(i)] = layer
 
         self.layer_dict[model_pre+"_flatten"] = tf.keras.layers.Flatten()
@@ -120,13 +120,13 @@ class pdqn(tf.keras.Model):
             layer = tf.keras.layers.Dense(fc_feats[i],
                                         activation=tf.nn.relu,
                                         use_bias=True,
-                                        kernel_initializer=tf.keras.initializers.glorot_normal,
-                                        bias_initializer=tf.keras.initializers.Zeros)
+                                        kernel_initializer='glorot_normal',
+                                        bias_initializer='zeros')
             self.layer_dict[model_pre+"_dense"+str(i)] = layer
 
         self.layer_dict[model_pre+"_fdense"] = tf.keras.layers.Dense(3,activation=None,use_bias=True,
-                                                        kernel_initializer=tf.keras.initializers.glorot_normal,
-                                                        bias_initializer=tf.keras.initializers.Zeros)
+                                                        kernel_initializer='glorot_normal',
+                                                        bias_initializer='zeros')
 
 
 
@@ -166,6 +166,7 @@ class pdqn(tf.keras.Model):
         
         y = r+0.99*Qmax
 
+<<<<<<< HEAD
         print(inputs[2][0])
         update_idx = [[i,a] for i,a in zip(range(0,len(inputs[1])),inputs[1])]
         y = y.numpy()
@@ -178,6 +179,8 @@ class pdqn(tf.keras.Model):
         # print("Qarg",Qarm)
         # print("Tarin",Tra_d3.numpy())
         # print("Ydense",y_scr.numpy())         
+=======
+>>>>>>> a602436cfaf1624b17eebdb0cef5248e9b5c3dee
 
         #with tf.contrib.summary.record_summaries_every_n_global_steps(1):
             #tf.contrib.summary.image('s1',tf.expand_dims(norm_Tar_s1[:,:,:,0],-1))

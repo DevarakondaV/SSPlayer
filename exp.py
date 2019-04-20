@@ -52,8 +52,7 @@ class experience:
         reward = []
 
         tree_idx = []
-
-        if (self.total_exp > self.tree.capacity):
+        if (self.total_exp >= self.tree.capacity):
             min_prob = np.min(self.tree.tree[-self.tree.capacity:]) / self.tree.get_total_priority()
         else:
             min_prob = np.min(self.tree.tree[-self.tree.capacity:self.tree.capacity-1+self.tree.data_i]) / self.tree.get_total_priority()
