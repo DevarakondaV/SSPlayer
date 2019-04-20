@@ -90,8 +90,10 @@ class pdqn(tf.keras.Model):
                 loss = self.loss_fun(y,Tra_d3,IS_weights)
             
             grads = tape.gradient(loss,self.trainable_variables)
+#            grads_clip = [ tf.clip_by_global_norm(grad,clip_norm = 1) for grad in grads]
+            grads_clip,global_norm = tf.clip_by_global_norm(grads,clip_norm = 1)
             self.optimizer.apply_gradients(
-                zip(grads,self.trainable_variables),
+                zip(grads_clip,self.trainable_variables),
                 global_step=tf.train.get_global_step()
             )
             

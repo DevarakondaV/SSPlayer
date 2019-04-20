@@ -15,7 +15,7 @@ from trainer import *
 import json
 import os
 
-os.chdir(r"C:\Users\devar\Documents\EngProj\SSPlayer\\")
+#os.chdir(r"C:\Users\devar\Documents\EngProj\SSPlayer\\")
 
 with open("meta.json","r") as params_file:
     data = json.load(params_file)
