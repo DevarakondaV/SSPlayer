@@ -21,7 +21,6 @@ import uuid
 from math import log
 
 
-
 class snake:
 
     def __init__(self,id):
@@ -48,6 +47,7 @@ class snake:
         self.move_dir = 3
         self.snake_length = 2
         self.iter_frame = 0
+        self.count = 0
 
     def _launch_game(self):
         """
@@ -220,18 +220,19 @@ class snake:
         img: Numpy Image array
         """
 
-
         img = self.sct.grab(self.processing_crop)
         img = Image.fromarray(np.array(img)[:, :, 1]).resize((84, 84))     
         img = np.expand_dims(np.array(img), axis=2)
         return img
 
 
-def save_img(img):
-    img = Image.fromarray(img[:, :, 0])
-    
-    #fname = str(uuid.uuid4())+"__"+adir
-    path = r"C:\Users\Vishnu\Documents\EngProj\tflog\test.jpeg"
-    img.save(path, "JPEG")
+    def save_img(self,img):
+        print("Called Save Image")
+        img = Image.fromarray(img[:, :, 0])
+        fname = str(uuid.uuid4())
+        fname = str(self.count)
+        self.count+=1
+        path = r"C:\Users\Vishnu\Documents\EngProj\tflog\imgs\\"+fname+".jpeg"
+        img.save(path, "JPEG")
 
 

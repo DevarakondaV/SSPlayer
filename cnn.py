@@ -76,11 +76,12 @@ class pdqn(tf.keras.Model):
 
     def train(self,inputs,IS_weights):
         print("##### TRAINING #####")
+        #Flip states before passing to network
         stdzd = (
-            tf.map_fn(lambda frame: tf.image.per_image_standardization(frame),inputs[0].astype(np.float32)),
-            inputs[1].astype(np.float32),
+            tf.map_fn(lambda frame: tf.image.per_image_standardization(frame),inputs[3].astype(np.float32)),
+            inputs[1].astype(np.int64),
             inputs[2].astype(np.float32),
-            tf.map_fn(lambda frame: tf.image.per_image_standardization(frame),inputs[3].astype(np.float32))
+            tf.map_fn(lambda frame: tf.image.per_image_standardization(frame),inputs[0].astype(np.float32))
         )
         
         with self.s_writer.as_default():
@@ -160,8 +161,23 @@ class pdqn(tf.keras.Model):
         Tra_d3 = self.layer_dict["Tra_fdense"](Tra_d2)
 
 
-        Qmax = tf.keras.backend.max(Tar_d3,axis=0)
+        Qmax = tf.keras.backend.max(Tar_d3,axis=1)
+        # Qarm = tf.keras.backend.argmax(Tar_d3,axis=1)
+        
         y = r+0.99*Qmax
+
+        print(inputs[2][0])
+        update_idx = [[i,a] for i,a in zip(range(0,len(inputs[1])),inputs[1])]
+        y = y.numpy()
+        y = [inputs[2][i] if inputs[2][i] == -1 else y[i] for i in range(0,len(inputs[1]))]         
+        
+        y_scr = tf.scatter_nd_update(tf.Variable(Tra_d3),indices=update_idx,updates=y)
+        # print("Update idx", update_idx)
+        # print("Targ",Tar_d3.numpy())
+        # print("Qmax",Qmax)
+        # print("Qarg",Qarm)
+        # print("Tarin",Tra_d3.numpy())
+        # print("Ydense",y_scr.numpy())         
 
         #with tf.contrib.summary.record_summaries_every_n_global_steps(1):
             #tf.contrib.summary.image('s1',tf.expand_dims(norm_Tar_s1[:,:,:,0],-1))
@@ -169,4 +185,4 @@ class pdqn(tf.keras.Model):
             #tf.contrib.summary.image('s1',tf.expand_dims(norm_Tar_s1[:,:,:,2],-1))
             #tf.contrib.summary.image('s1',tf.expand_dims(norm_Tar_s1[:,:,:,3],-1))
 
-        return y,Tra_d3
+        return y_scr,Tra_d3

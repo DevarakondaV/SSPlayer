@@ -274,6 +274,7 @@ class Trainer:
                     
                     r = game.get_reward()
                     print("REWARD FOR ACTION", r)
+                    frame = game.get_frame()
 
                     if (len(seq) >= seq_len):
                         seq.pop(0)
@@ -294,7 +295,6 @@ class Trainer:
 
                     if current_tran % 10 == 0:
                         net.update_target_weights()
-
 
                     if self.force_kill:
                         break
