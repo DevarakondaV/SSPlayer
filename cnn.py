@@ -166,7 +166,6 @@ class pdqn(tf.keras.Model):
         
         y = r+0.99*Qmax
 
-<<<<<<< HEAD
         print(inputs[2][0])
         update_idx = [[i,a] for i,a in zip(range(0,len(inputs[1])),inputs[1])]
         y = y.numpy()
@@ -179,8 +178,6 @@ class pdqn(tf.keras.Model):
         # print("Qarg",Qarm)
         # print("Tarin",Tra_d3.numpy())
         # print("Ydense",y_scr.numpy())         
-=======
->>>>>>> a602436cfaf1624b17eebdb0cef5248e9b5c3dee
 
         #with tf.contrib.summary.record_summaries_every_n_global_steps(1):
             #tf.contrib.summary.image('s1',tf.expand_dims(norm_Tar_s1[:,:,:,0],-1))
