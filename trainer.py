@@ -279,10 +279,11 @@ class Trainer:
                     
                     phi1 = phi2
                     
-                    leaf_idx,IS_weights,seq_n = self.exp.sample(batch_size)
-                    IS_weights = np.reshape(IS_weights,(batch_size,1))
-                    y,Tra_d3 = net.train(seq_n,IS_weights,r)
-                    self.update_exp(leaf_idx,np.amax((y-Tra_d3).numpy(),axis=1))
+                    if (len(self.exp) > batch_size):
+                        leaf_idx,IS_weights,seq_n = self.exp.sample(batch_size)
+                        IS_weights = np.reshape(IS_weights,(batch_size,1))
+                        y,Tra_d3 = net.train(seq_n,IS_weights,r)
+                        self.update_exp(leaf_idx,np.amax((y-Tra_d3).numpy(),axis=1))
 
                     if current_tran % 10 == 0:
                         net.update_target_weights()

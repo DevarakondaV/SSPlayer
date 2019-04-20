@@ -103,7 +103,8 @@ class snake:
         self.stop_play = True if self.start_button.get_attribute("style") == "display: block;" else False
         self.iter_frame += 1
         del_r = self.calc_delr()
-        self.reward = self.reward+del_r
+        # self.reward = self.reward+del_r
+        self.reward = del_r
         print("REWARD BEFORE CLIP: {} + {}".format(self.reward,del_r))
         self.reward = np.clip(self.reward,a_min=-1,a_max=1)
         return
