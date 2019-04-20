@@ -109,8 +109,8 @@ class pdqn(tf.keras.Model):
                                         data_format="channels_last",
                                         activation=tf.nn.relu,
                                         use_bias=True,
-                                        kernel_initializer=tf.keras.initializers.glorot_normal,
-                                        bias_initializer=tf.keras.initializers.Zeros)
+                                        kernel_initializer='glorot_normal',
+                                        bias_initializer='zeros')
             self.layer_dict[model_pre+"_cnn_layer"+str(i)] = layer
 
         self.layer_dict[model_pre+"_flatten"] = tf.keras.layers.Flatten()
@@ -119,13 +119,13 @@ class pdqn(tf.keras.Model):
             layer = tf.keras.layers.Dense(fc_feats[i],
                                         activation=tf.nn.relu,
                                         use_bias=True,
-                                        kernel_initializer=tf.keras.initializers.glorot_normal,
-                                        bias_initializer=tf.keras.initializers.Zeros)
+                                        kernel_initializer='glorot_normal',
+                                        bias_initializer='zeros')
             self.layer_dict[model_pre+"_dense"+str(i)] = layer
 
         self.layer_dict[model_pre+"_fdense"] = tf.keras.layers.Dense(3,activation=None,use_bias=True,
-                                                        kernel_initializer=tf.keras.initializers.glorot_normal,
-                                                        bias_initializer=tf.keras.initializers.Zeros)
+                                                        kernel_initializer='glorot_normal',
+                                                        bias_initializer='zeros')
 
 
 

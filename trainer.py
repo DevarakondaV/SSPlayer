@@ -79,15 +79,6 @@ class Trainer:
         self.total_frames = self.total_frames + 1
         return
 
-        #Older experience is phased out by poping from exp buffer
-        if (len(self.exp) > self.max_exp_len):
-            self.exp.pop()
-        #process_frames = process_frames+2
-
-        #add new experience
-        self.exp.appendleft(seq)    
-        return
-
     def get_greed(self,processed_frames,greed_frames):
         """
             Function returns greed based on linear relationship
@@ -210,7 +201,7 @@ class Trainer:
             print("Iteration {} of {}".format(i+1,run_times))
             if not self.force_kill:
                 self.train(net, game, n, seq_len, batch_size, greed_frames, max_exp_len_train,learning_rate,i)
-
+                net.save_weights("E:\\vishnu\\SSPlayer\\tf13\\one\\weights\\weights{}.h5".format(i),save_format='h5')
                 r = self.play(net, game, seq_len, x)
                 
                 reward_list.append(r)
