@@ -80,7 +80,7 @@ class pdqn(tf.keras.Model):
         stdzd = (
             tf.map_fn(lambda frame: tf.image.per_image_standardization(frame),inputs[3].astype(np.float32)),
             inputs[1].astype(np.int64),
-            inputs[2].astype(np.float32),
+            np.transpose(inputs[2].astype(np.float32)),
             tf.map_fn(lambda frame: tf.image.per_image_standardization(frame),inputs[0].astype(np.float32))
         )
         
@@ -162,22 +162,22 @@ class pdqn(tf.keras.Model):
 
 
         Qmax = tf.keras.backend.max(Tar_d3,axis=1)
-        # Qarm = tf.keras.backend.argmax(Tar_d3,axis=1)
-        
         y = r+0.99*Qmax
+        update_idx = [[i,a[0]] for i,a in zip(range(0,len(inputs[1])),inputs[1])]
 
-        print(inputs[2][0])
-        update_idx = [[i,a] for i,a in zip(range(0,len(inputs[1])),inputs[1])]
-        y = y.numpy()
-        y = [inputs[2][i] if inputs[2][i] == -1 else y[i] for i in range(0,len(inputs[1]))]         
-        
+        print("Before y",y)
+
+        y = y.numpy()[0]
+        y = [inputs[2][0][i] if inputs[2][0][i] == -1 else y[i] for i in range(0,len(inputs[2][0]))]         
+ 
         y_scr = tf.scatter_nd_update(tf.Variable(Tra_d3),indices=update_idx,updates=y)
         # print("Update idx", update_idx)
-        # print("Targ",Tar_d3.numpy())
         # print("Qmax",Qmax)
-        # print("Qarg",Qarm)
+        # print("reward",r)
+        # print("y",y)
+        # print("Targ",Tar_d3.numpy())
         # print("Tarin",Tra_d3.numpy())
-        # print("Ydense",y_scr.numpy())         
+        # print("Yscr",y_scr.numpy())         
 
         #with tf.contrib.summary.record_summaries_every_n_global_steps(1):
             #tf.contrib.summary.image('s1',tf.expand_dims(norm_Tar_s1[:,:,:,0],-1))
