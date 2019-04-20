@@ -124,13 +124,14 @@ class Trainer:
         # return np_f
     
             
-    def create_reward_plot(self,r_iter):
+    def create_reward_plot(self,r_iter,save_dir):
         """
         Funciton creates a plot of the reward vs game iteration.
 
         args:
             g_iter: int. NNumber of total games played
             r_iter: List of ints. List containing reward for each game iterstion
+            save_dir:   String. Directory where plot is saved
         """
 
         len_re = len(r_iter)
@@ -142,7 +143,7 @@ class Trainer:
 
         plt.plot(g_vec,r_iter)
         plt.title("Reward for game iteration")
-        plt.savefig(r"E:\vishnu\SSPlayer\log2\rewardplt.png")
+        plt.savefig(save_dir+"\\rewardplt.png")
 
 
     def key_manager(self,key):
@@ -178,7 +179,7 @@ class Trainer:
 
     def play_train(self, net, game, learning_rate,
                     seq_len, batch_size, num_times, greed_frames,
-                    min_exp_len, max_exp_len_train, log, n, x):
+                    min_exp_len, max_exp_len_train, log, n, x,LOGDIR):
         """
         args:
             net:                Net object.
@@ -193,21 +194,28 @@ class Trainer:
             log:                Bool. True to activate console log.
             n: int. Number of process frames to run before running play operations
             x: Number of times to play the game
+            LOGDIR:             String. Directory where model is saved
         """
+
+        weights_save_dir = LOGDIR+"\\weights\\"
+        if not os.path.exists(weights_save_dir):
+            os.makedirs(weights_save_dir)
+
 
         run_times = int(num_times/n)
         reward_list = []
+
         for i in range(0,run_times):
             print("Iteration {} of {}".format(i+1,run_times))
             if not self.force_kill:
                 self.train(net, game, n, seq_len, batch_size, greed_frames, max_exp_len_train,learning_rate,i)
-                net.save_weights("E:\\vishnu\\SSPlayer\\tf13\\one\\weights\\weights{}.h5".format(i),save_format='h5')
+                net.save_weights(weights_save_dir+"weights{}.h5".format(i),save_format='h5')
                 r = self.play(net, game, seq_len, x)
                 
                 reward_list.append(r)
         
         self.con_log("Reward List: ",reward_list)
-        self.create_reward_plot(reward_list)
+        self.create_reward_plot(reward_list,LOGDIR)
 
     def train(self, net, game, n, seq_len, 
                 batch_size, greed_frames, min_exp_len_train,
@@ -237,7 +245,7 @@ class Trainer:
         current_tran = 1
         def fun():
             nonlocal current_tran
-            while current_tran < (i+1)*n:
+            while current_tran < n:
                 
 
                 seq = []
@@ -247,7 +255,7 @@ class Trainer:
                 phi1 = self.process_seq(seq, seq_len)
                 while not game.stop_play:
                     os.system('cls')
-                    print("TRAINSITION",current_tran)
+                    print("TRAINSITION",current_tran+(i*n))
                     
                     current_tran+=1
                     greed = self.get_greed(current_tran+(i*n),greed_frames)
@@ -355,7 +363,7 @@ class Trainer:
                     break
             
                 reward_list.append(reward)
-            return reward_list
+            return np.mean(reward_list)
 
         return self.esc_wrap(fun)
 

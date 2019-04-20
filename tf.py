@@ -52,7 +52,7 @@ elif (run_type == "r"):
     n = 10000
     # game_trainer = Trainer(net,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
     game_trainer = Trainer(1)
-    game_trainer.play_train(net,game,learning_rate,seq_len,batch_size,num_times,greed_frames,max_exp_len,min_exp_len_train,1,n,15)
+    game_trainer.play_train(net,game,learning_rate,seq_len,batch_size,num_times,greed_frames,max_exp_len,min_exp_len_train,1,n,15,LOGDIR)
 elif (run_type == "t"):
     num_times = 1000
     greed_frames = 100
@@ -60,7 +60,7 @@ elif (run_type == "t"):
     min_exp_len_train = 10
     n = 100
     game_trainer = Trainer(1)
-    game_trainer.play_train(net,game,learning_rate,seq_len,batch_size,num_times,greed_frames,max_exp_len,min_exp_len_train,1,n,15)
+    game_trainer.play_train(net,game,learning_rate,seq_len,batch_size,num_times,greed_frames,max_exp_len,min_exp_len_train,1,n,15,LOGDIR)
 else :
     print("INVALID PLAY OPTION")
 
