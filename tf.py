@@ -36,6 +36,7 @@ gamma = np.array([data["gamma"]]).astype(np.float16)
 
 
 net = pdqn(seq_len,conv,fclyr,conv_k_size,conv_stride,LOGDIR,gamma=gamma,batch_size=batch_size,learning_rate=learning_rate)
+net.set_model_weights("E:\vishnu\SSPlayer\tf13\two\weights\weights1.hdf5")
 game = snake(data["pc"])
 
 
@@ -45,20 +46,19 @@ if (run_type == "p"):
     game_trainer = Trainer(1)
     game_trainer.play(net,game,seq_len,num_times)
 elif (run_type == "r"):
-    num_times = 1000000
-    greed_frames = 100000
+    num_times = 10000000
+    greed_frames = 1
     max_exp_len = 100000
     min_exp_len_train = 25000 #30000
-    n = 10000
-    # game_trainer = Trainer(net,game,num_times,greed_frames,max_exp_len,min_exp_len_train,10,batch_size,ops_and_tens,g_sheets,1)
+    n = 1000000
     game_trainer = Trainer(1)
     game_trainer.play_train(net,game,learning_rate,seq_len,batch_size,num_times,greed_frames,max_exp_len,min_exp_len_train,1,n,15,LOGDIR)
 elif (run_type == "t"):
-    num_times = 1000
-    greed_frames = 100
+    num_times = 20000
+    greed_frames = 10000
     max_exp_len = 100
     min_exp_len_train = 10
-    n = 100
+    n = 10000
     game_trainer = Trainer(1)
     game_trainer.play_train(net,game,learning_rate,seq_len,batch_size,num_times,greed_frames,max_exp_len,min_exp_len_train,1,n,15,LOGDIR)
 else :

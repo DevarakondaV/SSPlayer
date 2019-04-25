@@ -130,7 +130,8 @@ class pdqn(tf.keras.Model):
                                                         kernel_initializer='glorot_normal',
                                                         bias_initializer='zeros')
 
-
+    def set_model_weights(self,sdir):
+        self.set_weights(sdir)
 
     def call(self, inputs,training=False):
         print("Maximum",np.max(inputs[0].numpy()))
@@ -166,7 +167,7 @@ class pdqn(tf.keras.Model):
         Qmax = tf.keras.backend.max(Tar_d3,axis=1)
         y = r+0.99*Qmax
         update_idx = [[i,a[0]] for i,a in zip(range(0,len(inputs[1])),inputs[1])]
-
+        y = tf.clip_by_value(y,-1,1)
         print("Before y",y)
 
         y = y.numpy()[0]
