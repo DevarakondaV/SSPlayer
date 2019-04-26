@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import truncnorm as tn
 import tensorflow as tf
+import h5py
 from tensorflow.contrib.tensorboard.plugins import projector
 
 
@@ -90,7 +91,6 @@ class pdqn(tf.keras.Model):
                 loss = self.loss_fun(y,Tra_d3,IS_weights)
             
             grads = tape.gradient(loss,self.trainable_variables)
-#            grads_clip = [ tf.clip_by_global_norm(grad,clip_norm = 1) for grad in grads]
             grads_clip,global_norm = tf.clip_by_global_norm(grads,clip_norm = 1)
             self.optimizer.apply_gradients(
                 zip(grads_clip,self.trainable_variables),
@@ -131,7 +131,53 @@ class pdqn(tf.keras.Model):
                                                         bias_initializer='zeros')
 
     def set_model_weights(self,sdir):
-        self.set_weights(sdir)
+        f = h5py.File(sdir,'r')
+        lb = f['conv2d']['pdqn']['conv2d']['bias:0'][()]
+        lw = f['conv2d']['pdqn']['conv2d']['kernel:0'][()]
+        l1b = f['conv2d_1']['pdqn']['conv2d_1']['bias:0'][()]
+        l1w = f['conv2d_1']['pdqn']['conv2d_1']['kernel:0'][()]
+        l2b = f['conv2d_2']['pdqn']['conv2d_2']['bias:0'][()]
+        l2w = f['conv2d_2']['pdqn']['conv2d_2']['kernel:0'][()]
+        l3b = f['conv2d_3']['pdqn']['conv2d_3']['bias:0'][()]
+        l3w = f['conv2d_3']['pdqn']['conv2d_3']['kernel:0'][()]
+        l4b = f['conv2d_4']['pdqn']['conv2d_4']['bias:0'][()]
+        l4w = f['conv2d_4']['pdqn']['conv2d_4']['kernel:0'][()]
+        l5b = f['conv2d_5']['pdqn']['conv2d_5']['bias:0'][()]
+        l5w = f['conv2d_5']['pdqn']['conv2d_5']['kernel:0'][()]
+
+        db = f['dense']['pdqn']['dense']['bias:0'][()]
+        dw = f['dense']['pdqn']['dense']['kernel:0'][()]
+        d1b = f['dense_1']['pdqn']['dense_1']['bias:0'][()]
+        d1w = f['dense_1']['pdqn']['dense_1']['kernel:0'][()]
+        d2b = f['dense_2']['pdqn']['dense_2']['bias:0'][()]
+        d2w = f['dense_2']['pdqn']['dense_2']['kernel:0'][()]
+        d3b = f['dense_3']['pdqn']['dense_3']['bias:0'][()]
+        d3w = f['dense_3']['pdqn']['dense_3']['kernel:0'][()]
+        d4b = f['dense_4']['pdqn']['dense_4']['bias:0'][()]
+        d4w = f['dense_4']['pdqn']['dense_4']['kernel:0'][()]
+        d5b = f['dense_5']['pdqn']['dense_5']['bias:0'][()]
+        d5w = f['dense_5']['pdqn']['dense_5']['kernel:0'][()]
+        f.close()
+
+        #Target network
+        self.layer_dict["Tar_cnn_layer0"].set_weights([lw,lb])
+        self.layer_dict["Tar_cnn_layer1"].set_weights([l1w,l1b])
+        self.layer_dict["Tar_cnn_layer2"].set_weights([l2w,l2b])
+        self.layer_dict["Tar_dense0"].set_weights([dw,db])
+        self.layer_dict["Tar_dense1"].set_weights([d1w,d1b])
+        self.layer_dict["Tar_fdense"].set_weights([d2w,d2b])
+
+
+        #Training network
+        self.layer_dict["Tra_cnn_layer0"].set_weights([l3w,l3b])
+        self.layer_dict["Tra_cnn_layer1"].set_weights([l4w,l4b])
+        self.layer_dict["Tra_cnn_layer2"].set_weights([l5w,l5b])
+        self.layer_dict["Tra_dense0"].set_weights([d3w,d3b])
+        self.layer_dict["Tra_dense1"].set_weights([d4w,d4b])
+        self.layer_dict["Tra_fdense"].set_weights([d5w,d5b])
+
+
+        return
 
     def call(self, inputs,training=False):
         print("Maximum",np.max(inputs[0].numpy()))

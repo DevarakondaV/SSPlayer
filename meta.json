@@ -1,5 +1,6 @@
 {
-    "pc": 1,
+    "pc": 2,
+    "load_weights": 1,
     "rtype": "t",
     "save_steps": 5,
     "batchsize": 10,

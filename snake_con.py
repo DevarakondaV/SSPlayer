@@ -38,10 +38,16 @@ class snake:
                                     'height': 402}
         elif id==2:
             self.ext_path = r"C:\Users\vishnu\AppData\Local\Google\Chrome\User Data\Default\Extensions\gllcngkdngnfgilfmcbaanknakfgfepb\4.0_0"
-            self.processing_crop = {'left': 80,
-                                    'top': 362,
-                                    'width': 127,
-                                    'height': 123}
+            self.processing_crop_100 = {'left': 80,
+                                        'top': 362,
+                                        'width': 127,
+                                        'height': 123}
+
+            self.processing_crop = {'left':80,
+                                    'top': 295,
+                                    'width': 252,
+                                    'height': 252,}
+
         self._launch_game()
         self.sct = mss.mss()
         self.stop_play = False
@@ -238,7 +244,7 @@ class snake:
         fname = str(uuid.uuid4())
         fname = str(self.count)
         self.count+=1
-        path = r"C:\Users\devar\Documents\EngProj\tflog\imgs\\"+fname+".jpeg"
+        path = r"C:\Users\vishnu\Documents\EngProj\tflog\imgs\\"+fname+".jpeg"
         img.save(path, "JPEG")
 
 
