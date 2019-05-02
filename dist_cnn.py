@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.stats import truncnorm as tn
 import tensorflow as tf
-from tensorflow.contrib.tensorboard.plugins import projector
 
 
 def conv_layer(m_input,size_in,size_out,k_size_w,k_size_h,conv_stride,pool_k_size,pool_stride_size,trainable_vars,name,num):
@@ -119,7 +118,16 @@ def final_linear_layer(m_input,size_in,size_out,trainable_vars,name="final",num=
         tf.summary.histogram("act",act)
         return act
         
-
+    
+    
+def get_place_holders():
+    """
+    Returns: The tensorflow name of the placeholder variables
+    """
+    a = tf.get_default_graph().get_tensor_by_name("infer_place_holder/x1:0")
+    b = tf.get_default_graph().get_tensor_by_name("infer_place_holder/train_bool:0")
+    c = tf.get_default_graph().get_tensor_by_name("train_place_holder/seq:0")
+    return a,b,c
 
 
 def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,trainable_vars):
@@ -147,7 +155,7 @@ def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,
         fcs_name="FC"
         
         #Number of kernels/neurons in the first layer
-        conv_feats[0] = 10
+        conv_feats[0] = 4
 
         
         #Building Convolution Layers
@@ -182,13 +190,33 @@ def build_graph(name,net_in,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,
                 fcs.append(fc_layer(fcs[i],
                                     fc_feats[i],fc_feats[i+1],
                                     trainable_vars,fcs_name,str(i+1)))
-
             output_layer = fcs[len(fcs)-1]
             output_layer = final_linear_layer(output_layer,fc_feats[fc_count-1],4,trainable_vars,name=fcs_name,num=str(fc_count))
     return output_layer
 
         
 
+def build_train_queue(batch_size,img_shp):
+    """
+    Builds FIFOQueue used in training
+
+    args:
+        batch_size: int. Training batch size
+        img_shp: shape of the image
+    
+    Returns:
+        Tensorflow FIFOQueue
+    """
+    with tf.name_scope("TrainQueue"):
+        q = tf.FIFOQueue(capacity=25,
+                         dtypes= (tf.uint8,tf.uint8,tf.float16,tf.uint8),
+                         shapes= (img_shp,
+                                  tf.TensorShape([batch_size,1]),
+                                  tf.TensorShape([batch_size,1]),
+                                  img_shp),
+                         name="tq",shared_name="train_queue")
+        
+    return q
 
 
 
@@ -205,7 +233,6 @@ def standardize_img(img_array):
     img_std = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), 
                         img_array,dtype=tf.float32,
                         parallel_iterations=4)
-
     return tf.cast(img_std,tf.float16)
 
 def get_tensor(name):
@@ -426,145 +453,6 @@ def create_model(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,f
     #writer.add_summary(summ.eval(),g_step.eval())
     return writer,summ,train,action,x1,train_q,p_op,q_s1
 
-
-def construct_two_network_model(learning_rate,gamma,batch_size,seq_len,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
-    """
-    This functions creates a non-distributed tensorflow model for inference and training with only two networks
-
-    args:
-        learning_rate: float. Learning rate for the tensorflow model
-        gamma: float. Gamma in q learning
-        batch_size: Size of batch
-        seq_len: int. Batch size for training
-        conv_count: int. number of convolution layers
-        fc_count: int. number of dense layers
-
-    returns:
-        rtn_vals: Dictionary of required returns. Operations and tensors!
-    """
-
-    #Global step for training purposes
-    global_step = tf.train.create_global_step()
-    writer = tf.summary.FileWriter(LOGDIR)
-    
-    #Safety Conditional check
-    if (len(conv_feats) != conv_count):
-        return
-
-    #return values
-    rtn_vals = {}
-
-    #Creating placeholders
-    with tf.name_scope("place_holders"):
-        s1 = tf.placeholder(tf.uint8,shape=[None,100,100,seq_len],name='s1')
-        s2 = tf.placeholder(tf.uint8,shape=[None,100,100,seq_len],name='s2')
-        r = tf.placeholder(tf.float16,shape=[None,1],name="r")
-
-
-    #Standardizing images
-    with tf.name_scope("image_pre_proc"):
-        std_img_s1 = standardize_img(s1)
-        std_img_s2 = standardize_img(s2)
-        #tf.summary.image("std_img_1",std_img_s1)
-        #tf.summary.image("std_img_2",std_img_s2)
-
-
-    #pad tensor if its inference [Because inference is only single image]
-    paddings = tf.constant([[0,batch_size-1],[0,0],[0,0],[0,0]])
-    def fn_true():
-        #If it is inference pad the image
-        padded_img = tf.pad(std_img_s1,paddings,mode='CONSTANT')
-        sum_img = padded_img[0][:,:,batch_size-1]
-        sum_img = tf.expand_dims(sum_img,0)
-        sum_img = tf.expand_dims(sum_img,3)
-        return [padded_img,sum_img]
-    
-
-    input_img,sum_img = tf.cond(tf.equal(tf.shape(s1)[0],1),fn_true,lambda: [std_img_s2,tf.zeros(shape=[1,100,100,1],dtype=tf.float16)])
-    tf.summary.image("Image",sum_img)
-
-    #Building graph for inference
-    inference_out = build_graph("Target",input_img,
-                                conv_count,fc_count,
-                                conv_feats,fc_feats,conv_k_size,conv_stride,"False")
-    
-    #Building graph for training
-    train_out = build_graph("Train",std_img_s2,
-                            conv_count,fc_count,
-                            conv_feats,fc_feats,conv_k_size,conv_stride,"True")
-    
-
-    #Assignment operations for updating inference graph
-    with tf.name_scope("Assignment_Ops"):
-        with tf.name_scope("Target_weight_update_op"):
-            target_ops = target_weight_update_ops("conv","FC",conv_count,fc_count)
-
-    with tf.name_scope("action"):
-        action = tf.argmax(inference_out[0],axis=0,name="action")
-        tf.summary.scalar("Action: ",action)
-
-    #implementing Q algorithm
-    with tf.name_scope("Q_Algo"):
-<<<<<<< HEAD
-        qmax_idx = tf.argmax(inference_out,axis=1,name="qmax_idx")
-        gamma = tf.constant(0.99,tf.float16)
-        idxs = tf.concat((tf.transpose([tf.range(0,batch_size,dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
-        Qnext = tf.reduce_max(inference_out,name="Qnext_target")
-        target_q = tf.add(r,tf.multiply(gamma,Qnext),name="y")
-        #y = tf.Variable(tf.zeros(shape=tf.shape(inference_out),dtype=tf.float16),trainable=False)
-        y = tf.Variable(tf.zeros(shape=[batch_size,4],dtype=tf.float16),trainable=False,name='y')
-        #y = tf.Variable(tf.zeros(shape=[1,4],dtype=tf.float16))
-        assign_y = tf.assign(y,inference_out)
-        with tf.control_dependencies([assign_y]):
-            tf.scatter_nd_update(y,tf.expand_dims(idxs,axis=1),target_q)
-=======
-        qmax_idx = tf.argmax(inference_out,axis=1,name="qmax_idx", output_type=tf.int64)
-        inf_shape = tf.shape(inference_out,out_type=tf.int64)
-        qm_shape = tf.shape(qmax_idx,out_type=tf.int64)
-        idxs = tf.concat((tf.transpose([tf.range(0,qm_shape[0],dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
-        gamma = tf.constant(0.99,shape=[batch_size],dtype=tf.float16)#([seq_len],0.99)
-        gamma_sparse = tf.SparseTensor(idxs,gamma,dense_shape=inf_shape)
-        reward_sparse = tf.SparseTensor(idxs,tf.squeeze(r,axis=1),dense_shape=inf_shape)
-        gamma_dense = tf.sparse_tensor_to_dense(gamma_sparse,1)
-        reward_dense = tf.sparse_tensor_to_dense(reward_sparse,0)
-        y = tf.add(reward_dense,tf.multiply(gamma_dense,inference_out))
-        ct = tf.concat([inference_out,y],axis=0)
-        
->>>>>>> 2048_st
-    
-
-    with tf.name_scope("Trainer"):
-        loss = tf.losses.huber_loss(y,train_out,delta=1.0)
-        tf.summary.scalar("loss",loss)
-        opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01)
-        grads = opt.compute_gradients(loss)
-        train = opt.apply_gradients(grads,global_step=global_step,name='train')
-        prt1 = tf.Print(loss,[loss],"loss ",name="prt1",summarize=100)  
-        prt2 = tf.Print(y,[y],"y: ",name="prt2",summarize=100)
-
-    summ = tf.summary.merge_all()
-    #tf.summary.merge([summary_var1, summary_var2])
-
-    rtn_vals['s1'] = s1
-    rtn_vals['s2'] = s2
-    rtn_vals['r'] = r
-    rtn_vals['target_ops'] = target_ops
-    
-    rtn_vals['train'] = train
-    rtn_vals['print1'] = prt1
-    rtn_vals['print2'] = prt2
-
-    rtn_vals['action'] = action
-    #rtn_vals['op'] = op[0]
-    
-    rtn_vals['summ'] = summ
-    rtn_vals['writer'] = writer
-    rtn_vals['global_step'] = global_step
-    rtn_vals['gamma'] = gamma
-
-    return rtn_vals
-
-
 def create_model2(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR):
     """
         This functions creates a non-distributed tensorflow model for inference and training
@@ -592,8 +480,8 @@ def create_model2(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,
     with tf.name_scope("img_preproc"):
         std_img_s1 = standardize_img(s1)
         std_img_s2 = standardize_img(s2)
-        summ_img1 = tf.summary.image("std_img_1",std_img_s1)
-        summ_img2 = tf.summary.image("std_img_2",std_img_s2)
+        tf.summary.image("std_img_1",std_img_s1)
+        tf.summary.image("std_img_2",std_img_s2)
 
     #Building Training Model
     train_output = build_graph("Train",std_img_s2,
@@ -633,7 +521,7 @@ def create_model2(learning_rate,gamma,batch_size,conv_count,fc_count,conv_feats,
 
     with tf.name_scope("trainer"):
         loss = tf.losses.huber_loss(y,train_output,delta=1.0)
-        summ_loss = tf.summary.scalar("loss",loss)
+        tf.summary.scalar("loss",loss)
         opt = tf.train.RMSPropOptimizer(learning_rate = learning_rate,momentum=0.95,epsilon=.01)
         grads = opt.compute_gradients(loss)
         train = opt.apply_gradients(grads,global_step=global_step)
@@ -682,7 +570,7 @@ def infer_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
     #with tf.device("/job:ps/task:0"):
     
     #Placing the operations on worker 0. Not Cheif
-    with tf.device("/job:worker/replica:0/task:0"):
+    with tf.device("/job:worker/replica:0/task:0/cpu:0"):
         with tf.name_scope("infer_place_holder"):
             x1 = tf.placeholder(tf.uint8,shape=[1,100,100,4],name="x1")
 
@@ -741,7 +629,7 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
 
 
     #This model operations live on worker 1. Is Cheif
-    with tf.device("/job:worker/replica:0/task:1"):    
+    with tf.device("/job:worker/replica:0/task:1/gpu:0"):    
         with tf.name_scope("train_place_holder"):
             s_img1 = tf.placeholder(tf.uint8,shape=[batch_size,100,100,4],name="s_img1")
             s_a = tf.placeholder(tf.uint8,shape=[batch_size,1],name="s_a")
@@ -755,10 +643,11 @@ def train_model(learning_rate,batch_size,conv_count,fc_count,conv_feats,fc_feats
 
         #Building Queue Operations
         
-        with tf.name_scope("train_queue"):
-            train_q = build_train_queue(batch_size,s_img1.get_shape())
-            enqueue_op = train_q.enqueue((s_img1,s_a,s_r,s_img2),name="eq")
-            img1,a,r,img2 = train_q.dequeue(name="d")
+        with tf.device("/job:worker/replica:0/task:1/cpu:2"):
+            with tf.name_scope("train_queue"):
+                train_q = build_train_queue(batch_size,s_img1.get_shape())
+                enqueue_op = train_q.enqueue((s_img1,s_a,s_r,s_img2),name="eq")
+                img1,a,r,img2 = train_q.dequeue(name="d")
             
         #a = s_a
         #r = s_r
@@ -839,9 +728,8 @@ def flatten_weights_summarize(w,num,trainable):
 def intermediate_summary_img(img,num,trainable):
     s_img = img[0,:,:,:]
     if (trainable):
-        with tf.name_scope("inter_imgs"):
-            s_img_n = tf.expand_dims(tf.transpose(s_img,perm=[2,0,1]),axis=3)
-            tf.summary.image("img"+num,s_img_n)
+        s_img_n = tf.expand_dims(tf.transpose(s_img,perm=[2,0,1]),axis=3)
+        tf.summary.image("img"+num,s_img_n)
         """
         s_img_1 = tf.expand_dims(img[:,:,:,0],axis=3)
         s_img_2 = tf.expand_dims(img[:,:,:,1],axis=3)

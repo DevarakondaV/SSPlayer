@@ -14,3 +14,6 @@ cord.py
 debug.log
 log2/
 chkpt/
+img/
+project-tensorboard/
+log3/

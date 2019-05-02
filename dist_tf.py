@@ -83,18 +83,18 @@ else:
 
     
 
-    summary_dir = r'C:\Users\Vishnu\Documents\EngProj\SSPlayer\log\sum'
-    ckpt_dir = r'C:\Users\Vishnu\Documents\EngProj\SSPlayer\log\ckpt'
+    summary_dir = r'C:\Users\devar\Documents\EngProj\SSPlayer\log\sum'
+    ckpt_dir = r'C:\Users\devar\Documents\EngProj\SSPlayer\log\ckpt'
 
     lap_dir = r'C:\Users\Vishnu\Documents\EngProj\SSPlayer\log'
     dsk_chk_dir = r"E:\TFtmp\test\model"
     dsk_sum_dir = r"E:\TFtmp\test\sum"
 
     #Saver
-    saver = tf.train.Saver(
-        var_list = get_all_weights_bias_tensors(conv_count,fc_count)
-    )
-
+    #saver = tf.train.Saver(
+    #    var_list = get_all_weights_bias_tensors(conv_count,fc_count)
+    #)
+    saver = tf.train.Saver()
 
     summary_hook = tf.train.SummarySaverHook(   save_steps=1,save_secs=None,
                                                     output_dir=summary_dir,summary_writer=None,
@@ -109,7 +109,7 @@ else:
         # THis is master thread
 
         g_sheets = 0
-        game = t048(2)
+        game = t048(1)
         wait_for(1)
         print(server.target)
 
