@@ -1,0 +1,41 @@
+{
+    "pc": 1,
+    "load_weights": 0,
+    "rtype": "t",
+    "save_steps": 5,
+    "batchsize": 20,
+    "seq_len": 5,
+    "conv_k_size": [
+        {"l1": 4},
+        {"l2": 4},
+        {"l3": 3}
+    ],
+    "conv_stride": [
+        {"l1": 2},
+        {"l2": 2},
+        {"l3": 1}
+    ],
+    "conv": [
+        {"l1": 32},
+        {"l2": 64},
+        {"l3": 64}
+    ],
+    "fclyr": [
+        {"l1": 512},
+        {"l2": 512}
+    ],
+    "learing_rate": 0.00025,
+    "gamma": 0.99,
+    "logdir": "E:\\vishnu\\SSPlayer\\tf13\\oones",
+    "plogdir": "C:\\Users\\vishnu\\documents\\engproj\\tflog",
+    "tnum_times": 1000,
+    "tgreed_frames": 100,
+    "tmax_exp_len": 100,
+    "tmin_exp_len_train": 10,
+    "tn": 100,
+    "num_times": 1000,
+    "greed_frames": 100,
+    "max_exp_len": 100,
+    "min_exp_len_train": 10,
+    "n": 100
+}

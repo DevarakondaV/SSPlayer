@@ -3,8 +3,9 @@ from tensorflow.python import debug as tf_debug
 import sys
 import numpy as np
 from dist_cnn import *
-from t048_trainer import *
+from snake_trainer import *
 #from gsheets import *
+
 
 s_name = str(sys.argv[1])
 t_num = int(sys.argv[2])
@@ -109,7 +110,7 @@ else:
         # THis is master thread
 
         g_sheets = 0
-        game = t048(1)
+        game = snake(1)
         wait_for(1)
         print(server.target)
 
