@@ -35,8 +35,8 @@ class sumTree:
         """
         
         self.data[self.data_i] = data
+
         tree_i = self.capacity-1+self.data_i
-        
         self.update(tree_i,p_val)
         if (self.data_i == self.capacity-1):
             self.data_i = 0

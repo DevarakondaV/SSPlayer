@@ -1,6 +1,6 @@
 import time
 import numpy as np
-np.set_printoptions(threshold=np.nan)
+#np.set_printoptions(threshold=np.nan)
 from PIL import Image
 from snake_con import *
 import sys
@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 #import cv2
 from collections import deque
-import objgraph
+#import objgraph
 
 from pynput import keyboard
 from threading import Thread
@@ -130,7 +130,7 @@ class Trainer:
         move_dir = game.move_dir
         
         if a == 2:
-            game.move(-1)
+            game.move(83)
             m_dir = "stright"
             return m_dir
         
@@ -198,7 +198,7 @@ class Trainer:
         m_dir = self.perform_action(a)
         #Get the reward for the action!
        
-        chk_frm = phi1[:,:,self.seq_len-1]        
+        #chk_frm = phi1[:,:,self.seq_len-1]        
         # frame = self.get_frame()
         # while (np.array_equal(chk_frm,np.squeeze(frame))):
         #     print("IN WHILE")
@@ -209,16 +209,16 @@ class Trainer:
         
         
         #
-        reward = 0 
+        reward += r
         
-
-        self.con_log("Action = {}\nMove dir = {}\nReward = {}".format(str(a),m_dir,r))
+        os.system('cls')
+        self.con_log("Action = {}\nMove dir = {}\nReward = {}\n IterR: {}".format(str(a),m_dir,r,reward))
         self.con_log("Process Frames = {}\nTotal Frames {}".format(self.process_frames,self.total_frames))
         self.con_log("Avaiable Memory = {}".format(psutil.virtual_memory().available))
         #if frames are equal then invalid move..reinfer Process Frames
         #chk_frm = phi1[:,:,0]
-        chk_frm = phi1[:,:,self.seq_len-1]
-        return frame,r,reward,not np.array_equal(chk_frm,np.squeeze(frame))
+       # chk_frm = phi1[:,:,self.seq_len-1]
+        return frame,r,reward,True
         #return frame,r,reward,1
 
 
@@ -252,7 +252,8 @@ class Trainer:
         """
 
         self.exp.store(error,seq)
-
+        self.process_frames = self.process_frames +  1 
+        self.total_frames = self.total_frames + 1
         return
 
         #Older experience is phased out by poping from exp buffer
@@ -347,7 +348,7 @@ class Trainer:
         weights = self.ops_and_tens['IS_weights']
         weights_tmp = np.zeros(shape=[self.batch_size,1])
 
-        zeros = np.zeros(shape=(100,100,self.seq_len)).astype(np.uint8)
+        zeros = np.zeros(shape=(84,84,self.seq_len)).astype(np.uint8)
         rv = np.zeros((self.batch_size,1))
         self.con_log("UPDATING TARGET PARAMS: {}".format(n),"")
         sess.run([ops_and_tens['target_ops']],{s1: [zeros],s2: [zeros],r: rv,weights: weights_tmp})
@@ -364,10 +365,10 @@ class Trainer:
                 frame: numpy array. Screenshot of current state.
         """
 
-        frame = take_shot(self.game)
+        frame = self.game.take_shot()
         #append the number of processed frames
-        self.process_frames = self.process_frames +  1 
-        self.total_frames = self.total_frames + 1
+        #self.process_frames = self.process_frames +  1 
+        #self.total_frames = self.total_frames + 1
         return frame
 
     def process_seq(self,seq):
@@ -381,7 +382,7 @@ class Trainer:
         """
 
         if (len(seq) < self.seq_len):
-            frames = [np.zeros(shape=[100,100,1]) for i in range(0,self.seq_len-len(seq))]+ [i for i in seq]
+            frames = [np.zeros(shape=[84,84,1]).astype(np.uint8) for i in range(0,self.seq_len-len(seq))]+ [i for i in seq]
         else:
             frames = seq
         
@@ -438,7 +439,7 @@ class Trainer:
        
             return
     
-    @profile
+    #@profile
     def Q_Algorithm(self):
         """
         Function implements the Q algorithm with experience replay.
@@ -455,9 +456,11 @@ class Trainer:
         #frame_limit = self.frame_limit
 
 
-        self.infer_action(np.zeros((100,100,self.seq_len)))
-        self.game.click_play()        
+        self.infer_action(np.zeros((84,84,self.seq_len)))
+        self.game.click_play()
+              
         while (self.process_frames < self.frame_limit):       #While the number of processed frames is less than total training frame limit
+                self.game.set_initial_dist()  
                 #wait_for(1)
                 #Declare params for one iteration of the game
                 iter_reward = 0
@@ -537,7 +540,7 @@ class Trainer:
 
                 #If game ended naturally...    
                 self.game.stop_play = False
-                gc.collect()
+                #gc.collect()
                 #new_game_element = self.game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
                 #new_game_element.click()
                 self.game.click_play()
@@ -666,7 +669,7 @@ class Trainer:
         #Start a new game
         #new_game_element = game.chrome.find_element_by_xpath('/html/body/div[2]/div[2]/a')
         #new_game_element.click()
-        self.infer_action(np.zeros((100,100,self.seq_len)))
+        self.infer_action(np.zeros((84,84,self.seq_len)))
         game.click_play()
 
         #reward list
