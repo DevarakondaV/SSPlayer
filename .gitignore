@@ -17,3 +17,10 @@ chkpt/
 img/
 project-tensorboard/
 log3/
+tsne/
+creds.data
+gsheets.py
+imgs/
+log2-1.zip
+restore.py
+reward.py

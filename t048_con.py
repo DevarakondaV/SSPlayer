@@ -43,7 +43,7 @@ class t048:
                                     'height': 546}
         elif id==2:
             #self.ext_path = r"C:\Users\Vishnu\AppData\Local\Google\Chrome\User Data\Default\Extensions\kcnffeedfpaijglkkpplkbdpchgjbako\1.2_0"
-            self.ext_path = r"C:\Users\Vishnu\AppData\Local\Google\Chrome\User Data\Default\Extensions\jfnbjbahocpfkbbadndnocljpjpccggf\1.5_0"
+            self.ext_path = r"C:\Users\Vishnu\AppData\Local\Google\Chrome\User Data\Profile 3\Extensions\jfnbjbahocpfkbbadndnocljpjpccggf\1.5_0"
             self.processing_crop = {'left':155,
                                     'top': 250,
                                     'width': 273,
