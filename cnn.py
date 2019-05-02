@@ -37,10 +37,10 @@ class pdqn(tf.keras.Model):
         self.build_layers("Tra",seq_len,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR)
 
         self.loss_fun = tf.keras.losses.MeanSquaredError()
-        # self.optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate,
-        #                                             momentum=0.95,
-        #                                             )
-        self.optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate)
+        self.optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate,
+                                                    momentum=0.95,
+                                                    )
+        # self.optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate)
 
         return
 
@@ -184,35 +184,6 @@ class pdqn(tf.keras.Model):
 
         norm_Tra_s2 = tf.convert_to_tensor(inputs[3])
         r = tf.convert_to_tensor(inputs[2])
-
-
-        args:
-            learning_rate: Float. Initial Learning Rate
-            gamma: Discount factor in Q-learning algorithm
-            batch_size: int. Batch size
-            conv_count: int. Number of Convolution Layesr
-            fc_count: int. Number of dense layers
-            conv_feats: List containing the number of kernels at each layer
-            fc_feats: List containing the number of neurons at each layer
-            conv_k_size: List specifiying the shape fo the convolution kernels at each layer.
-            conv_stride: List specifiying the stride for convolution at each layer.
-            LOGDIR: String. Location of Logs
-
-        Returns:
-            writer: Tensorflow summary file writer
-            summ: Tensorflow summary merge
-            train: Tensorflow train operation that executes training
-            enqueue_op: Tensorflow operation for adding values to queue
-            q_s1: Tensorflow print operation for printing size of queue
-            s_img1: Image1 placeholder
-            s_a: Action placeholder
-            s_r: Reward Placeholder
-            s_img2: Image2 placeholder
-            ops: Update operations to update Inference graph weights/biases
-        """
-        #Safety Check requiremnt
-        if (len(conv_feats) != conv_count):
-            return
         
         Tra_cl1 = self.layer_dict["Tra_cnn_layer0"](norm_Tra_s2)
         Tra_cl2 = self.layer_dict["Tra_cnn_layer1"](Tra_cl1)

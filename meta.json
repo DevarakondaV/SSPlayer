@@ -1,9 +1,9 @@
 {
-    "pc": 1,
+    "pc": 2,
     "load_weights": 0,
     "rtype": "t",
     "save_steps": 5,
-    "batchsize": 20,
+    "batchsize": 10,
     "seq_len": 5,
     "conv_k_size": [
         {"l1": 4},
