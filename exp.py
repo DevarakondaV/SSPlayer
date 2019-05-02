@@ -52,8 +52,7 @@ class experience:
         reward = []
 
         tree_idx = []
-
-        if (self.total_exp > self.tree.capacity):
+        if (self.total_exp >= self.tree.capacity):
             min_prob = np.min(self.tree.tree[-self.tree.capacity:]) / self.tree.get_total_priority()
         else:
             min_prob = np.min(self.tree.tree[-self.tree.capacity:self.tree.capacity-1+self.tree.data_i]) / self.tree.get_total_priority()
@@ -87,8 +86,8 @@ class experience:
 
         IS_weights = np.vstack(IS_weights)
         IS_weights = np.power(IS_weights,-self.beta) / maxwi
-        img_1 = np.asarray(img_1)
-        img_2 = np.asarray(img_2)
+        img_1 = np.asarray(img_1).squeeze()
+        img_2 = np.asarray(img_2).squeeze()
         reward = np.reshape(np.asarray(reward),(batch_size,1))
         action = np.reshape(np.asarray(action),(batch_size,1))
         return tree_idx,IS_weights,(img_1,action,reward,img_2)
