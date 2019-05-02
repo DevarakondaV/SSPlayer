@@ -56,7 +56,6 @@ def conv_layer(m_input,size_in,size_out,k_size_w,k_size_h,conv_stride,pool_k_siz
         tf.summary.histogram("act",act)
         return tf.nn.max_pool(act,ksize=[1,pool_k_size,pool_k_size,1],strides=[1,pool_stride_size,pool_stride_size,1],padding='SAME')
 
-
 def fc_layer(m_input,size_in,size_out,trainable_vars,name,num):
     """
     Creates convolution Layer

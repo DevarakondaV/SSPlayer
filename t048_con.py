@@ -93,11 +93,6 @@ class t048:
 
         chrome.execute_script("window.scrollTo(0,225)")
         
-        self.chrome_pid = self.chrome.service.process.pid
-        print("###################",self.chrome_pid)
-        self.app = Application().connect(process = self.chrome_pid)
-
-
     def click_at_location(self,cord):
         x = cord[0]
         y = cord[1]
