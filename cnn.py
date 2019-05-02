@@ -425,10 +425,28 @@ class network:
 
         # 0 is Trainer....1 is inference
 
-        tf.reset_default_graph()
-        
-        with tf.name_scope("infer_place_holder"):
-            x1 = tf.placeholder(tf.uint8,shape=[1,110,84,4],name="x1")
+    #Assignment operations for updating inference graph
+    with tf.name_scope("Assignment_Ops"):
+        with tf.name_scope("Target_weight_update_op"):
+            target_ops = target_weight_update_ops("conv","FC",conv_count,fc_count)
+
+    with tf.name_scope("action"):
+        action = tf.argmax(inference_out[0],axis=0,name="action")
+        tf.summary.scalar("Action: ",action)
+
+    #implementing Q algorithm
+    with tf.name_scope("Q_Algo"):
+        qmax_idx = tf.argmax(inference_out,axis=1,name="qmax_idx", output_type=tf.int64)
+        inf_shape = tf.shape(inference_out,out_type=tf.int64)
+        qm_shape = tf.shape(qmax_idx,out_type=tf.int64)
+        idxs = tf.concat((tf.transpose([tf.range(0,qm_shape[0],dtype=tf.int64)]),tf.transpose([qmax_idx])),axis=1)
+        gamma = tf.constant(0.99,shape=[batch_size],dtype=tf.float16)#([seq_len],0.99)
+        gamma_sparse = tf.SparseTensor(idxs,gamma,dense_shape=inf_shape)
+        reward_sparse = tf.SparseTensor(idxs,tf.squeeze(r,axis=1),dense_shape=inf_shape)
+        gamma_dense = tf.sparse_tensor_to_dense(gamma_sparse,1)
+        reward_dense = tf.sparse_tensor_to_dense(reward_sparse,0)
+        y = tf.add(reward_dense,tf.multiply(gamma_dense,inference_out))
+        ct = tf.concat([inference_out,y],axis=0)
     
         
         with tf.device("/job:local/task:0"):
