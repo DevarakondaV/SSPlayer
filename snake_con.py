@@ -181,12 +181,14 @@ class snake:
 
     def calc_delr(self):
         #If scored reward is 1
-        if (self.get_score()):
-            return 1
+        #if (self.get_score()):
+        #    return 1
 
         #if hit wall reward is -1
         if (self.stop_play):
             return -1
+        else:
+            return self.get_score()
         
         #Else use distance
         if (self.iter_frame > self.calc_iter_timeout()):

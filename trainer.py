@@ -293,7 +293,7 @@ class Trainer:
                         y,Tra_d3 = net.train(seq_n,IS_weights,r)
                         self.update_exp(leaf_idx,np.amax((y-Tra_d3).numpy(),axis=1))
 
-                    if current_tran % 10 == 0:
+                    if current_tran % 10000 == 0:
                         net.update_target_weights()
 
                     if self.force_kill:

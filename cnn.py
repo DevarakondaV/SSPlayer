@@ -28,23 +28,6 @@ class pdqn(tf.keras.Model):
         self.s_writer = tf.contrib.summary.create_file_writer(
             logdir = LOGDIR
         )
-        self.img_stdr = tf.keras.preprocessing.image.ImageDataGenerator(
-            featurewise_center=False,
-            samplewise_center=False,
-            featurewise_std_normalization=False,
-            samplewise_std_normalization=False,
-            zca_whitening=False,
-            rotation_range=0,
-            width_shift_range=0,
-            height_shift_range=0,
-            shear_range=0,
-            channel_shift_range=0,
-            horizontal_flip=False,
-            vertical_flip=False,
-            rescale=None,
-
-
-        )
 
 
         #Building layers
@@ -54,7 +37,10 @@ class pdqn(tf.keras.Model):
         self.build_layers("Tra",seq_len,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR)
 
         self.loss_fun = tf.keras.losses.MeanSquaredError()
-        self.optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate)
+        # self.optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate,
+        #                                             momentum=0.95,
+        #                                             )
+        self.optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate)
 
         return
 

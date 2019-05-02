@@ -1,9 +1,9 @@
 {
-    "pc": 2,
-    "load_weights": 1,
+    "pc": 1,
+    "load_weights": 0,
     "rtype": "t",
     "save_steps": 5,
-    "batchsize": 10,
+    "batchsize": 20,
     "seq_len": 5,
     "conv_k_size": [
         {"l1": 4},
@@ -26,7 +26,7 @@
     ],
     "learing_rate": 0.00025,
     "gamma": 0.99,
-    "logdir": "E:\\vishnu\\SSPlayer\\tf13\\two",
+    "logdir": "E:\\vishnu\\SSPlayer\\tf13\\oones",
     "plogdir": "C:\\Users\\vishnu\\documents\\engproj\\tflog",
     "tnum_times": 1000,
     "tgreed_frames": 100,
