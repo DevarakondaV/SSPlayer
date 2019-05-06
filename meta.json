@@ -1,6 +1,6 @@
 {
-    "pc": 2,
-    "load_weights": 0,
+    "pc": 1,
+    "load_weights": 1,
     "rtype": "t",
     "save_steps": 5,
     "batchsize": 10,
@@ -26,7 +26,7 @@
     ],
     "learing_rate": 0.00025,
     "gamma": 0.99,
-    "logdir": "E:\\vishnu\\SSPlayer\\tf13\\oones",
+    "logdir": "E:\\vishnu\\SSPlayer\\tf13\\stwo",
     "plogdir": "C:\\Users\\vishnu\\documents\\engproj\\tflog",
     "tnum_times": 1000,
     "tgreed_frames": 100,

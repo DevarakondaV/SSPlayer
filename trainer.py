@@ -268,8 +268,6 @@ class Trainer:
                         e,a = net.infer([phi1])
                         kill_play = game.perform_action(a.numpy()[0])
 
-                    if (kill_play):
-                        print("END Play")
                     
                     r = game.get_reward()
                     print("REWARD FOR ACTION", r)
@@ -293,8 +291,11 @@ class Trainer:
                         y,Tra_d3 = net.train(seq_n,IS_weights,r)
                         self.update_exp(leaf_idx,np.amax((y-Tra_d3).numpy(),axis=1))
 
-                    if current_tran % 15 == 0:
+                    if current_tran % 10 == 0:
                         net.update_target_weights()
+                    
+                    if (kill_play):
+                        print("END Play")
 
                     if self.force_kill:
                         break

@@ -37,9 +37,7 @@ class pdqn(tf.keras.Model):
         self.build_layers("Tra",seq_len,conv_feats,fc_feats,conv_k_size,conv_stride,LOGDIR)
 
         self.loss_fun = tf.keras.losses.MeanSquaredError()
-        self.optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate,
-                                                    momentum=0.95,
-                                                    )
+        self.optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate)
         # self.optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate)
 
         return
