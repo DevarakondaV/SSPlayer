@@ -53,7 +53,7 @@ run_type = input("Run type?(r=run, t=testing,p=play): ")
 if (run_type == "p"):
     num_times = int(input("Play_times?: "))
     game_trainer = Trainer(1)
-    game_trainer.play(net,game,seq_len,num_times)
+    game_trainer.play(net,game,seq_len,num_times,TSNE=True)
 elif (run_type == "r"):
     num_times = 5000000
     greed_frames = 1000000

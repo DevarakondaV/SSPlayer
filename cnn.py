@@ -54,12 +54,16 @@ class pdqn(tf.keras.Model):
         self.layer_dict["Tar_fdense"].set_weights(self.layer_dict["Tra_fdense"].get_weights())
 
 
-    def infer(self,inputs):
+    def infer(self,inputs,TSNE=False):
         print("##### INFERING #####")
         inputs[0] = inputs[0].astype(np.float32)
         inputs[0] = tf.image.per_image_standardization(inputs[0])
-        Tar_d3,a = self.__call__(inputs = inputs)
-        return Tar_d3,a
+        if not TSNE:
+            Tar_d3,a = self.__call__(inputs = inputs)
+            return Tar_d3,a
+        else:
+            Tar_d3,a,Tar_d2 = self.__call__(inputs = inputs,TSNE=TSNE)           
+            return Tar_d3,a,Tar_d2
 
     def train(self,inputs,IS_weights,r):
         print("##### TRAINING #####")
@@ -165,7 +169,7 @@ class pdqn(tf.keras.Model):
 
         return
 
-    def call(self, inputs,training=False):
+    def call(self, inputs,training=False,TSNE=False):
         print("Maximum",np.max(inputs[0].numpy()))
 
         norm_Tar_s1 = tf.convert_to_tensor(inputs[0])
@@ -180,8 +184,10 @@ class pdqn(tf.keras.Model):
 
         #if not training return this mode
         if (not training):
-            return Tar_d3,tf.keras.backend.argmax(Tar_d3)
-
+            if not TSNE:
+                return Tar_d3,tf.keras.backend.argmax(Tar_d3)
+            else:
+                return Tar_d3,tf.keras.backend.argmax(Tar_d3),Tar_d2
         norm_Tra_s2 = tf.convert_to_tensor(inputs[3])
         r = tf.convert_to_tensor(inputs[2])
         

@@ -56,14 +56,6 @@ class Trainer:
         self.pause = False
 
 
-        # self.con_log("Action = {}\nMove dir = {}\nReward = {}".format(str(a),m_dir,r))
-        # self.con_log("Process Frames = {}\nTotal Frames {}".format(self.process_frames,self.total_frames))
-        # self.con_log("Avaiable Memory = {}".format(psutil.virtual_memory().available))
-        # #if frames are equal then invalid move..reinfer Process Frames
-        # #chk_frm = phi1[:,:,0]
-        # chk_frm = phi1[:,:,self.seq_len-1]
-        # return frame,r,reward,not np.array_equal(chk_frm,np.squeeze(frame))
-        # #return frame,r,reward,1
 
 
     def store_exp(self,error,seq):
@@ -308,7 +300,7 @@ class Trainer:
         return self.esc_wrap(fun)
 
 
-    def play(self,net,game,seq_len,num_times):
+    def play(self,net,game,seq_len,num_times,TSNE=False):
         """
         Fucntion plays the game
 
@@ -317,6 +309,7 @@ class Trainer:
             game: game instance
             seq_len: int. Sequence length
             num_times: int. number of times to play the game
+            TSNE: Bool. If True, function will write files for performing tsne
 
         returns:
             rtn_val: double. Average reward for n iterations
@@ -325,7 +318,15 @@ class Trainer:
         #net([np.zeros(shape=(1,84,84,5)).astype(np.float16)])
         #net.infer([np.zeros(shape=(1,84,84,5)).astype(np.float16)])
 
+        #Create memap objects if TSNE
+        if (TSNE):
+            tarmmep = np.memmap("test/tar",dtype=np.float16,mode='w+',shape=(1000,512))
+            ammep = np.memmap("test/a",dtype=np.uint8,mode='w+',shape=(1000,))
+            t_i = 0
+
         def fun():
+            if (TSNE):
+                nonlocal t_i
             reward_list = []
             for i in range(0,num_times):
                 self.con_log('Play Iteration: ',i+1)
@@ -338,7 +339,14 @@ class Trainer:
                 while not game.stop_play:
                     os.system('cls')
                     phi1 = phi1.astype(np.float16)
-                    Tar_d3,a = net.infer([phi1])
+                    if not TSNE:
+                        Tar_d3,a = net.infer([phi1])
+                    else:
+                        Tar_d3,a,Tar_d2 = net.infer([phi1],TSNE=TSNE)
+                        print("TSNE")
+                        tarmmep[t_i:,:] = Tar_d2.numpy().astype(np.float16)
+                        ammep[t_i:] = a.numpy().astype(np.uint8)
+                        t_i+=1
                     kill_play = game.perform_action(a.numpy()[0])
                     if (kill_play):
                         print("END PLAY")
