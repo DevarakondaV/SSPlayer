@@ -283,8 +283,8 @@ class Trainer:
                         y,Tra_d3 = net.train(seq_n,IS_weights,r)
                         self.update_exp(leaf_idx,np.amax((y-Tra_d3).numpy(),axis=1))
 
-                    if current_tran % 10000 == 0:
-                        net.update_target_weights()
+                        if current_tran % 10 == 0:
+                            net.update_target_weights()
                     
                     if (kill_play):
                         print("END Play")
@@ -345,8 +345,6 @@ class Trainer:
                     phi1 = phi1.astype(np.float16)
                     if not TSNE:
                         Tar_d3,a = net.infer([phi1])
-                        print(a.numpy().shape,a.numpy().dtype)
-                        print(a.numpy()[0])
                     else:
                         Tar_d3,a,Tar_d2 = net.infer([phi1],TSNE=TSNE)
                         print("TSNE: ",t_i)

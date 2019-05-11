@@ -1,20 +1,24 @@
 import tensorflow as tf
+tf.enable_eager_execution()
+tf.executing_eagerly() 
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+sess = tf.Session(config=config)
+tf.keras.backend.set_session(sess)
+
+
 import sys
 import numpy as np
 from cnn import *
 #from gsheets import *
 tf.enable_eager_execution()
 tf.executing_eagerly() 
-from snake_trainer import *
 from trainer import *
 import json
 import os
 
-os.chdir(r"C:\Users\Vishnu\Documents\EngProj\SSPlayer\\")
-
 with open("meta.json","r") as params_file:
     data = json.load(params_file)
-    #print(data)
 
 LOGDIR = data["logdir"] if data["pc"] == 1 else data["plogdir"]
 save_steps = data["save_steps"]
@@ -28,9 +32,24 @@ conv = [i["l"+str(idx+1)] for i,idx in zip(data["conv"],range(0,len(data["conv"]
 fclyr = [i["l"+str(idx+1)] for i,idx in zip(data["fclyr"],range(0,len(data["fclyr"])))]
 learning_rate = data["learing_rate"]
 gamma = np.array([data["gamma"]]).astype(np.float16)
+load_weights = True if data["load_weights"] == 1 else  False
+img_dir = data["sample_img_dir"]
 
-img_dir = r'C:\Users\vishnu\Documents\EngProj\snake_imgs\\'
+
 img = sorted([img_dir+i for i in os.listdir(img_dir)])
+
+
+net = pdqn(seq_len,conv,fclyr,conv_k_size,conv_stride,LOGDIR,gamma=gamma,batch_size=batch_size,learning_rate=learning_rate)
+if (load_weights):
+    T1 = np.zeros(shape=(1,84,84,seq_len))
+    infer_dummy = [T1]
+    train_dummy = [np.vstack([T1,T1]),
+                    np.asarray([[1],[0]]),
+                    np.asarray([.5,-1.0]).reshape((2,1)),
+                    np.vstack([T1,T1])]
+    net.infer(infer_dummy)
+    net.train(inputs=train_dummy,IS_weights=np.ones(shape=(2,1)),r=[0,0])
+    net.set_model_weights(r"C:\\Users\\devar\\Documents\\EngProj\\SSPlayer\\sweights\\b5weights2.hdf5")
 
 imgs = []
 for i in img:
@@ -42,20 +61,20 @@ T1 = imgs[:,:,:,0:5]
 T2 = imgs[:,:,:,5:10]
 T3 = imgs[:,:,:,10:15]
 T4 = imgs[:,:,:,15:20]
-#T1 = np.vstack([T1,T2])
-#T2 = np.vstack([T3,T4])
+T1 = np.vstack([T1,T2])
+T2 = np.vstack([T3,T4])
 print(T1.shape,T2.shape)
 
-net = pdqn(seq_len,conv,fclyr,conv_k_size,conv_stride,LOGDIR,gamma=gamma,batch_size=batch_size,learning_rate=learning_rate)
-rts = net.infer(inputs = [T1])
-print(net.layer_dict["Tar_dense1"])
-print(rts)
+print("HERE")
+#rts = net.infer(inputs = [T1])
+y = net.train([T1,np.asarray([[1],[0]]),np.asarray([.5,-1]).reshape((2,1)),T2],IS_weights=np.ones(shape=(2,1)),r=[0,0])
+#print(net.layer_dict["Tar_dense1"])
+#print(rts)
+exit()
 #net.set_model_weights(r"C:\Users\vishnu\Documents\EngProj\test\weights1.hdf5")
 
-#y = net.train([T1,np.asarray([1,0]),np.asarray([.5,-1]),T2],np.ones(2))
 
 import numpy as np
-from scipy
 t = np.memmap("tsne/tar",mode="r",dtype=np.float16)
 t.shape
 t = t.reshape(5000,512)
