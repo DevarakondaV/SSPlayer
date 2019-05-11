@@ -36,6 +36,7 @@ gamma = np.array([data["gamma"]]).astype(np.float16)
 load_weights = True if data["load_weights"] == 1 else  False
 
 net = pdqn(seq_len,conv,fclyr,conv_k_size,conv_stride,LOGDIR,gamma=gamma,batch_size=batch_size,learning_rate=learning_rate)
+
 if (load_weights):
     T1 = np.zeros(shape=(1,84,84,seq_len))
     infer_dummy = [T1]
@@ -45,7 +46,7 @@ if (load_weights):
                     np.vstack([T1,T1])]
     net.infer(infer_dummy)
     net.train(inputs=train_dummy,IS_weights=np.ones(shape=(2,1)),r=[0,0])
-    net.set_model_weights(r"E:\vishnu\SSPlayer\tf13\oones\weights\weights0.hdf5")
+    net.set_model_weights(r"C:\\Users\\vishnu\\Documents\\EngProj\\SSPlayer\\sweights\\b5weights2.hdf5")
 game = snake(data["pc"])
 
 
@@ -53,7 +54,7 @@ run_type = input("Run type?(r=run, t=testing,p=play): ")
 if (run_type == "p"):
     num_times = int(input("Play_times?: "))
     game_trainer = Trainer(1)
-    game_trainer.play(net,game,seq_len,num_times,TSNE=True)
+    game_trainer.play(net,game,seq_len,num_times,TSNE=False,TSNE_size=5000)
 elif (run_type == "r"):
     num_times = 5000000
     greed_frames = 1000000

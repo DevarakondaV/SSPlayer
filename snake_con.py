@@ -38,12 +38,12 @@ class snake:
                                     'height': 402}
         elif id==2:
             self.ext_path = r"C:\Users\vishnu\AppData\Local\Google\Chrome\User Data\Default\Extensions\gllcngkdngnfgilfmcbaanknakfgfepb\4.0_0"
-            self.processing_crop_100 = {'left': 80,
+            self.processing_crop = {'left': 80,
                                         'top': 362,
                                         'width': 127,
                                         'height': 123}
 
-            self.processing_crop = {'left':80,
+            self.processing_crop_200 = {'left':80,
                                     'top': 295,
                                     'width': 252,
                                     'height': 252,}
@@ -88,9 +88,9 @@ class snake:
 
         self.canvas = chrome.find_element_by_id("snake-game")
         self.game_container = chrome.find_element_by_class_name("container")
-        self.chrome.execute_script("arguments[0].setAttribute('width','200')", self.canvas)
-        self.chrome.execute_script("arguments[0].setAttribute('height','200')", self.canvas)
-        self.chrome.execute_script("arguments[0].setAttribute('style','width: 200px;')", self.game_container)
+        self.chrome.execute_script("arguments[0].setAttribute('width','100')", self.canvas)
+        self.chrome.execute_script("arguments[0].setAttribute('height','100')", self.canvas)
+        self.chrome.execute_script("arguments[0].setAttribute('style','width: 100px;')", self.game_container)
         self.chrome.execute_script("arguments[0].setAttribute('class','')", self.game_container)
         
                 

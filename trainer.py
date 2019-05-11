@@ -300,7 +300,7 @@ class Trainer:
         return self.esc_wrap(fun)
 
 
-    def play(self,net,game,seq_len,num_times,TSNE=False):
+    def play(self,net,game,seq_len,num_times,TSNE=False,TSNE_size=0):
         """
         Fucntion plays the game
 
@@ -310,6 +310,7 @@ class Trainer:
             seq_len: int. Sequence length
             num_times: int. number of times to play the game
             TSNE: Bool. If True, function will write files for performing tsne
+            TSNE_size: int. Number of transitions to save for tsne
 
         returns:
             rtn_val: double. Average reward for n iterations
@@ -320,13 +321,15 @@ class Trainer:
 
         #Create memap objects if TSNE
         if (TSNE):
-            tarmmep = np.memmap("test/tar",dtype=np.float16,mode='w+',shape=(1000,512))
-            ammep = np.memmap("test/a",dtype=np.uint8,mode='w+',shape=(1000,))
+            tarmmep = np.memmap("tsne/tar",dtype=np.float16,mode='w+',shape=(TSNE_size,512))
+            vmmep = np.memmap("tsne/v",dtype=np.float16,mode='w+',shape=(TSNE_size,))
+            ammep = np.memmap("tsne/a",dtype=np.float16,mode='w+',shape=(TSNE_size,))
+            
             t_i = 0
 
         def fun():
             if (TSNE):
-                nonlocal t_i
+                nonlocal t_i,tarmmep,vmmep,ammep
             reward_list = []
             for i in range(0,num_times):
                 self.con_log('Play Iteration: ',i+1)
@@ -341,12 +344,21 @@ class Trainer:
                     phi1 = phi1.astype(np.float16)
                     if not TSNE:
                         Tar_d3,a = net.infer([phi1])
+                        print(a.numpy().shape,a.numpy().dtype)
+                        print(a.numpy()[0])
                     else:
                         Tar_d3,a,Tar_d2 = net.infer([phi1],TSNE=TSNE)
-                        print("TSNE")
+                        print("TSNE: ",t_i)
                         tarmmep[t_i:,:] = Tar_d2.numpy().astype(np.float16)
-                        ammep[t_i:] = a.numpy().astype(np.uint8)
+                        vmmep[t_i:] = np.amax(Tar_d3.numpy()).astype(np.float16)
+                        ammep[t_i:] = a.numpy()[0].astype(np.uint8)
                         t_i+=1
+                        if (t_i % 100 == 0):
+                            self.save_transition(phi1,name=str(t_i))
+                        if (t_i == TSNE_size):
+                            del tarmmep
+                            del ammep
+                            self.force_kill = True
                     kill_play = game.perform_action(a.numpy()[0])
                     if (kill_play):
                         print("END PLAY")
@@ -410,5 +422,19 @@ class Trainer:
         for i in range(0,len(seq)):
             Image.fromarray(np.squeeze(seq[i])).save("imgs/test"+str(i)+".png")
 
-
     
+    def save_transition(self,transition,name):
+        """
+        Function writes transition as image.
+        If transition channel is greater than 3 it will drop the remaining
+        args:
+            transition: Numpy array of shape [1,img_w,img_h,channels]
+            name: the name to write the file as
+        """
+        write_loc = "tsne/imgs/"+name
+        r_img = transition.squeeze()[:,:,4].astype(np.uint8)
+        img = Image.fromarray(r_img)
+        path = write_loc+".jpeg"
+        img.save(path, "JPEG")
+
+
