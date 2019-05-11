@@ -55,14 +55,6 @@ class pdqn(tf.keras.Model):
             print(key,Tar_key)
             self.layer_dict[Tar_key].set_weights(Tra_weights[key])
 
-        # self.layer_dict["Tar_cnn_layer0"].set_weights(self.layer_dict["Tra_cnn_layer0"].get_weights())
-        # self.layer_dict["Tar_cnn_layer1"].set_weights(self.layer_dict["Tra_cnn_layer1"].get_weights())
-        # self.layer_dict["Tar_cnn_layer2"].set_weights(self.layer_dict["Tra_cnn_layer2"].get_weights())
-        # self.layer_dict["Tar_dense0"].set_weights(self.layer_dict["Tra_dense0"].get_weights())
-        # self.layer_dict["Tar_dense1"].set_weights(self.layer_dict["Tra_dense1"].get_weights())
-        # self.layer_dict["Tar_fdense"].set_weights(self.layer_dict["Tra_fdense"].get_weights())
-
-
     def infer(self,inputs):
         print("##### INFERING #####")
         inputs[0] = inputs[0].astype(np.float32)
@@ -172,52 +164,6 @@ class pdqn(tf.keras.Model):
             ])
 
         f.close()
-
-        # lb = f['conv2d']['pdqn']['conv2d']['bias:0'][()]
-        # lw = f['conv2d']['pdqn']['conv2d']['kernel:0'][()]
-        # l1b = f['conv2d_1']['pdqn']['conv2d_1']['bias:0'][()]
-        # l1w = f['conv2d_1']['pdqn']['conv2d_1']['kernel:0'][()]
-        # l2b = f['conv2d_2']['pdqn']['conv2d_2']['bias:0'][()]
-        # l2w = f['conv2d_2']['pdqn']['conv2d_2']['kernel:0'][()]
-        # l3b = f['conv2d_3']['pdqn']['conv2d_3']['bias:0'][()]
-        # l3w = f['conv2d_3']['pdqn']['conv2d_3']['kernel:0'][()]
-        # l4b = f['conv2d_4']['pdqn']['conv2d_4']['bias:0'][()]
-        # l4w = f['conv2d_4']['pdqn']['conv2d_4']['kernel:0'][()]
-        # l5b = f['conv2d_5']['pdqn']['conv2d_5']['bias:0'][()]
-        # l5w = f['conv2d_5']['pdqn']['conv2d_5']['kernel:0'][()]
-
-        # db = f['dense']['pdqn']['dense']['bias:0'][()]
-        # dw = f['dense']['pdqn']['dense']['kernel:0'][()]
-        # d1b = f['dense_1']['pdqn']['dense_1']['bias:0'][()]
-        # d1w = f['dense_1']['pdqn']['dense_1']['kernel:0'][()]
-        # d2b = f['dense_2']['pdqn']['dense_2']['bias:0'][()]
-        # d2w = f['dense_2']['pdqn']['dense_2']['kernel:0'][()]
-        # d3b = f['dense_3']['pdqn']['dense_3']['bias:0'][()]
-        # d3w = f['dense_3']['pdqn']['dense_3']['kernel:0'][()]
-        # d4b = f['dense_4']['pdqn']['dense_4']['bias:0'][()]
-        # d4w = f['dense_4']['pdqn']['dense_4']['kernel:0'][()]
-        # d5b = f['dense_5']['pdqn']['dense_5']['bias:0'][()]
-        # d5w = f['dense_5']['pdqn']['dense_5']['kernel:0'][()]
-        # f.close()
-
-        # #Target network
-        # self.layer_dict["Tar_cnn_layer0"].set_weights([lw,lb])
-        # self.layer_dict["Tar_cnn_layer1"].set_weights([l1w,l1b])
-        # self.layer_dict["Tar_cnn_layer2"].set_weights([l2w,l2b])
-        # self.layer_dict["Tar_dense0"].set_weights([dw,db])
-        # self.layer_dict["Tar_dense1"].set_weights([d1w,d1b])
-        # self.layer_dict["Tar_fdense"].set_weights([d2w,d2b])
-
-
-        # #Training network
-        # self.layer_dict["Tra_cnn_layer0"].set_weights([l3w,l3b])
-        # self.layer_dict["Tra_cnn_layer1"].set_weights([l4w,l4b])
-        # self.layer_dict["Tra_cnn_layer2"].set_weights([l5w,l5b])
-        # self.layer_dict["Tra_dense0"].set_weights([d3w,d3b])
-        # self.layer_dict["Tra_dense1"].set_weights([d4w,d4b])
-        # self.layer_dict["Tra_fdense"].set_weights([d5w,d5b])
-
-
         return
 
     def call(self, inputs,training=False):
@@ -229,14 +175,7 @@ class pdqn(tf.keras.Model):
                 continue
             Tar_out = self.layer_dict[key](Tar_inp)
             Tar_inp = Tar_out
-            #print("output",Tar_out.shape)
-        # Tar_cl1 = self.layer_dict["Tar_cnn_layer0"](norm_Tar_s1)
-        # Tar_cl2 = self.layer_dict["Tar_cnn_layer1"](Tar_cl1)
-        # Tar_cl3 = self.layer_dict["Tar_cnn_layer2"](Tar_cl2)
-        # Tar_fl = self.layer_dict["Tar_flatten"](Tar_cl3)
-        # Tar_d1 = self.layer_dict["Tar_dense0"](Tar_fl)
-        # Tar_d2 = self.layer_dict["Tar_dense1"](Tar_d1)
-        # Tar_d3 = self.layer_dict["Tar_fdense"](Tar_d2)
+            # print("output",Tar_out.shape)
 
         #if not training return this mode
         if (not training):
@@ -249,15 +188,6 @@ class pdqn(tf.keras.Model):
                 continue
             Tra_out = self.layer_dict[key](Tra_inp)
             Tra_inp = Tra_out
-
-        # Tra_cl1 = self.layer_dict["Tra_cnn_layer0"](norm_Tra_s2)
-        # Tra_cl2 = self.layer_dict["Tra_cnn_layer1"](Tra_cl1)
-        # Tra_cl3 = self.layer_dict["Tra_cnn_layer2"](Tra_cl2)
-        # Tra_fl = self.layer_dict["Tra_flatten"](Tra_cl3)
-        # Tra_d1 = self.layer_dict["Tra_dense0"](Tra_fl)
-        # Tra_d2 = self.layer_dict["Tra_dense1"](Tra_d1)
-        # Tra_d3 = self.layer_dict["Tra_fdense"](Tra_d2)
-
 
         Qmax = tf.keras.backend.max(Tar_out,axis=1)
         y = r+0.99*Qmax

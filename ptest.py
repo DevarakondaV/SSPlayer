@@ -33,9 +33,9 @@ fclyr = [i["l"+str(idx+1)] for i,idx in zip(data["fclyr"],range(0,len(data["fcly
 learning_rate = data["learing_rate"]
 gamma = np.array([data["gamma"]]).astype(np.float16)
 load_weights = True if data["load_weights"] == 1 else  False
+img_dir = data["sample_img_dir"]
 
 
-img_dir = r'C:\Users\devar\Documents\EngProj\snake_imgs\\'
 img = sorted([img_dir+i for i in os.listdir(img_dir)])
 
 

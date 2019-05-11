@@ -39,7 +39,8 @@ load_weights = True if data["load_weights"] == 1 else  False
 net = pdqn(seq_len,conv,fclyr,conv_k_size,conv_stride,LOGDIR,gamma=gamma,batch_size=batch_size,learning_rate=learning_rate)
 
 if (load_weights):
-    T1 = np.zeros(shape=(1,84,84,seq_len))
+    weights_dir = data["weightsdir"]
+    T1 = np.zeros(shape=(1,84,84,sesq_len))
     infer_dummy = [T1]
     train_dummy = [np.vstack([T1,T1]),
                     np.asarray([[1],[0]]),
@@ -47,7 +48,7 @@ if (load_weights):
                     np.vstack([T1,T1])]
     net.infer(infer_dummy)
     net.train(inputs=train_dummy,IS_weights=np.ones(shape=(2,1)),r=[0,0])
-    net.set_model_weights(r"C:\\Users\\devar\\Documents\\EngProj\\SSPlayer\\sweights\\b5weights2.hdf5")
+    net.set_model_weights(weights_dir)
 game = snake(data["pc"])
 
 
