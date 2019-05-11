@@ -47,7 +47,7 @@ if (load_weights):
                     np.vstack([T1,T1])]
     net.infer(infer_dummy)
     net.train(inputs=train_dummy,IS_weights=np.ones(shape=(2,1)),r=[0,0])
-    net.set_model_weights(r"C:\\Users\\vishnu\\Documents\\EngProj\\SSPlayer\\sweights\\b5weights2.hdf5")
+    net.set_model_weights(r"C:\\Users\\devar\\Documents\\EngProj\\SSPlayer\\sweights\\b5weights2.hdf5")
 game = snake(data["pc"])
 
 
