@@ -20,3 +20,4 @@ imgs/
 restore.py
 reward.py
 *.py~
+sweights/
