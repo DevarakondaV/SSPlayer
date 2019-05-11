@@ -46,7 +46,7 @@ if (load_weights):
                     np.vstack([T1,T1])]
     net.infer(infer_dummy)
     net.train(inputs=train_dummy,IS_weights=np.ones(shape=(2,1)),r=[0,0])
-    net.set_model_weights(r"E:\vishnu\SSPlayer\tf13\stwo\weights\b5weights2.hdf5")
+    net.set_model_weights(r"E:\\vishnu\\SSPlayer\\tf13\\s150one\\weights\\weights1.hdf5")
 game = snake(data["pc"])
 
 
@@ -57,7 +57,7 @@ if (run_type == "p"):
     game_trainer.play(net,game,seq_len,num_times)
 elif (run_type == "r"):
     num_times = 1000000
-    greed_frames = 100000
+    greed_frames = 50000
     max_exp_len = 1000000
     min_exp_len_train = 25000 #30000
     n = 100000

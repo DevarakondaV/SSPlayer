@@ -90,7 +90,7 @@ class Trainer:
         
         if processed_frames > greed_frames:
             return 0.1
-        return (((.1-1)/greed_frames)*processed_frames)+1
+        return (((.1-.5)/greed_frames)*processed_frames)+.5
 
     def update_exp(self,leaf_idx,td):
         """
@@ -153,7 +153,7 @@ class Trainer:
 
         if key == keyboard.Key.esc:
             self.pause = not self.pause
-        elif key == keyboard.Key.delete:
+        elif key == keyboard.Key.f1:
             self.pause = False
             self.force_kill = True
 
@@ -291,7 +291,7 @@ class Trainer:
                         y,Tra_d3 = net.train(seq_n,IS_weights,r)
                         self.update_exp(leaf_idx,np.amax((y-Tra_d3).numpy(),axis=1))
 
-                    if current_tran % 10 == 0:
+                    if current_tran % 10000 == 0:
                         net.update_target_weights()
                     
                     if (kill_play):
