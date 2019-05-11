@@ -1,5 +1,4 @@
 *log*
-*test*
 Release.win32/
 seq/
 testimg/
@@ -21,3 +20,4 @@ restore.py
 reward.py
 *.py~
 sweights/
+test/
