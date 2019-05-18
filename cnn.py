@@ -167,7 +167,6 @@ class pdqn(tf.keras.Model):
         return
 
     def call(self, inputs,training=False):
-        print("Maximum",np.max(inputs[0].numpy()))
 
         Tar_inp = tf.convert_to_tensor(inputs[0])
         for key in self.layer_dict:
@@ -193,8 +192,6 @@ class pdqn(tf.keras.Model):
         y = r+0.99*Qmax
         update_idx = [[i,a[0]] for i,a in zip(range(0,len(inputs[1])),inputs[1])]
         y = tf.clip_by_value(y,-1,1)
-        print("Before y",y)
-
         y = y.numpy()[0]
         y = [inputs[2][0][i] if inputs[2][0][i] == -1 else y[i] for i in range(0,len(inputs[2][0]))]         
  

@@ -26,7 +26,10 @@ class experience:
         #New experience needs maximum priority
 
         # priority_max = np.minimum(np.max(self.tree.tree[-self.tree.capacity:]),1)
+        p_max = np.max(self.tree.tree[-self.tree.capacity:])
         error = np.abs(error)
+        if p_max > error:
+            error = p_max
         self.total_exp +=1
         error += self.epsilon
         clipped_e = np.clip(error,0,self.max)
