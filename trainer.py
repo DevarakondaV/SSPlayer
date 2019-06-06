@@ -82,7 +82,7 @@ class Trainer:
         
         if processed_frames > greed_frames:
             return 0.1
-        return (((.1-.5)/greed_frames)*processed_frames)+.5
+        return (((.1-1)/greed_frames)*processed_frames)+1
 
     def update_exp(self,leaf_idx,td):
         """
@@ -283,7 +283,7 @@ class Trainer:
                         y,Tra_d3 = net.train(seq_n,IS_weights,r)
                         self.update_exp(leaf_idx,np.amax((y-Tra_d3).numpy(),axis=1))
 
-                        if current_tran % 10 == 0:
+                        if current_tran % 1000 == 0:
                             net.update_target_weights()
                     
                     if (kill_play):
@@ -334,6 +334,9 @@ class Trainer:
             reward_list = []
             for i in range(0,num_times):
                 self.con_log('Play Iteration: ',i+1)
+                if (i > 5000):
+                    self.con_log('Play Iteration To High: ',i+1)                    
+                    break
                 game.click_play()
                 reward = 0
                 seq = []

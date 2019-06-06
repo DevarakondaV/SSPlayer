@@ -28,11 +28,11 @@ class snake:
         self.chrome_path = r'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
         if id==1:
             self.ext_path = r"C:\Users\devar\AppData\Local\Google\Chrome\User Data\Default\Extensions\gllcngkdngnfgilfmcbaanknakfgfepb\4.0_0"
-            self.processing_crop = {'left':128,
+            self.processing_crop_100 = {'left':128,
                                     'top': 582,
                                     'width': 201,
                                     'height': 200}
-            self.processing_crop_150 = {'left':128,
+            self.processing_crop = {'left':128,
                                     'top': 582,
                                     'width': 301,
                                     'height': 302}
@@ -92,9 +92,9 @@ class snake:
 
         self.canvas = chrome.find_element_by_id("snake-game")
         self.game_container = chrome.find_element_by_class_name("container")
-        self.chrome.execute_script("arguments[0].setAttribute('width','100')", self.canvas)
-        self.chrome.execute_script("arguments[0].setAttribute('height','100')", self.canvas)
-        self.chrome.execute_script("arguments[0].setAttribute('style','width: 100px;')", self.game_container)
+        self.chrome.execute_script("arguments[0].setAttribute('width','150')", self.canvas)
+        self.chrome.execute_script("arguments[0].setAttribute('height','150')", self.canvas)
+        self.chrome.execute_script("arguments[0].setAttribute('style','width: 150px;')", self.game_container)
         self.chrome.execute_script("arguments[0].setAttribute('class','')", self.game_container)
         
                 
@@ -186,8 +186,8 @@ class snake:
     def calc_delr(self):
         #If scored reward is 1
         if (self.get_score()):
-           return 1
-
+           #return 1
+            return self.snake_length-5
         #if hit wall reward is -1
         if (self.stop_play):
             return -1
