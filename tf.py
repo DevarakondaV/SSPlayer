@@ -40,7 +40,7 @@ net = pdqn(seq_len,conv,fclyr,conv_k_size,conv_stride,LOGDIR,gamma=gamma,batch_s
 
 if (load_weights):
     weights_dir = data["weightsdir"]
-    T1 = np.zeros(shape=(1,84,84,sesq_len))
+    T1 = np.zeros(shape=(1,84,84,seq_len))
     infer_dummy = [T1]
     train_dummy = [np.vstack([T1,T1]),
                     np.asarray([[1],[0]]),

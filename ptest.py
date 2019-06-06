@@ -66,12 +66,8 @@ T2 = np.vstack([T3,T4])
 print(T1.shape,T2.shape)
 
 print("HERE")
-#rts = net.infer(inputs = [T1])
+rts = net.infer(inputs = [T1])
 y = net.train([T1,np.asarray([[1],[0]]),np.asarray([.5,-1]).reshape((2,1)),T2],IS_weights=np.ones(shape=(2,1)),r=[0,0])
-#print(net.layer_dict["Tar_dense1"])
-#print(rts)
-exit()
-#net.set_model_weights(r"C:\Users\vishnu\Documents\EngProj\test\weights1.hdf5")
 
 
 import numpy as np
@@ -91,11 +87,13 @@ from mpl_toolkits.mplot3d import Axes3D,proj3d
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import pylab
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-
-tsne = TSNE(n_components=3,learning_rate=150,perplexity=30)
+# tsne = TSNE(n_components=3,learning_rate=150,perplexity=30)
+tsne = TSNE(n_components=3,learning_rate=200,perplexity=30)
 print("Fitting TSNE")
 imgs_ts = tsne.fit_transform(t)
+
 
 xxts = imgs_ts[:,0]
 yyts = imgs_ts[:,1]
@@ -122,16 +120,24 @@ for i in range(0,len(a)):
         gp3[1].append(yyts[i])
         gp3[2].append(zzts[i])
 
+vc = [i if i < 3 else 2 for i in v ]
 fig = plt.figure()
-ax = fig.add_subplot(121, projection='3d')
-sctr = ax.scatter(xxts,yyts,zzts,c=v,marker='.')#,zzts,c=a,marker='.')
-ax.set_xlabel('X Label')
-ax.set_ylabel('Y Label')
-plt.colorbar(sctr)
-ax2 = fig.add_subplot(122,projection='3d')
-ax2.plot(gp1[0],gp1[1],gp1[2],marker='.',color='r',label='Left',linestyle='')
-ax2.plot(gp2[0],gp2[1],gp2[2],marker='.',color='g',label='Right',linestyle='')
-ax2.plot(gp3[0],gp3[1],gp3[2],marker='.',color='y',label='Stright',linestyle='')
+ax = fig.add_subplot(121)#, projection='3d')
+sctr = ax.scatter(xxts,yyts,c=vc,marker='.')#,zzts,c=vc,marker='.')#,zzts,c=a,marker='.')
+divider = make_axes_locatable(ax)
+cax1 = divider.append_axes("right", size="5%", pad=0.05)
+fig.colorbar(sctr, cax=cax1)
+
+#ax.set_aspect('equal')
+ax.set_xlabel('Dim1')
+ax.set_ylabel('Dim2')
+#plt.colorbar(sctr)
+ax2 = fig.add_subplot(122)#,projection='3d')
+ax2.plot(gp1[0],gp1[1],marker='.',color='r',label='left',linestyle='')#gp1[2],marker='.',color='r',label='Left',linestyle='')
+ax2.plot(gp2[0],gp2[1],marker='.',color='g',label='Right',linestyle='')#gp2[2],marker='.',color='g',label='Right',linestyle='')
+ax2.plot(gp3[0],gp3[1],marker='.',color='y',label='Straight',linestyle='')#gp3[2],marker='.',color='y',label='Stright',linestyle='')
+ax2.set_xlabel('Dim1')
+ax2.set_ylabel('Dim2')
 ax2.legend()
 plt.show()
 
