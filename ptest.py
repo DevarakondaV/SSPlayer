@@ -77,7 +77,7 @@ exit()
 import numpy as np
 t = np.memmap("tsne/tar",mode="r",dtype=np.float16)
 t.shape
-t = t.reshape(5000,512)
+t = t.reshape(10000,512)
 t[1].shape
 v = np.memmap("tsne/v",mode="r",dtype=np.float16)
 v.shape
@@ -100,10 +100,35 @@ imgs_ts = tsne.fit_transform(t)
 xxts = imgs_ts[:,0]
 yyts = imgs_ts[:,1]
 zzts = imgs_ts[:,2]
-#xxts = [xxts[i] for i in range(100,5000,100)]
-#yyts = [yyts[i] for i in range(100,5000,100)]
-#v = [v[i] for i in range(100,5000,100)]
-#ac = [a[i] for i in range(100,5000,100)]
+
+
+import numpy as np
+t = np.memmap("tsne/tar",mode="r",dtype=np.float16)
+t.shape
+t = t.reshape(10000,512)
+t[1].shape
+v = np.memmap("tsne/v",mode="r",dtype=np.float16)
+v.shape
+a = np.memmap("tsne/a",mode="r",dtype=np.float16)
+a.shape
+a = a.astype(np.uint8)
+a.dtype
+
+from sklearn.manifold import TSNE
+from mpl_toolkits.mplot3d import Axes3D,proj3d
+import matplotlib.pyplot as plt
+from matplotlib import colors
+import pylab
+
+
+tsne = TSNE(n_components=3,learning_rate=5000,perplexity=50)
+print("Fitting TSNE")
+imgs_ts = tsne.fit_transform(t)
+
+xxts = imgs_ts[:,0]
+yyts = imgs_ts[:,1]
+zzts = imgs_ts[:,2]
+
 
 gp1 = [[],[],[]]
 gp2 = [[],[],[]]
@@ -121,6 +146,20 @@ for i in range(0,len(a)):
         gp3[0].append(xxts[i])
         gp3[1].append(yyts[i])
         gp3[2].append(zzts[i])
+
+fig = plt.figure()
+ax = fig.add_subplot(121)
+sctr = ax.scatter(xxts,yyts,c=v,marker='.')#,zzts,c=a,marker='.')
+ax.set_xlabel('X Label')
+ax.set_ylabel('Y Label')
+plt.colorbar(sctr)
+ax2 = fig.add_subplot(122)
+ax2.plot(gp1[0],gp1[1],marker='.',color='r',label='Left',linestyle='')
+ax2.plot(gp2[0],gp2[1],marker='.',color='g',label='Right',linestyle='')
+ax2.plot(gp3[0],gp3[1],marker='.',color='y',label='Stright',linestyle='')
+ax2.legend()
+plt.show()
+
 
 fig = plt.figure()
 ax = fig.add_subplot(121, projection='3d')

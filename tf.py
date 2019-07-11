@@ -40,7 +40,7 @@ net = pdqn(seq_len,conv,fclyr,conv_k_size,conv_stride,LOGDIR,gamma=gamma,batch_s
 
 if (load_weights):
     weights_dir = data["weightsdir"]
-    T1 = np.zeros(shape=(1,84,84,sesq_len))
+    T1 = np.zeros(shape=(1,84,84,seq_len))
     infer_dummy = [T1]
     train_dummy = [np.vstack([T1,T1]),
                     np.asarray([[1],[0]]),
@@ -56,13 +56,13 @@ run_type = input("Run type?(r=run, t=testing,p=play): ")
 if (run_type == "p"):
     num_times = int(input("Play_times?: "))
     game_trainer = Trainer(1)
-    game_trainer.play(net,game,seq_len,num_times,TSNE=False,TSNE_size=5000)
+    game_trainer.play(net,game,seq_len,num_times,TSNE=False,TSNE_size=10000)
 elif (run_type == "r"):
     num_times = 1000000
-    greed_frames = 50000
+    greed_frames = 200000
     max_exp_len = 1000000
     min_exp_len_train = 25000 #30000
-    n = 100000
+    n = 5000
     game_trainer = Trainer(1)
     game_trainer.play_train(net,game,learning_rate,seq_len,batch_size,num_times,greed_frames,max_exp_len,min_exp_len_train,1,n,15,LOGDIR)
 elif (run_type == "t"):

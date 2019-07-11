@@ -32,11 +32,11 @@ class snake:
                                     'top': 582,
                                     'width': 201,
                                     'height': 200}
-            self.processing_crop = {'left':128,
+            self.processing_crop_150 = {'left':128,
                                     'top': 582,
                                     'width': 301,
                                     'height': 302}
-            self.processing_crop_200 = {'left':128,
+            self.processing_crop = {'left':128,
                                     'top': 477,
                                     'width': 402,
                                     'height': 402}
@@ -92,9 +92,9 @@ class snake:
 
         self.canvas = chrome.find_element_by_id("snake-game")
         self.game_container = chrome.find_element_by_class_name("container")
-        self.chrome.execute_script("arguments[0].setAttribute('width','150')", self.canvas)
-        self.chrome.execute_script("arguments[0].setAttribute('height','150')", self.canvas)
-        self.chrome.execute_script("arguments[0].setAttribute('style','width: 150px;')", self.game_container)
+        self.chrome.execute_script("arguments[0].setAttribute('width','200')", self.canvas)
+        self.chrome.execute_script("arguments[0].setAttribute('height','200')", self.canvas)
+        self.chrome.execute_script("arguments[0].setAttribute('style','width: 200px;')", self.game_container)
         self.chrome.execute_script("arguments[0].setAttribute('class','')", self.game_container)
         
                 
@@ -186,8 +186,7 @@ class snake:
     def calc_delr(self):
         #If scored reward is 1
         if (self.get_score()):
-           #return 1
-            return self.snake_length-5
+          return 1
         #if hit wall reward is -1
         if (self.stop_play):
             return -1
@@ -196,10 +195,10 @@ class snake:
         
         #Else use distance
         if (self.iter_frame > self.calc_iter_timeout()):
-            print("ITER FRAME {}: val: {}".format(self.iter_frame,self.snake_length))
+            #print("ITER FRAME {}: val: {}".format(self.iter_frame,self.snake_length))
             return -0.5/self.snake_length
         else:
-            print("DISTANCE")
+            #print("DISTANCE")
             num = self.snake_length+self.prv_dist
             den = self.snake_length+self.get_current_dist()
             return log(num/den,self.snake_length)

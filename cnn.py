@@ -55,12 +55,16 @@ class pdqn(tf.keras.Model):
             print(key,Tar_key)
             self.layer_dict[Tar_key].set_weights(Tra_weights[key])
 
-    def infer(self,inputs):
+    def infer(self,inputs,TSNE=False):
         print("##### INFERING #####")
         inputs[0] = inputs[0].astype(np.float32)
         inputs[0] = tf.image.per_image_standardization(inputs[0])
-        Tar_d3,a = self.__call__(inputs = inputs)
-        return Tar_d3,a
+        if not TSNE:
+            Tar_d3,a = self.__call__(inputs = inputs)
+            return Tar_d3,a
+        else:
+            Tar_d3,a,Tar_d2 = self.__call__(inputs = inputs,TSNE=TSNE)           
+            return Tar_d3,a,Tar_d2
 
     def train(self,inputs,IS_weights,r):
         print("##### TRAINING #####")
@@ -166,7 +170,7 @@ class pdqn(tf.keras.Model):
         f.close()
         return
 
-    def call(self, inputs,training=False):
+    def call(self, inputs,training=False,TSNE=False):
 
         Tar_inp = tf.convert_to_tensor(inputs[0])
         for key in self.layer_dict:
@@ -174,11 +178,16 @@ class pdqn(tf.keras.Model):
                 continue
             Tar_out = self.layer_dict[key](Tar_inp)
             Tar_inp = Tar_out
+            if TSNE and key == "Tar_dense1":
+                Tar_d2 = Tar_out
             # print("output",Tar_out.shape)
 
         #if not training return this mode
         if (not training):
-            return Tar_out,tf.keras.backend.argmax(Tar_out)
+            if not TSNE:
+                return Tar_out,tf.keras.backend.argmax(Tar_out)
+            else:
+                return Tar_out,tf.keras.backend.argmax(Tar_out),Tar_d2
 
         Tra_inp = tf.convert_to_tensor(inputs[3])
         r = tf.convert_to_tensor(inputs[2])

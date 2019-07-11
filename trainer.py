@@ -81,7 +81,7 @@ class Trainer:
 
         
         if processed_frames > greed_frames:
-            return 0.1
+            return 0.05
         return (((.1-1)/greed_frames)*processed_frames)+1
 
     def update_exp(self,leaf_idx,td):
@@ -262,7 +262,7 @@ class Trainer:
 
                     
                     r = game.get_reward()
-                    print("REWARD FOR ACTION", r)
+                    #print("REWARD FOR ACTION", r)
                     frame = game.get_frame()
 
                     if (len(seq) >= seq_len):
@@ -277,13 +277,13 @@ class Trainer:
                     
                     phi1 = phi2
                     
-                    if (len(self.exp) > batch_size):
+                    if (len(self.exp) > batch_size and len(self.exp) > 10000):
                         leaf_idx,IS_weights,seq_n = self.exp.sample(batch_size)
                         IS_weights = np.reshape(IS_weights,(batch_size,1))
                         y,Tra_d3 = net.train(seq_n,IS_weights,r)
                         self.update_exp(leaf_idx,np.amax((y-Tra_d3).numpy(),axis=1))
 
-                        if current_tran % 1000 == 0:
+                        if current_tran % 10 == 0:
                             net.update_target_weights()
                     
                     if (kill_play):
