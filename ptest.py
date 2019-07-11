@@ -66,12 +66,8 @@ T2 = np.vstack([T3,T4])
 print(T1.shape,T2.shape)
 
 print("HERE")
-#rts = net.infer(inputs = [T1])
+rts = net.infer(inputs = [T1])
 y = net.train([T1,np.asarray([[1],[0]]),np.asarray([.5,-1]).reshape((2,1)),T2],IS_weights=np.ones(shape=(2,1)),r=[0,0])
-#print(net.layer_dict["Tar_dense1"])
-#print(rts)
-exit()
-#net.set_model_weights(r"C:\Users\vishnu\Documents\EngProj\test\weights1.hdf5")
 
 
 import numpy as np
@@ -91,11 +87,13 @@ from mpl_toolkits.mplot3d import Axes3D,proj3d
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import pylab
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-
-tsne = TSNE(n_components=3,learning_rate=150,perplexity=30)
+# tsne = TSNE(n_components=3,learning_rate=150,perplexity=30)
+tsne = TSNE(n_components=3,learning_rate=200,perplexity=30)
 print("Fitting TSNE")
 imgs_ts = tsne.fit_transform(t)
+
 
 xxts = imgs_ts[:,0]
 yyts = imgs_ts[:,1]
@@ -147,6 +145,7 @@ for i in range(0,len(a)):
         gp3[1].append(yyts[i])
         gp3[2].append(zzts[i])
 
+vc = [i if i < 3 else 2 for i in v ]
 fig = plt.figure()
 ax = fig.add_subplot(121)
 sctr = ax.scatter(xxts,yyts,c=v,marker='.')#,zzts,c=a,marker='.')
