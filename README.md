@@ -1,14 +1,13 @@
-# This project is not complete yet.
 # SSPlayer
 
-SSPlayer is an implementation of Deep Q-Network, as described in "Playing Atari with Deep Reinforcement Learning" by DeepMind, to play ShapeScape.
-The complete description of this project can be found [here](www.vishnudevarakonda.com/ML/ssplayer)
-# States and Actions
-In this section, I will describe how to apply these concepts to train a neural network to play snake. Firstly, we need to define the states and actions for our MDP. Following the paper by DeepMind, I used images of the snake environment as states. As explained in the paper, it is important that we capture not just the current environment image but a combination of several previous images as they contain relevant information for how to play the game. This combination of images of the game environment, a sequence, can be packed to create a state for the MDP. Next, I defined the number of actions at each state to be three(left, right or straight) because regardless of the orientation of the snake there are only 3 possible actions. 
-# Network Architecture
-As described earlier the action value function Q is estimated by a neural network. In this instance, because we are dealing with images, the most appropriate network would be a convolutional neural network with some small differences. There are no pooling layers because the pixel perfect location of each "object" in the environment is important. All activation used in this neural network were ReLu except the final layer which uses liner activations as we are trying to estimate an actual function. There are 3 convolution layers with [32,64,64] features, [4,4,3] kernel sizes, [2,2,1] stride. There is a dense network with two hidden layers with [512,512] nodes and 3 final outputs which represent the value for each possible action. Additionally, I used a target network and priority experience replay to expedite the training process.
+SSPlayer is an implementation of Deep Q-Network, as described in "Playing Atari with Deep Reinforcement Learning" by DeepMind, to play games.
+The complete description of this project can be found [here](https://vishnudevarakonda.com/ML/ssplayer)
 
-# Results
-After running the training operation for about a 200 thousand states where the greed gradually reduces from 100% to 10% over the first 100 thousand states, the result of how well the network learned to play snake can be seen [here](www.vishnudevarakonda.com/ML/ssplayer).
+# Snake
+Snake was the first game that I was successfully able to train. Below is an example of the results. <br>
+![Alt text](https://vishnudevarakonda.com/res/ML/ssplayer/s9.gif),![Alt text](https://vishnudevarakonda.com/res/ML/ssplayer/s9-2.gif)
+
+### Results
+After running the training operation for about a 200 thousand states where the greed gradually reduces from 100% to 10% over the first 100 thousand states, the result of how well the network learned to play snake can be seen [here](https://vishnudevarakonda.com/ML/ssplayer).
 
 Clearly, this is not the optimal solution for playing the game. Yet, we can see the network has learned some policy that is effective at finding the food in different locations and guiding the snake there. As discussed earlier, the Q function will find the optimal policy as the number of states approaches infinity. Therefore, a longer training period would ensure that the network will get better.
