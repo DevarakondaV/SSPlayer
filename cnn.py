@@ -11,16 +11,15 @@ class pdqn(tf.keras.Model):
         """
         Function initializes the model
         args:
-            learning_rate: Int. Learning rate associated with the model. Default model is inferenc only
-            gamma: Float. Temporal difference learning discount parameter
-            batch_size: int.
-            seq_len: int.
+            seq_len: int. Number of frames used for one state
             conv_feats: List of Ints. Specifies the number of kernels for each layer
-            fc_feats: List of Ints. Specifies the number of nodes for each leayer.
+            fc_feats: List of Ints. Specifies the number of nodes for each dense leayer.
             conv_k_size: List of ints. Specifies the cnn kernel size
             conv_stride: List of ints. Specifies the stride for each layer.
             LOGDIR: String. Tensorboard log dir
-
+            gamma: Float. Future discounted return rate gamma, discount factor.
+            batch_size: int.
+            learning_rate: Int. Learning rate associated with the model. Default model is inferenc only
         """
         super(pdqn, self).__init__()
         self.layer_dict = {}
