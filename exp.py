@@ -1,3 +1,7 @@
+# Code in this file was borrowed from:
+# https://github.com/rlcode/per/blob/master/prioritized_memory.py
+# Modifications have been made for current game.
+
 from sumTree import sumTree
 import numpy as np
 import sys

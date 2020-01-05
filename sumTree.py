@@ -1,3 +1,7 @@
+# Code in this file was borrowed from:
+# https://github.com/rlcode/per/blob/master/SumTree.py
+# Modifications have been made for current game.
+
 import numpy as np
 import sys
 import time
