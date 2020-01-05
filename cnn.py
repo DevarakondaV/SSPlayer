@@ -41,6 +41,9 @@ class pdqn(tf.keras.Model):
         return
 
     def update_target_weights(self):
+        """
+        Function updates target network weights
+        """
         print("##### UPDATE PARAMS #####")
 
         Tra_weights = {}
@@ -55,6 +58,15 @@ class pdqn(tf.keras.Model):
             self.layer_dict[Tar_key].set_weights(Tra_weights[key])
 
     def infer(self, inputs, TSNE=False):
+        """
+        Function infers form the target network.
+        args:
+            inputs: numpy array. Represents the input to the network.
+        returns:
+            Tar_d3: numpy array. Network output 
+            a: numpy array. Argmax of Tar_d3
+            Tar_d2: numpy array. Last output used to construct TSNE
+        """
         print("##### INFERING #####")
         inputs[0] = inputs[0].astype(np.float32)
         inputs[0] = tf.image.per_image_standardization(inputs[0])
@@ -66,6 +78,16 @@ class pdqn(tf.keras.Model):
             return Tar_d3, a, Tar_d2
 
     def train(self, inputs, IS_weights, r):
+        """
+        Function preforms a training operation.
+        args:
+            inputs: numpy array. Represents the input to the network.
+            IS_weights: Numpy array. Importance sampling weights.
+            r: 
+        returns:
+            Tra_d3: numpy array. Training network output
+        """
+
         print("##### TRAINING #####")
         # Flip states before passing to network
         stdzd = (
@@ -97,6 +119,23 @@ class pdqn(tf.keras.Model):
 
     def build_layers(self, model_pre, seq_len, conv_feats, fc_feats, conv_k_size,
                      conv_stride, LOGDIR, gamma=0, batch_size=0, learning_rate=0):
+        """
+        Function build the network given the params
+        args:
+            model_pre: string: customize title for model layer titles.
+            seq_len: int. Number of frames used for one state.
+            conv_feats: List of Ints. Specifies the number of kernels for each layer.
+            fc_feats: List of Ints. Specifies the number of nodes for each dense leayer.
+            conv_k_size: List of ints. Specifies the cnn kernel size.
+            conv_stride: List of ints. Specifies the stride for each layer.
+            LOGDIR: String. Tensorboard log dir.
+            gamma: Float. Future discounted return rate gamma, discount factor.
+            batch_size: int.
+            learning_rate: Int. Learning rate associated with the model. Default model is inference only.
+        return:
+        after:
+            self.layer_dict contains the network layers
+        """
 
         for i in range(0, len(conv_feats)):
             layer = tf.keras.layers.Conv2D(filters=conv_feats[i],
@@ -124,6 +163,14 @@ class pdqn(tf.keras.Model):
                                                                      bias_initializer='zeros')
 
     def set_model_weights(self, sdir):
+        """
+        Function sets the model weights after loading a model from directory
+        args:
+            sdir: String. Path to file containing model.
+        returns:
+        after:
+            self.layer_dict should be filled with
+        """
         tar_count_cnn = len(
             [key for key in self.layer_dict.keys() if "Tar_cnn_layer" in key])
         tra_count_cnn = len(
@@ -179,6 +226,17 @@ class pdqn(tf.keras.Model):
         return
 
     def call(self, inputs, training=False, TSNE=False):
+        """
+        Function runs a training or inference call on the network.
+        args:
+            inputs: numpy array. contains inputs depending on training or inference.
+            training: bool. defines training call.
+            TSNE: bool. Specifies if TSNE data should be constructed
+        returns:
+            Tar_out: numpy array. Output from target network.
+            a: numpy array. Argmax of Tar_out.
+            Tar_d2: numpy array. output from network for TSNE
+        """
 
         Tar_inp = tf.convert_to_tensor(inputs[0])
         for key in self.layer_dict:
